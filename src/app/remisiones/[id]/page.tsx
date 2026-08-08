@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { lineasDeRemision, obtenerRemision } from "@/lib/consultas";
 import { BotonImprimir } from "@/components/BotonImprimir";
-import { IconoVolver } from "@/components/iconos";
+import { EnlaceVolver } from "@/components/ui";
 import { creditoCompleto } from "@/lib/marca";
 
 export const dynamic = "force-dynamic";
@@ -27,13 +26,7 @@ export default async function HojaRemision({ params }: { params: Promise<{ id: s
   return (
     <div className="space-y-5">
       <div className="no-imprimir flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/salidas"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-humo)] transition-colors hover:text-[var(--color-tinta)]"
-        >
-          <IconoVolver tamano={16} />
-          Volver a salidas
-        </Link>
+        <EnlaceVolver href="/salidas">Volver a salidas</EnlaceVolver>
         <BotonImprimir texto="Imprimir hoja" />
       </div>
 
@@ -73,34 +66,50 @@ export default async function HojaRemision({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        <table className="mt-4 w-full text-left text-sm">
+        {/* En el celular la columna "#" y "Quedaron" se ocultan: lo que
+            importa al revisar el envio es que salio y cuanto. Al imprimir
+            vuelven todas, porque la hoja de papel si tiene ancho. */}
+        <table className="mt-4 w-full table-fixed text-left text-sm">
           <thead className="border-b border-slate-400 text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="py-2 font-semibold">#</th>
-              <th className="py-2 font-semibold">Codigo</th>
-              <th className="py-2 font-semibold">Descripcion</th>
-              <th className="py-2 text-right font-semibold">Piezas</th>
-              <th className="py-2 text-right font-semibold">Quedaron</th>
+              <th className="hidden w-8 py-2 pr-2 font-semibold sm:table-cell print:table-cell">
+                #
+              </th>
+              <th className="w-[5.5rem] py-2 pr-2 font-semibold sm:w-24">Codigo</th>
+              <th className="py-2 pr-2 font-semibold">Descripcion</th>
+              <th className="w-14 py-2 pl-2 text-right font-semibold sm:w-16">Piezas</th>
+              <th className="hidden w-20 py-2 pl-2 text-right font-semibold sm:table-cell print:table-cell">
+                Quedaron
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-slate-200 align-top">
             {lineas.map((l, i) => (
               <tr key={l.id}>
-                <td className="py-2 text-slate-400">{i + 1}</td>
-                <td className="codigo py-2">{l.modelo_codigo}</td>
-                <td className="py-2">{l.modelo_descripcion}</td>
-                <td className="py-2 text-right text-base font-bold">{l.cantidad}</td>
-                <td className="py-2 text-right text-slate-500">{l.existencia_despues}</td>
+                <td className="hidden py-2 pr-2 text-slate-400 sm:table-cell print:table-cell">
+                  {i + 1}
+                </td>
+                <td className="codigo py-2 pr-2 break-words">{l.modelo_codigo}</td>
+                <td className="py-2 pr-2 break-words">{l.modelo_descripcion}</td>
+                <td className="py-2 pl-2 text-right text-base font-bold tabular-nums">
+                  {l.cantidad}
+                </td>
+                <td className="hidden py-2 pl-2 text-right tabular-nums text-slate-500 sm:table-cell print:table-cell">
+                  {l.existencia_despues}
+                </td>
               </tr>
             ))}
           </tbody>
           <tfoot className="border-t-2 border-slate-800">
             <tr>
-              <td colSpan={3} className="py-3 text-right font-bold uppercase">
+              <td className="hidden sm:table-cell print:table-cell" />
+              <td colSpan={2} className="py-3 pr-2 text-right font-bold uppercase">
                 Total
               </td>
-              <td className="py-3 text-right text-lg font-bold">{remision.total_piezas}</td>
-              <td />
+              <td className="py-3 pl-2 text-right text-lg font-bold tabular-nums">
+                {remision.total_piezas}
+              </td>
+              <td className="hidden sm:table-cell print:table-cell" />
             </tr>
           </tfoot>
         </table>

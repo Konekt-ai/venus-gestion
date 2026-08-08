@@ -164,7 +164,7 @@ export function AccionesMovimiento({
               key={tipo}
               type="button"
               onClick={() => abrir(OPCIONES.find((o) => o.tipo === tipo)!)}
-              className={`flex flex-col items-center gap-2 rounded-sm border px-3 py-4 text-sm font-semibold transition-colors ${color}`}
+              className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-sm border px-2 py-4 text-center text-sm leading-tight font-semibold transition-colors sm:min-h-0 sm:px-3 ${color}`}
             >
               <Icono tamano={24} />
               {texto}
@@ -210,13 +210,17 @@ export function AccionesMovimiento({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Boton type="submit" disabled={enviando}>
+          {/* Con el teclado numerico encima (que no trae tecla de retorno)
+              estos botones son la unica salida: no pueden partirse en dos
+              renglones ni quedarse angostos. */}
+          <div className="flex gap-2">
+            <Boton type="submit" disabled={enviando} className="flex-1 !py-3.5 !text-base sm:flex-none">
               {enviando ? "Guardando..." : "Confirmar"}
             </Boton>
             <Boton
               type="button"
               variante="secundario"
+              className="flex-1 !py-3.5 sm:flex-none"
               onClick={() => {
                 setAbierta(null);
                 setMensaje(null);

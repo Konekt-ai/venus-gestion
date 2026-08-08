@@ -40,7 +40,7 @@ export function IniciarConteo() {
             className="campo"
           />
         </div>
-        <Boton type="submit" disabled={enviando} className="!py-3.5 !text-base">
+        <Boton type="submit" disabled={enviando} className="w-full !py-3.5 !text-base sm:w-auto">
           <IconoConteo tamano={18} />
           {enviando ? "Iniciando..." : "Empezar a contar"}
         </Boton>

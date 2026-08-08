@@ -31,7 +31,7 @@ export function DireccionRed() {
   return (
     <Tarjeta className="space-y-3">
       <div>
-        <h2 className="text-base font-bold">Entrar desde el celular</h2>
+        <h2 className="titulo text-lg">Entrar desde el celular</h2>
         <p className="mt-1 text-sm text-[var(--color-humo)]">
           Con el celular conectado al mismo WiFi que esta computadora, abre el navegador y escribe
           esta direccion:

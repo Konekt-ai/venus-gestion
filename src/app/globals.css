@@ -45,6 +45,16 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* "contain" corta el jalar-para-recargar de Android: a media captura de
+     un conteo, una recarga accidental borra lo que se estaba escribiendo.
+     Va en html porque desde body no alcanza al viewport. Se deja el
+     rebote elastico, que es la senal de "llegaste al final". */
+  overscroll-behavior-y: contain;
+  /* Cuando el navegador desplaza solo para ensenar el campo recien
+     enfocado, que no lo deje debajo de la barra de abajo ni del
+     encabezado pegajoso. */
+  scroll-padding-bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px));
+  scroll-padding-top: calc(4.25rem + env(safe-area-inset-top, 0px));
 }
 
 body {
@@ -52,6 +62,76 @@ body {
   color: var(--color-tinta);
   font-family: var(--font-sans);
   touch-action: manipulation;
+}
+
+/* ---------- Telefono ----------
+   Las areas seguras son el espacio que se comen el notch de arriba y la
+   barra de gestos de abajo en los iPhone. Sin esto, la barra de
+   navegacion inferior queda medio tapada y no se puede tocar bien. */
+
+.margen-abajo-seguro {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.espacio-barra-inferior {
+  padding-bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Encabezado de celular: su relleno normal mas lo que ocupe el notch.
+   En el navegador de siempre el inset vale 0 y queda igual que ahora;
+   solo cambia si la app se abre desde la pantalla de inicio. */
+.encabezado-seguro {
+  padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+}
+
+/* Cualquier cosa que se toque con el dedo debe tener donde tocarse,
+   aunque el icono de adentro sea chico. */
+.toque {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Se queda pegado justo arriba de la barra de accesos mientras su
+   tarjeta siga en pantalla: sirve para que el total de un envio no se
+   pierda de vista al ir agregando renglones. */
+.pegado-arriba-barra {
+  position: sticky;
+  bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+}
+
+/* Un bloque ancho (una tabla) que se desliza dentro de si mismo en vez
+   de arrastrar toda la pagina de lado. */
+.desliza-h {
+  overflow-x: auto;
+  /* Sin esto, deslizar a la derecha dispara el gesto de "regresar". */
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* El navegador pinta un cuadro gris al tocar que ignora las esquinas
+   redondeadas y se ve sin terminar. Cada boton responde con su propio
+   estado :active en su lugar. */
+a,
+button,
+[role="button"],
+summary,
+label,
+select,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Que mantener presionado un boton no saque la lupa de seleccionar
+   texto. Los codigos y las cantidades si se pueden seleccionar. */
+button,
+[role="button"],
+nav a {
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 /* ---------- Tipografia ---------- */
@@ -93,13 +173,26 @@ body {
   width: 100%;
   border: 1px solid var(--color-linea-fuerte);
   border-radius: 3px;
-  padding: 0.65rem 0.8rem;
-  font-size: 0.9375rem;
+  /* ~48px de alto en el telefono: el pulgar no falla. */
+  padding: 0.85rem 0.8rem;
+  /* 16px exactos: por debajo de eso, Safari en iPhone hace zoom solo al
+     tocar el campo y deja la pantalla descuadrada. El zoom con los dedos
+     sigue permitido, que es lo que importa para poder acercarse a leer.
+     NUNCA agregarle text-sm ni text-xs a un .campo: regresa el zoom. */
+  font-size: 16px;
   font-family: inherit;
   background: var(--color-papel);
   color: var(--color-tinta);
   outline: none;
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* En pantallas grandes el campo puede volver a su tamano de siempre. */
+@media (min-width: 768px) {
+  .campo {
+    padding: 0.65rem 0.8rem;
+    font-size: 0.9375rem;
+  }
 }
 .campo:focus {
   border-color: var(--color-oro);

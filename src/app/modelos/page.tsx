@@ -59,14 +59,17 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
             : "Todo lo que hay registrado en la bodega"
         }
         accion={
-          <BotonEnlace href="/modelos/nuevo" className="no-imprimir">
+          <BotonEnlace
+            href="/modelos/nuevo"
+            className="no-imprimir w-full !py-3 sm:w-auto sm:!py-2.5"
+          >
             <IconoMas tamano={17} />
             Nuevo modelo
           </BotonEnlace>
         }
       />
 
-      <Suspense fallback={<div className="h-14 rounded-sm bg-white" />}>
+      <Suspense fallback={<div className="h-[52px] rounded-sm bg-[var(--color-papel)]" />}>
         <Buscador valorInicial={q} enVivo />
       </Suspense>
 
@@ -102,9 +105,11 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
             piezas en bodega
           </p>
 
-          {/* Tabla en computadora */}
-          <div className="hidden overflow-hidden rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)] md:block">
-            <table className="w-full text-left text-sm">
+          {/* Tabla en computadora. Un celular acostado ya entra en md: y ahi
+              las seis columnas no caben, asi que la tabla se desliza dentro
+              de su propio marco en vez de recortarse en silencio. */}
+          <div className="desliza-h hidden rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)] md:block">
+            <table className="w-full min-w-[38rem] text-left text-sm">
               <thead className="border-b border-[var(--color-linea)] bg-[var(--color-crema)] text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-humo)]">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Codigo</th>

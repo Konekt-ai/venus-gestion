@@ -31,11 +31,15 @@ export function FiltrosModelos({
     parametros.get(c)
   );
 
+  // shrink-0: dentro de la tira ningun select debe encogerse, o un nombre
+  // de linea largo aplasta a los demas.
   const claseSelect =
-    "campo !w-auto !py-2 !pl-3 !pr-8 !text-sm cursor-pointer";
+    "campo !w-auto min-w-0 shrink-0 cursor-pointer !py-3 !pl-3 !pr-8 sm:!py-2 sm:!text-sm";
 
   return (
-    <div className="no-imprimir flex flex-wrap items-center gap-2">
+    // En celular los filtros son una tira que se desliza de lado: apilados
+    // ocupaban tres renglones antes de ver el primer modelo.
+    <div className="no-imprimir -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:items-center sm:overflow-visible sm:px-0 sm:pb-0">
       <select
         aria-label="Filtrar por existencia"
         value={parametros.get("existencia") ?? ""}
@@ -116,7 +120,7 @@ export function FiltrosModelos({
             const q = parametros.get("q");
             router.replace(q ? `/modelos?q=${encodeURIComponent(q)}` : "/modelos");
           }}
-          className="rounded-sm px-3 py-2 text-sm font-semibold text-[var(--color-humo)] hover:bg-[var(--color-crema)]"
+          className="shrink-0 rounded-sm px-3 py-3 text-sm font-semibold text-[var(--color-vino)] hover:bg-[var(--color-crema)] sm:py-2"
         >
           Quitar filtros
         </button>

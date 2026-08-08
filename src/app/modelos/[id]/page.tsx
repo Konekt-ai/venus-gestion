@@ -1,15 +1,15 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { movimientosDeModelo, nombresDeLineas, obtenerModelo } from "@/lib/consultas";
 import { AccionesMovimiento } from "@/components/AccionesMovimiento";
 import {
   BotonEnlace,
+  EnlaceVolver,
   Existencia,
   Insignia,
   PastillaUbicacion,
   Tarjeta,
 } from "@/components/ui";
-import { IconoEditar, IconoEstrella, IconoVolver } from "@/components/iconos";
+import { IconoEditar, IconoEstrella } from "@/components/iconos";
 import { NOMBRE_MOVIMIENTO } from "@/lib/tipos";
 
 export const dynamic = "force-dynamic";
@@ -34,13 +34,7 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-5">
-      <Link
-        href="/modelos"
-        className="no-imprimir inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-humo)] transition-colors hover:text-[var(--color-tinta)]"
-      >
-        <IconoVolver tamano={16} />
-        Volver a modelos
-      </Link>
+      <EnlaceVolver href="/modelos">Volver a modelos</EnlaceVolver>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -66,26 +60,32 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="no-imprimir flex gap-2">
-          <BotonEnlace href={`/modelos/${modelo.id}/editar`} variante="secundario">
+        <div className="no-imprimir flex w-full gap-2 sm:w-auto">
+          <BotonEnlace
+            href={`/modelos/${modelo.id}/editar`}
+            variante="secundario"
+            className="w-full !py-3 sm:w-auto sm:!py-2.5"
+          >
             <IconoEditar tamano={16} />
             Editar
           </BotonEnlace>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Tarjeta className="text-center">
+      {/* Apiladas, las tres cifras empujaban fuera de pantalla "¿Que paso con
+          este modelo?", que es a lo que se entra estando frente al rack. */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+        <Tarjeta className="col-span-2 text-center sm:col-span-1">
           <p className="etiqueta">En bodega</p>
           <div className="mt-1">
             <Existencia cantidad={modelo.existencia} minimo={modelo.minimo} tamano="grande" />
           </div>
         </Tarjeta>
-        <Tarjeta className="text-center">
+        <Tarjeta className="text-center !p-4 sm:!p-5">
           <p className="etiqueta">En la tienda</p>
           <p className="titulo mt-1 text-3xl tabular-nums">{modelo.en_tienda}</p>
         </Tarjeta>
-        <Tarjeta className="text-center">
+        <Tarjeta className="text-center !p-4 sm:!p-5">
           <p className="etiqueta">En el tianguis</p>
           <p className="titulo mt-1 text-3xl tabular-nums">{modelo.en_tianguis}</p>
         </Tarjeta>

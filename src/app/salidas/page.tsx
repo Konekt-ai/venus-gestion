@@ -69,14 +69,16 @@ export default async function PaginaSalidas({ searchParams }: { searchParams: Pa
         </Tarjeta>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Dos y dos en el celular: sueltas se acomodan en tres renglones
+          desparejos y empujan el buscador fuera de la primera pantalla. */}
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {PESTANAS.map(({ clave: c, texto, Icono }) => {
           const activa = c === clave;
           return (
             <Link
               key={c}
               href={`/salidas?modo=${c}`}
-              className={`inline-flex items-center gap-2 rounded-sm border px-3.5 py-2 text-sm font-semibold transition-colors ${
+              className={`flex min-h-14 items-center justify-center gap-2 rounded-sm border px-3 py-2 text-center text-sm leading-tight font-semibold transition-colors sm:min-h-0 sm:justify-start sm:px-3.5 ${
                 activa
                   ? "border-[var(--color-vino)] bg-[var(--color-vino-palido)] text-[var(--color-vino)]"
                   : "border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] text-[var(--color-humo)] hover:border-[var(--color-oro)] hover:text-[var(--color-tinta)]"
@@ -104,16 +106,16 @@ export default async function PaginaSalidas({ searchParams }: { searchParams: Pa
                 <li key={r.id}>
                   <Link
                     href={`/remisiones/${r.id}`}
-                    className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-oro-tenue)]"
+                    className="flex flex-col gap-1.5 px-4 py-3 transition-colors hover:bg-[var(--color-oro-tenue)] sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                   >
                     <span className="min-w-0">
                       <span className="codigo block text-sm">{r.folio}</span>
-                      <span className="block text-xs text-[var(--color-humo)]">
+                      <span className="block truncate text-xs text-[var(--color-humo)]">
                         {r.fecha.slice(0, 16)}
                         {r.persona && ` · ${r.persona}`}
                       </span>
                     </span>
-                    <span className="flex shrink-0 items-center gap-2">
+                    <span className="flex flex-wrap items-center gap-2 sm:shrink-0">
                       <Insignia tono={r.tipo === "envio" ? "vino" : "ok"}>
                         {r.tipo === "envio" ? "Salida" : "Regreso"} · {r.destino}
                       </Insignia>

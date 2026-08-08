@@ -36,7 +36,7 @@ Cada prenda es un **modelo** con su código tal como viene en la etiqueta:
 lo busca de forma tolerante:
 
 | Si escribes | Encuentra |
-|---|---|
+| --- | --- |
 | `84` | `084` |
 | `vd194`, `VD-194`, `vd 194` | `VD 194` |
 | `194` | `VD 194` |
@@ -116,6 +116,52 @@ sobrescribir en silencio.
 
 ---
 
+## Desde el celular
+
+El sistema está pensado para usarse de pie entre los racks, con el teléfono
+en una mano. Está adaptado a pantalla angosta: los campos no provocan zoom al
+tocarlos, los botones tienen tamaño suficiente para el pulgar, y la barra de
+accesos de abajo respeta la zona de gestos del iPhone.
+
+**Se puede instalar como app**: al abrirlo en el celular, desde el menú del
+navegador se elige *Agregar a pantalla de inicio*. Queda con su propio icono y
+se abre sin la barra de direcciones. Al mantener presionado el icono aparecen
+accesos directos a **Conteo**, **Salidas** y **Modelos**.
+
+---
+
+## Demostración pública (Vercel)
+
+Además de correr en la bodega, el proyecto se puede subir a Vercel como
+**escaparate** para enseñarle el sistema a alguien.
+
+En ese modo la base de datos vive en la carpeta temporal del servidor, así que
+**los datos son de ejemplo y se reinician solos**. Una franja ámbar lo advierte
+en pantalla para que nadie capture ahí inventario de verdad. Desde *Ajustes* se
+puede reiniciar la demostración a mano para volver a enseñarla desde cero.
+
+### Cómo subirla
+
+1. Hacer commit y subir el repositorio a GitHub.
+2. Importar el repo en Vercel. **No hay que tocar** Build Command ni Output
+   Directory: Next.js se detecta solo. Tampoco hace falta `vercel.json`.
+3. En *Settings → Environment Variables*, agregar `VENUS_DEMO = 1` en
+   Production, Preview y Development.
+4. Desplegar. En el log debe decir Node **24.x** (queda fijado en
+   `package.json` porque el binario de SQLite depende de la versión).
+5. Abrir la URL **desde el celular** y comprobar: que cargue el tablero con
+   datos, que se vea la franja ámbar, que se pueda registrar una entrada y una
+   salida, y que las descargas de Ajustes funcionen.
+
+> Si el primer despliegue falla con `Module did not self-register`, cambiar
+> `engines.node` a `"22.x"` en `package.json` y volver a desplegar. Es el único
+> ajuste que suele hacer falta.
+
+**La bodega no se ve afectada.** Sin `VENUS_DEMO`, el sistema sigue guardando en
+`data/venus.db` exactamente como antes.
+
+---
+
 ## Para desarrollo
 
 ```bash
@@ -130,7 +176,7 @@ npm run datos:ejemplo -- --limpiar   # borra todo y recarga
 ### Cómo está armado
 
 | Carpeta | Qué hay |
-|---|---|
+| --- | --- |
 | `src/lib/` | Base de datos, esquema, códigos, motor de existencias, CSV |
 | `src/acciones/` | Operaciones de escritura (server actions) |
 | `src/app/` | Pantallas |

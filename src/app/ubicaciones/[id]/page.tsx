@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { buscarModelos, obtenerUbicacion } from "@/lib/consultas";
 import { AccionesUbicacion } from "@/components/AccionesUbicacion";
-import { BotonEnlace, Existencia, Tarjeta, Vacio } from "@/components/ui";
-import { IconoCaja, IconoEtiqueta, IconoVolver } from "@/components/iconos";
+import { BotonEnlace, EnlaceVolver, Existencia, Tarjeta, Vacio } from "@/components/ui";
+import { IconoCaja, IconoEtiqueta } from "@/components/iconos";
 
 export const dynamic = "force-dynamic";
 
@@ -19,13 +19,7 @@ export default async function DetalleUbicacion({ params }: { params: Promise<{ i
 
   return (
     <div className="space-y-5">
-      <Link
-        href="/ubicaciones"
-        className="no-imprimir inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-humo)] transition-colors hover:text-[var(--color-tinta)]"
-      >
-        <IconoVolver tamano={16} />
-        Volver a ubicaciones
-      </Link>
+      <EnlaceVolver href="/ubicaciones">Volver a ubicaciones</EnlaceVolver>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -84,13 +78,15 @@ export default async function DetalleUbicacion({ params }: { params: Promise<{ i
                     href={`/modelos/${m.id}`}
                     className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-oro-tenue)]"
                   >
-                    <span className="min-w-0">
+                    <span className="min-w-0 flex-1">
                       <span className="codigo block">{m.codigo}</span>
                       <span className="block truncate text-sm text-[var(--color-humo)]">
                         {m.descripcion}
                       </span>
                     </span>
-                    <Existencia cantidad={m.existencia} minimo={m.minimo} />
+                    <span className="shrink-0">
+                      <Existencia cantidad={m.existencia} minimo={m.minimo} />
+                    </span>
                   </Link>
                 </li>
               ))}

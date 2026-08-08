@@ -19,12 +19,16 @@ export function GestorUbicaciones({ hayUbicaciones }: { hayUbicaciones: boolean 
   return (
     <div className="no-imprimir">
       {modo === null ? (
-        <div className="flex flex-wrap gap-2">
-          <Boton onClick={() => setModo("lote")}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Boton onClick={() => setModo("lote")} className="w-full !py-3 sm:w-auto">
             <IconoMas tamano={17} />
             {hayUbicaciones ? "Crear una zona completa" : "Mapear la bodega"}
           </Boton>
-          <Boton variante="secundario" onClick={() => setModo("una")}>
+          <Boton
+            variante="secundario"
+            onClick={() => setModo("una")}
+            className="w-full !py-3 sm:w-auto"
+          >
             Agregar un lugar suelto
           </Boton>
         </div>
@@ -83,7 +87,7 @@ function FormularioLote({
   return (
     <Tarjeta className="space-y-4">
       <div>
-        <h2 className="text-base font-bold">Crear una zona completa</h2>
+        <h2 className="titulo text-lg">Crear una zona completa</h2>
         <p className="mt-0.5 text-sm text-[var(--color-humo)]">
           Dile cuantos racks tiene la zona y cuantas repisas cada uno; se crean todos los lugares
           de una vez.
@@ -154,11 +158,20 @@ function FormularioLote({
           </p>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          <Boton type="submit" disabled={enviando || total === 0}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Boton
+            type="submit"
+            disabled={enviando || total === 0}
+            className="w-full !py-3 sm:w-auto"
+          >
             {enviando ? "Creando..." : `Crear ${total} lugares`}
           </Boton>
-          <Boton type="button" variante="secundario" onClick={alCancelar}>
+          <Boton
+            type="button"
+            variante="secundario"
+            onClick={alCancelar}
+            className="w-full !py-3 sm:w-auto"
+          >
             Cancelar
           </Boton>
         </div>
@@ -186,7 +199,7 @@ function FormularioUno({
   return (
     <Tarjeta className="space-y-4">
       <div>
-        <h2 className="text-base font-bold">Agregar un lugar</h2>
+        <h2 className="titulo text-lg">Agregar un lugar</h2>
         <p className="mt-0.5 text-sm text-[var(--color-humo)]">
           Solo la zona es obligatoria. Puedes usarlo para una tarima o una mesa dejando el rack y
           la repisa vacios.
@@ -196,7 +209,9 @@ function FormularioUno({
       {estado && !estado.ok && <Aviso tipo="error">{estado.error}</Aviso>}
 
       <form action={accion} className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-3">
+        {/* Los tres valen 1 o 2 caracteres: se quedan lado a lado hasta en el
+            telefono para no empujar "Crear lugar" fuera de la pantalla. */}
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <label htmlFor="zona-uno" className="etiqueta">
               Zona *
@@ -249,11 +264,16 @@ function FormularioUno({
           />
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Boton type="submit" disabled={pendiente}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Boton type="submit" disabled={pendiente} className="w-full !py-3 sm:w-auto">
             {pendiente ? "Guardando..." : "Crear lugar"}
           </Boton>
-          <Boton type="button" variante="secundario" onClick={alCancelar}>
+          <Boton
+            type="button"
+            variante="secundario"
+            onClick={alCancelar}
+            className="w-full !py-3 sm:w-auto"
+          >
             Cancelar
           </Boton>
         </div>

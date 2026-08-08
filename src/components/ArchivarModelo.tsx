@@ -25,8 +25,8 @@ export function ArchivarModelo({ modeloId, codigo }: { modeloId: number; codigo:
   }
 
   return (
-    <div className="rounded-sm border border-[var(--color-rojo-palido)] bg-[var(--color-rojo-palido)] p-4">
-      <h2 className="text-base font-bold text-[var(--color-rojo)]">
+    <div className="rounded-sm border-l-2 border-[var(--color-rojo)] bg-[var(--color-rojo-palido)] p-4">
+      <h2 className="titulo text-lg text-[var(--color-rojo)]">
         Dar de baja este modelo
       </h2>
       <p className="mt-1 text-sm text-[var(--color-rojo)]">
@@ -40,13 +40,22 @@ export function ArchivarModelo({ modeloId, codigo }: { modeloId: number; codigo:
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {confirmando ? (
           <>
-            <Boton variante="peligro" onClick={archivar} disabled={enviando}>
+            <Boton
+              variante="peligro"
+              onClick={archivar}
+              disabled={enviando}
+              className="w-full !py-3.5 sm:w-auto"
+            >
               {enviando ? "Dando de baja..." : `Si, dar de baja ${codigo}`}
             </Boton>
-            <Boton variante="secundario" onClick={() => setConfirmando(false)}>
+            <Boton
+              variante="secundario"
+              onClick={() => setConfirmando(false)}
+              className="w-full !py-3.5 sm:w-auto"
+            >
               Mejor no
             </Boton>
           </>

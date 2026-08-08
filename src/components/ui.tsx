@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { IconoPin, IconoVacio } from "@/components/iconos";
+import { IconoPin, IconoVacio, IconoVolver } from "@/components/iconos";
 
 /** Piezas visuales que se repiten en todo el sistema. */
 
@@ -17,6 +17,23 @@ export function Tarjeta({
     >
       {children}
     </div>
+  );
+}
+
+/**
+ * Regresar a la pantalla de arriba.
+ * En el celular es la unica salida, asi que necesita area de toque de
+ * verdad y no solo el texto.
+ */
+export function EnlaceVolver({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="no-imprimir -ml-2 inline-flex min-h-11 items-center gap-1.5 rounded-sm px-2 text-sm font-semibold text-[var(--color-humo)] transition-colors hover:bg-[var(--color-crema)] hover:text-[var(--color-tinta)]"
+    >
+      <IconoVolver tamano={18} />
+      {children}
+    </Link>
   );
 }
 
@@ -67,25 +84,31 @@ export function Insignia({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[0.7rem] font-semibold ${TONOS[tono]}`}
+      className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs font-semibold ${TONOS[tono]}`}
     >
       {children}
     </span>
   );
 }
 
+/**
+ * Los botones responden al dedo con :active porque en el telefono no
+ * existe el hover: sin esa senal, al tocar parece que no paso nada.
+ */
 const BOTONES = {
   primario:
-    "bg-[var(--color-vino)] text-white hover:bg-[var(--color-vino-oscuro)] disabled:bg-[var(--color-linea-fuerte)] disabled:text-white",
+    "bg-[var(--color-vino)] text-white hover:bg-[var(--color-vino-oscuro)] active:bg-[var(--color-vino-oscuro)] active:scale-[0.98] disabled:bg-[var(--color-linea-fuerte)] disabled:text-white disabled:active:scale-100",
   secundario:
-    "bg-[var(--color-papel)] text-[var(--color-tinta)] border border-[var(--color-linea-fuerte)] hover:border-[var(--color-oro)] hover:bg-[var(--color-oro-tenue)] disabled:text-[var(--color-humo)] disabled:hover:border-[var(--color-linea-fuerte)] disabled:hover:bg-[var(--color-papel)]",
+    "bg-[var(--color-papel)] text-[var(--color-tinta)] border border-[var(--color-linea-fuerte)] hover:border-[var(--color-oro)] hover:bg-[var(--color-oro-tenue)] active:bg-[var(--color-oro-palido)] active:scale-[0.98] disabled:text-[var(--color-humo)] disabled:hover:border-[var(--color-linea-fuerte)] disabled:hover:bg-[var(--color-papel)] disabled:active:scale-100",
   oscuro:
-    "bg-[var(--color-tinta)] text-[var(--color-oro-claro)] hover:bg-[var(--color-carbon)] disabled:bg-[var(--color-linea-fuerte)] disabled:text-white",
-  peligro: "bg-[var(--color-rojo)] text-white hover:brightness-90",
+    "bg-[var(--color-tinta)] text-[var(--color-oro-claro)] hover:bg-[var(--color-carbon)] active:bg-[var(--color-carbon)] active:scale-[0.98] disabled:bg-[var(--color-linea-fuerte)] disabled:text-white disabled:active:scale-100",
+  peligro:
+    "bg-[var(--color-rojo)] text-white hover:brightness-90 active:brightness-90 active:scale-[0.98]",
 };
 
+// min-h-11 son los 44px minimos para tocar sin fallar.
 const BASE_BOTON =
-  "inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed";
+  "inline-flex min-h-11 select-none items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed";
 
 export function Boton({
   children,
@@ -228,7 +251,7 @@ export function Existencia({
       className={`inline-flex items-baseline gap-1 rounded-sm font-semibold tabular-nums ${TONOS[tono]} ${clases}`}
     >
       {cantidad}
-      <span className="text-[0.6em] font-semibold opacity-70">
+      <span className="text-[0.72em] font-semibold">
         {cantidad === 1 ? "pza" : "pzas"}
       </span>
     </span>
@@ -245,15 +268,15 @@ export function PastillaUbicacion({
 }) {
   if (!codigo) {
     return (
-      <span className="inline-flex items-center rounded-sm bg-[var(--color-ambar-palido)] px-2 py-0.5 text-[0.7rem] font-semibold text-[var(--color-ambar)]">
+      <span className="inline-flex items-center rounded-sm bg-[var(--color-ambar-palido)] px-2 py-1 text-xs font-semibold text-[var(--color-ambar)]">
         Sin ubicacion
       </span>
     );
   }
 
   const contenido = (
-    <span className="codigo inline-flex items-center gap-1 rounded-sm bg-[var(--color-crema)] px-2 py-0.5 text-[0.7rem] text-[var(--color-tinta)]">
-      <IconoPin tamano={12} />
+    <span className="codigo inline-flex items-center gap-1 rounded-sm bg-[var(--color-crema)] px-2 py-1 text-xs text-[var(--color-tinta)]">
+      <IconoPin tamano={13} />
       {codigo}
     </span>
   );

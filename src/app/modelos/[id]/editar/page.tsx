@@ -13,7 +13,7 @@ export default async function EditarModelo({ params }: { params: Promise<{ id: s
   if (!modelo) notFound();
 
   return (
-    <div className="space-y-6">
+    <div>
       <TituloPagina
         titulo={`Editar ${modelo.codigo}`}
         descripcion="Para cambiar las piezas que hay, usa los botones de la ficha: asi queda registrado el movimiento."
@@ -30,7 +30,10 @@ export default async function EditarModelo({ params }: { params: Promise<{ id: s
         }}
       />
 
-      <ArchivarModelo modeloId={modelo.id} codigo={modelo.codigo} />
+      {/* Separado a mano: dar de baja no es un paso mas del formulario. */}
+      <div className="mt-8">
+        <ArchivarModelo modeloId={modelo.id} codigo={modelo.codigo} />
+      </div>
     </div>
   );
 }

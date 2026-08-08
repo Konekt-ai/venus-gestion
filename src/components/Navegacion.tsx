@@ -115,7 +115,7 @@ export function BarraMovil() {
   const pathname = usePathname();
 
   return (
-    <nav className="no-imprimir fixed inset-x-0 bottom-0 z-40 flex bg-[var(--color-tinta)] md:hidden">
+    <nav className="no-imprimir margen-abajo-seguro fixed inset-x-0 bottom-0 z-40 flex bg-[var(--color-tinta)] md:hidden">
       {ENLACES_MOVIL.map(({ href, texto, Icono, exacto }) => {
         const activo = estaActivo(pathname, href, exacto);
         return (
@@ -123,14 +123,14 @@ export function BarraMovil() {
             key={href}
             href={href}
             aria-current={activo ? "page" : undefined}
-            className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-medium ${
-              activo ? "text-[var(--color-oro-claro)]" : "text-white/50"
+            className={`relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[0.7rem] font-medium ${
+              activo ? "text-[var(--color-oro-claro)]" : "text-white/55"
             }`}
           >
             {activo && (
-              <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-[var(--color-oro)]" />
+              <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-[var(--color-oro)]" />
             )}
-            <Icono tamano={21} />
+            <Icono tamano={22} />
             {texto}
           </Link>
         );
@@ -142,16 +142,16 @@ export function BarraMovil() {
 /** Encabezado que solo aparece en celular. */
 export function EncabezadoMovil() {
   return (
-    <header className="no-imprimir capitone sticky top-0 z-30 flex items-center justify-between px-4 py-3 md:hidden">
+    <header className="no-imprimir capitone encabezado-seguro sticky top-0 z-30 flex items-center justify-between pb-3 md:hidden">
       <Link href="/">
         <Wordmark compacto />
       </Link>
       <Link
         href="/configuracion"
         aria-label="Ajustes"
-        className="p-1.5 text-white/60 transition-colors hover:text-[var(--color-oro-claro)]"
+        className="toque -mr-2 flex items-center justify-center text-white/60 transition-colors hover:text-[var(--color-oro-claro)]"
       >
-        <IconoAjustes tamano={20} />
+        <IconoAjustes tamano={21} />
       </Link>
     </header>
   );

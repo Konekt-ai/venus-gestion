@@ -46,6 +46,8 @@ export function FormularioModelo({
       {estado && !estado.ok && <Aviso tipo="error">{estado.error}</Aviso>}
 
       <Tarjeta className="space-y-4">
+        <h2 className="titulo text-lg">Datos de la prenda</h2>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="codigo" className="etiqueta">
@@ -168,7 +170,7 @@ export function FormularioModelo({
       </Tarjeta>
 
       <Tarjeta className="space-y-4">
-        <h2 className="text-base font-bold">Ubicacion y existencia</h2>
+        <h2 className="titulo text-lg">Ubicacion y existencia</h2>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="sm:col-span-2">
@@ -211,7 +213,8 @@ export function FormularioModelo({
                 min={0}
                 defaultValue={0}
                 inputMode="numeric"
-                className="campo sin-flechas !text-lg"
+                onFocus={(e) => e.currentTarget.select()}
+                className="campo sin-flechas !py-3.5 text-center !text-2xl !font-bold"
               />
             </div>
           )}
@@ -247,7 +250,7 @@ export function FormularioModelo({
           />
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2.5">
+        <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-[var(--color-linea)] px-3 py-3 sm:border-0 sm:px-0 sm:py-0">
           <input
             type="checkbox"
             name="destacado"
@@ -261,12 +264,12 @@ export function FormularioModelo({
       </Tarjeta>
 
       <div className="flex flex-wrap gap-2">
-        <Boton type="submit" disabled={pendiente}>
+        <Boton type="submit" disabled={pendiente} className="flex-1 !py-3.5 sm:flex-none">
           {pendiente ? "Guardando..." : editando ? "Guardar cambios" : "Dar de alta"}
         </Boton>
         <Link
           href={modelo ? `/modelos/${modelo.id}` : "/modelos"}
-          className="inline-flex items-center justify-center rounded-sm border border-[var(--color-linea)] bg-white px-4 py-2.5 text-sm font-semibold"
+          className="inline-flex flex-1 items-center justify-center rounded-sm border border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] px-4 py-3.5 text-sm font-semibold sm:flex-none sm:py-2.5"
         >
           Cancelar
         </Link>

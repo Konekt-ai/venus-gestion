@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { anotarConteo, borrarLineaConteo, cerrarConteo } from "@/acciones/conteos";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "@/lib/codigos";
@@ -62,13 +63,18 @@ export function PanelConteo({
   }, [busqueda, modelos]);
 
   function elegir(m: ModeloElegible) {
-    setElegido(m);
-    setBusqueda("");
-    const yaEsta = lineas.find((l) => l.modelo_id === m.id);
-    setCantidad(yaEsta ? String(yaEsta.contado) : "");
-    setMensaje(null);
-    // El foco salta solo al campo de cantidad para no tener que tocar.
-    setTimeout(() => campoCantidad.current?.focus(), 30);
+    // flushSync obliga a React a pintar YA, todavia dentro del toque del
+    // dedo: asi el campo de cantidad ya existe cuando le damos el foco y
+    // el telefono abre el teclado solo, sin tener que tocarlo otra vez.
+    flushSync(() => {
+      setElegido(m);
+      setBusqueda("");
+      const yaEsta = lineas.find((l) => l.modelo_id === m.id);
+      setCantidad(yaEsta ? String(yaEsta.contado) : "");
+      setMensaje(null);
+    });
+    campoCantidad.current?.focus();
+    campoCantidad.current?.select();
   }
 
   function anotar(e: React.FormEvent) {
@@ -81,23 +87,37 @@ export function PanelConteo({
       return;
     }
 
+    const modelo = elegido;
+
+    // Se limpia y se regresa el foco AHORA, todavia dentro del gesto: el
+    // teclado no alcanza a bajarse y se puede ir tecleando el siguiente
+    // codigo mientras el servidor guarda el anterior.
+    flushSync(() => {
+      setElegido(null);
+      setCantidad("");
+    });
+    campoBusqueda.current?.focus();
+
     iniciar(async () => {
-      const r = await anotarConteo(conteoId, elegido.id, n);
+      const r = await anotarConteo(conteoId, modelo.id, n);
       if (r.ok) {
         const dif = r.datos?.diferencia ?? 0;
         setMensaje({
           tipo: "ok",
           texto:
             dif === 0
-              ? `${elegido.codigo}: cuadra con lo registrado.`
-              : `${elegido.codigo}: ${dif > 0 ? "sobran" : "faltan"} ${Math.abs(dif)} contra lo registrado.`,
+              ? `${modelo.codigo}: cuadra con lo registrado.`
+              : `${modelo.codigo}: ${dif > 0 ? "sobran" : "faltan"} ${Math.abs(dif)} contra lo registrado.`,
         });
-        setElegido(null);
-        setCantidad("");
         router.refresh();
-        setTimeout(() => campoBusqueda.current?.focus(), 30);
       } else {
-        setMensaje({ tipo: "error", texto: r.error });
+        // Si fallo, se devuelve el modelo y la cantidad tal como estaban:
+        // contando de pie, perder el renglon y no saber cual fue es lo
+        // peor que puede pasar. El error dice de que modelo se trata
+        // porque los del servidor son genericos.
+        setElegido(modelo);
+        setCantidad(String(n));
+        setMensaje({ tipo: "error", texto: `${modelo.codigo}: ${r.error}` });
       }
     });
   }
@@ -118,7 +138,10 @@ export function PanelConteo({
       <Tarjeta className="space-y-3">
         {!elegido ? (
           <>
-            <label htmlFor="buscar-conteo" className="etiqueta !mb-0">
+            <label
+              htmlFor="buscar-conteo"
+              className="mb-1.5 block text-base font-semibold text-[var(--color-tinta)]"
+            >
               ¿Que modelo estas contando?
             </label>
             <input
@@ -128,6 +151,21 @@ export function PanelConteo({
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Escribe el codigo de la etiqueta"
               autoComplete="off"
+              type="search"
+              inputMode="search"
+              enterKeyHint="search"
+              autoCorrect="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              // Enter toma la primera sugerencia: asi se captura sin
+              // levantar la vista y un lector de codigo de barras
+              // Bluetooth (que teclea y manda Enter) funciona de corrido.
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && sugerencias.length > 0) {
+                  e.preventDefault();
+                  elegir(sugerencias[0]);
+                }
+              }}
               className="campo !py-3.5 !text-base"
             />
 
@@ -153,7 +191,11 @@ export function PanelConteo({
                           {m.ubicacion_codigo && ` · ${m.ubicacion_codigo}`}
                         </span>
                       </span>
-                      {yaContados.has(m.id) && <Insignia tono="ok">Ya contado</Insignia>}
+                      {yaContados.has(m.id) && (
+                        <span className="shrink-0">
+                          <Insignia tono="ok">Ya contado</Insignia>
+                        </span>
+                      )}
                     </button>
                   </li>
                 ))}
@@ -174,7 +216,10 @@ export function PanelConteo({
             </div>
 
             <div>
-              <label htmlFor="cantidad-conteo" className="etiqueta">
+              <label
+                htmlFor="cantidad-conteo"
+                className="mb-1.5 block text-base font-semibold text-[var(--color-tinta)]"
+              >
                 ¿Cuantas piezas hay fisicamente?
               </label>
               <input
@@ -185,6 +230,11 @@ export function PanelConteo({
                 value={cantidad}
                 onChange={(e) => setCantidad(e.target.value)}
                 inputMode="numeric"
+                enterKeyHint="done"
+                // Al volver a un modelo ya contado el numero viejo queda
+                // seleccionado: se teclea encima sin tener que borrarlo.
+                onFocus={(e) => e.currentTarget.select()}
+                onClick={(e) => e.currentTarget.select()}
                 required
                 className="campo sin-flechas !py-4 text-center !text-3xl !font-bold"
               />
@@ -201,9 +251,11 @@ export function PanelConteo({
                 type="button"
                 variante="secundario"
                 onClick={() => {
-                  setElegido(null);
-                  setCantidad("");
-                  setTimeout(() => campoBusqueda.current?.focus(), 30);
+                  flushSync(() => {
+                    setElegido(null);
+                    setCantidad("");
+                  });
+                  campoBusqueda.current?.focus();
                 }}
               >
                 Cancelar
@@ -213,31 +265,33 @@ export function PanelConteo({
         )}
       </Tarjeta>
 
-      <div className="grid grid-cols-3 gap-3">
+      {/* La cifra va arriba del rotulo: "Con diferencia" ocupa dos
+          renglones y si fuera al reves descuadraria las tres tarjetas. */}
+      <div className="grid grid-cols-3 gap-2">
         <Tarjeta className="!p-3 text-center">
-          <p className="etiqueta !mb-0">Contados</p>
-          <p className="text-2xl font-bold">{lineas.length}</p>
+          <p className="text-2xl font-bold leading-none">{lineas.length}</p>
+          <p className="etiqueta !mb-0 mt-1.5 leading-tight !tracking-[0.04em]">Contados</p>
         </Tarjeta>
         <Tarjeta className="!p-3 text-center">
-          <p className="etiqueta !mb-0">Cuadran</p>
-          <p className="text-2xl font-bold">{lineas.length - conDiferencia.length}</p>
+          <p className="text-2xl font-bold leading-none">{lineas.length - conDiferencia.length}</p>
+          <p className="etiqueta !mb-0 mt-1.5 leading-tight !tracking-[0.04em]">Cuadran</p>
         </Tarjeta>
         <Tarjeta className="!p-3 text-center">
-          <p className="etiqueta !mb-0">Con diferencia</p>
           <p
-            className={`text-2xl font-bold ${
+            className={`text-2xl font-bold leading-none ${
               conDiferencia.length > 0 ? "text-[var(--color-ambar)]" : ""
             }`}
           >
             {conDiferencia.length}
           </p>
+          <p className="etiqueta !mb-0 mt-1.5 leading-tight !tracking-[0.04em]">Con diferencia</p>
         </Tarjeta>
       </div>
 
       {lineas.length > 0 && (
         <Tarjeta className="!p-0">
           <div className="border-b border-[var(--color-linea)] px-4 py-3">
-            <h2 className="font-bold">Lo que llevas contado</h2>
+            <h2 className="titulo text-lg">Lo que llevas contado</h2>
           </div>
           <ul className="divide-y divide-[var(--color-linea)]">
             {lineas.map((l) => {
@@ -252,13 +306,13 @@ export function PanelConteo({
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-sm">
+                    <p className="text-base">
                       <span className="font-bold">{l.contado}</span>
                       <span className="text-[var(--color-humo)]"> / {l.esperado}</span>
                     </p>
                     {dif !== 0 && (
                       <p
-                        className={`text-xs font-bold ${
+                        className={`text-sm font-bold ${
                           dif > 0 ? "text-[var(--color-verde)]" : "text-[var(--color-rojo)]"
                         }`}
                       >
@@ -270,9 +324,9 @@ export function PanelConteo({
                     type="button"
                     onClick={() => quitar(l.modelo_id)}
                     aria-label={`Quitar ${l.modelo_codigo} del conteo`}
-                    className="rounded-sm px-2 py-1 text-[var(--color-humo)] hover:bg-[var(--color-crema)]"
+                    className="-mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-sm text-[var(--color-humo)] hover:bg-[var(--color-crema)] active:bg-[var(--color-crema)]"
                   >
-                    <IconoCerrar tamano={15} />
+                    <IconoCerrar tamano={18} />
                   </button>
                 </li>
               );
@@ -317,7 +371,7 @@ function CerrarConteo({
   return (
     <Tarjeta className="space-y-3">
       <div>
-        <h2 className="text-base font-bold">Terminar el conteo</h2>
+        <h2 className="titulo text-lg">Terminar el conteo</h2>
         <p className="mt-1 text-sm text-[var(--color-humo)]">
           {conDiferencia === 0 ? (
             "Todo cuadra: al cerrar no cambiara ninguna existencia."
@@ -333,18 +387,26 @@ function CerrarConteo({
 
       {error && <Aviso tipo="error">{error}</Aviso>}
 
-      <div className="flex flex-wrap gap-2">
+      {/* Apilados en el celular: cerrar el conteo ajusta existencias y no
+          se deshace, asi que no puede quedar a 8px de "Todavia no". */}
+      <div className="flex flex-col gap-2 sm:flex-row">
         {confirmando ? (
           <>
-            <Boton onClick={cerrar} disabled={enviando}>
+            <Boton onClick={cerrar} disabled={enviando} className="w-full !py-3.5 !text-base sm:w-auto">
               {enviando ? "Cerrando..." : "Si, cerrar y ajustar"}
             </Boton>
-            <Boton variante="secundario" onClick={() => setConfirmando(false)}>
+            <Boton
+              variante="secundario"
+              onClick={() => setConfirmando(false)}
+              className="w-full sm:w-auto"
+            >
               Todavia no
             </Boton>
           </>
         ) : (
-          <Boton onClick={() => setConfirmando(true)}>Cerrar conteo</Boton>
+          <Boton onClick={() => setConfirmando(true)} className="w-full sm:w-auto">
+            Cerrar conteo
+          </Boton>
         )}
       </div>
     </Tarjeta>

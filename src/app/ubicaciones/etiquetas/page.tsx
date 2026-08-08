@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { listarUbicaciones } from "@/lib/consultas";
 import { BotonImprimir } from "@/components/BotonImprimir";
-import { Vacio } from "@/components/ui";
-import { IconoEtiqueta, IconoVolver } from "@/components/iconos";
+import { EnlaceVolver, Vacio } from "@/components/ui";
+import { IconoEtiqueta } from "@/components/iconos";
 
 export const dynamic = "force-dynamic";
 
@@ -36,13 +36,9 @@ export default async function Etiquetas({ searchParams }: { searchParams: Params
   return (
     <div>
       <div className="no-imprimir mb-5">
-        <Link
-          href="/ubicaciones"
-          className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-humo)] transition-colors hover:text-[var(--color-tinta)]"
-        >
-          <IconoVolver tamano={16} />
-          Volver a ubicaciones
-        </Link>
+        <div className="mb-4">
+          <EnlaceVolver href="/ubicaciones">Volver a ubicaciones</EnlaceVolver>
+        </div>
 
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -58,7 +54,7 @@ export default async function Etiquetas({ searchParams }: { searchParams: Params
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/ubicaciones/etiquetas"
-              className={`rounded-sm border px-3 py-1.5 text-sm font-semibold transition-colors ${
+              className={`rounded-sm border px-3 py-3 text-sm font-semibold transition-colors sm:py-1.5 ${
                 !zonaFiltro
                   ? "border-[var(--color-vino)] bg-[var(--color-vino-palido)] text-[var(--color-vino)]"
                   : "border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] text-[var(--color-humo)] hover:border-[var(--color-oro)]"
@@ -72,7 +68,7 @@ export default async function Etiquetas({ searchParams }: { searchParams: Params
                 <Link
                   key={z}
                   href={`/ubicaciones/etiquetas?zona=${encodeURIComponent(z)}`}
-                  className={`rounded-sm border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`rounded-sm border px-3 py-3 text-sm font-semibold transition-colors sm:py-1.5 ${
                     zonaFiltro === z
                       ? "border-[var(--color-vino)] bg-[var(--color-vino-palido)] text-[var(--color-vino)]"
                       : "border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] text-[var(--color-humo)] hover:border-[var(--color-oro)]"
@@ -86,15 +82,20 @@ export default async function Etiquetas({ searchParams }: { searchParams: Params
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-0 print:grid-cols-2">
+      {/* En el celular va una etiqueta por renglon: en dos columnas el
+          codigo no cabe, se parte por el guion y se encima con la fila de
+          abajo. Al imprimir siempre son dos por renglon, seis por hoja. */}
+      <div className="grid grid-cols-1 gap-0 sm:grid-cols-2 print:grid-cols-2">
         {ubicaciones.map((u) => (
           <div
             key={u.id}
-            className="hoja flex aspect-[3/2] flex-col items-center justify-center border border-dashed border-slate-300 p-4 text-center"
+            className="hoja flex aspect-[2/1] flex-col items-center justify-center border border-dashed border-slate-300 p-4 text-center sm:aspect-[3/2] print:aspect-[3/2]"
           >
             <div className="marca text-base text-[#8a6d1f]">Venus</div>
             <div className="mt-0.5 h-px w-10 bg-[#c9ad63]" />
-            <div className="codigo my-3 text-5xl leading-none sm:text-6xl">{u.codigo}</div>
+            <div className="codigo my-3 text-4xl leading-none sm:text-5xl print:text-6xl">
+              {u.codigo}
+            </div>
             <div className="text-sm text-slate-600">
               Zona {u.zona}
               {u.rack && ` · Rack ${u.rack}`}

@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { IconoBuscar } from "@/components/iconos";
+import { IconoBuscar, IconoCerrar } from "@/components/iconos";
 
 /**
  * Buscador de modelos.
@@ -14,7 +14,9 @@ import { IconoBuscar } from "@/components/iconos";
 export function Buscador({
   valorInicial = "",
   autoFoco = false,
-  placeholder = "Busca por codigo o descripcion: VD 194, 84, midi olanes...",
+  // Corto a proposito: en el celular el texto largo se cortaba justo en los
+  // ejemplos, que son la parte que ensena que se puede escribir solo "84".
+  placeholder = "Codigo o descripcion: VD 194, 84...",
   /** true = filtra en vivo la lista de la misma pagina. */
   enVivo = false,
 }: {
@@ -54,6 +56,9 @@ export function Buscador({
 
   function enviar(e: React.FormEvent) {
     e.preventDefault();
+    // Con la lista en vivo, tocar "buscar" no navega a ningun lado: si no
+    // se baja el teclado, tapa la mitad de los resultados ya cargados.
+    input.current?.blur();
     if (enVivo) return;
     const destino = texto.trim() ? `/modelos?q=${encodeURIComponent(texto.trim())}` : "/modelos";
     router.push(destino);
@@ -73,8 +78,24 @@ export function Buscador({
         placeholder={placeholder}
         aria-label="Buscar modelo"
         autoComplete="off"
-        className="campo !py-3.5 !pl-11 !pr-4 !text-base"
+        enterKeyHint="search"
+        autoCorrect="off"
+        spellCheck={false}
+        className="campo !py-3.5 !pl-11 !pr-12 !text-base [&::-webkit-search-cancel-button]:appearance-none"
       />
+      {texto && (
+        <button
+          type="button"
+          onClick={() => {
+            setTexto("");
+            input.current?.focus();
+          }}
+          aria-label="Borrar busqueda"
+          className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-sm text-[var(--color-humo)] hover:text-[var(--color-tinta)]"
+        >
+          <IconoCerrar tamano={18} />
+        </button>
+      )}
     </form>
   );
 }

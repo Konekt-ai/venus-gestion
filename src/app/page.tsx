@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { modelosPorSurtir, movimientosRecientes, resumen } from "@/lib/consultas";
 import { Buscador } from "@/components/Buscador";
-import { Cifra, Existencia, PastillaUbicacion, Tarjeta, Vacio } from "@/components/ui";
+import { Cifra, Existencia, PastillaUbicacion, Vacio } from "@/components/ui";
 import {
   IconoConteo,
   IconoEntrada,
@@ -72,16 +72,16 @@ export default function Inicio() {
           titulo="Todavia no hay modelos registrados"
           descripcion="Puedes capturarlos uno por uno, o subir de golpe la lista que ya tienes en Excel desde Ajustes."
           accion={
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
               <Link
                 href="/modelos/nuevo"
-                className="rounded-sm bg-[var(--color-vino)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-vino-oscuro)]"
+                className="w-full rounded-sm bg-[var(--color-vino)] px-4 py-3 text-center text-sm font-semibold text-white hover:bg-[var(--color-vino-oscuro)] sm:w-auto"
               >
                 Dar de alta el primero
               </Link>
               <Link
                 href="/configuracion"
-                className="rounded-sm border border-[var(--color-linea-fuerte)] bg-white px-4 py-2.5 text-sm font-semibold hover:border-[var(--color-oro)]"
+                className="w-full rounded-sm border border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] px-4 py-3 text-center text-sm font-semibold hover:border-[var(--color-oro)] sm:w-auto"
               >
                 Importar desde Excel
               </Link>
@@ -172,11 +172,11 @@ export default function Inicio() {
 
       {porSurtir.length > 0 && (
         <section>
-          <div className="mb-3 flex items-baseline justify-between gap-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="titulo text-xl">Hay que surtir</h2>
             <Link
               href="/modelos?existencia=bajo"
-              className="text-sm font-semibold text-[var(--color-vino)] hover:underline"
+              className="-my-2 inline-flex min-h-11 shrink-0 items-center px-1 text-sm font-semibold text-[var(--color-vino)] hover:underline"
             >
               Ver todos
             </Link>
@@ -189,14 +189,19 @@ export default function Inicio() {
                     href={`/modelos/${m.id}`}
                     className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-oro-tenue)]"
                   >
-                    <span className="min-w-0">
+                    <span className="min-w-0 flex-1">
                       <span className="codigo block">{m.codigo}</span>
                       <span className="block truncate text-sm text-[var(--color-humo)]">
                         {m.descripcion}
                       </span>
+                      {/* La ubicacion baja al bloque de texto: arriba se comia
+                          el ancho de la descripcion y dos modelos parecidos
+                          se veian identicos al quedar truncados. */}
+                      <span className="mt-1 flex">
+                        <PastillaUbicacion codigo={m.ubicacion_codigo} />
+                      </span>
                     </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <PastillaUbicacion codigo={m.ubicacion_codigo} />
+                    <span className="shrink-0">
                       <Existencia cantidad={m.existencia} minimo={m.minimo} />
                     </span>
                   </Link>
@@ -209,11 +214,11 @@ export default function Inicio() {
 
       {recientes.length > 0 && (
         <section>
-          <div className="mb-3 flex items-baseline justify-between gap-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="titulo text-xl">Ultimos movimientos</h2>
             <Link
               href="/movimientos"
-              className="text-sm font-semibold text-[var(--color-vino)] hover:underline"
+              className="-my-2 inline-flex min-h-11 shrink-0 items-center px-1 text-sm font-semibold text-[var(--color-vino)] hover:underline"
             >
               Ver historial
             </Link>
@@ -230,7 +235,17 @@ export default function Inicio() {
                         {NOMBRE_MOVIMIENTO[mv.tipo] ?? mv.tipo} · {mv.fecha.slice(0, 16)}
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm font-semibold tabular-nums">
+                    <span
+                      className={`shrink-0 text-base font-semibold tabular-nums ${
+                        mv.tipo === "conteo"
+                          ? "text-[var(--color-humo)]"
+                          : diferencia > 0
+                            ? "text-[var(--color-verde)]"
+                            : diferencia < 0
+                              ? "text-[var(--color-rojo)]"
+                              : "text-[var(--color-humo)]"
+                      }`}
+                    >
                       {mv.tipo === "conteo"
                         ? `= ${mv.existencia_despues}`
                         : diferencia > 0

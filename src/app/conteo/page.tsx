@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   buscarModelos,
   conteoAbierto,
@@ -7,8 +6,8 @@ import {
 } from "@/lib/consultas";
 import { PanelConteo } from "@/components/PanelConteo";
 import { IniciarConteo } from "@/components/IniciarConteo";
-import { Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
-import { IconoPrenda } from "@/components/iconos";
+import { BotonEnlace, Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
+import { IconoPrenda, IconoUbicacion } from "@/components/iconos";
 import type { ModeloElegible } from "@/components/ArmadorEnvio";
 
 export const dynamic = "force-dynamic";
@@ -44,13 +43,15 @@ export default function PaginaConteo() {
               <ul className="divide-y divide-[var(--color-linea)]">
                 {historial.map((c) => (
                   <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                    <span className="min-w-0">
+                    <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold">{c.nombre}</span>
                       <span className="block text-xs text-[var(--color-humo)]">
                         Cerrado el {c.cerrado_en?.slice(0, 16)}
                       </span>
                     </span>
-                    <Insignia tono="ok">Cerrado</Insignia>
+                    <span className="shrink-0">
+                      <Insignia tono="ok">Cerrado</Insignia>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -94,15 +95,23 @@ export default function PaginaConteo() {
 
       <PanelConteo conteoId={abierto.id} modelos={modelos} lineas={lineas} />
 
-      <p className="text-center text-sm text-[var(--color-humo)]">
-        <Link
-          href="/modelos?orden=ubicacion"
-          className="font-semibold text-[var(--color-vino)] hover:underline"
-        >
-          Ver la lista ordenada por ubicacion
-        </Link>{" "}
-        para recorrer la bodega en orden.
-      </p>
+      {/* Envueltos juntos para que el space-y de la pagina no separe el
+          boton de su explicacion. */}
+      <div>
+        <div className="flex justify-center">
+          <BotonEnlace
+            href="/modelos?orden=ubicacion"
+            variante="secundario"
+            className="w-full justify-center sm:w-auto"
+          >
+            <IconoUbicacion tamano={16} />
+            Ver la lista por ubicacion
+          </BotonEnlace>
+        </div>
+        <p className="mt-2 text-center text-xs text-[var(--color-humo)]">
+          Para recorrer la bodega en orden.
+        </p>
+      </div>
     </div>
   );
 }

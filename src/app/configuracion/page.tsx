@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { listarCatalogo, nombresDeLineas, prefijosEnUso, resumen } from "@/lib/consultas";
-import { RUTA_BASE_DATOS } from "@/lib/db";
+import { MODO_DEMO, RUTA_BASE_DATOS } from "@/lib/db";
 import { DESARROLLADOR, NOMBRE_SISTEMA } from "@/lib/marca";
 import { ImportadorCSV } from "@/components/ImportadorCSV";
 import { DireccionRed } from "@/components/DireccionRed";
+import { ReiniciarDemo } from "@/components/ReiniciarDemo";
 import { EditorLineas } from "@/components/EditorLineas";
 import { Tarjeta, TituloPagina } from "@/components/ui";
 import {
@@ -85,10 +86,18 @@ export default function Configuracion() {
           </a>
         </div>
 
-        <p className="border-l-2 border-[var(--color-linea-fuerte)] bg-[var(--color-crema)] px-3 py-2 text-xs text-[var(--color-humo)]">
-          El archivo esta en{" "}
-          <code className="font-mono text-[var(--color-tinta)]">{RUTA_BASE_DATOS}</code>
-        </p>
+        {/* En la demostracion la ruta seria la de un archivo temporal del
+            servidor: decir "aqui vive tu inventario" ahi seria enganoso. */}
+        {!MODO_DEMO && (
+          <div className="border-l-2 border-[var(--color-linea-fuerte)] bg-[var(--color-crema)] px-3 py-2 text-xs text-[var(--color-humo)]">
+            <p>El archivo esta en</p>
+            {/* La ruta de Windows no tiene espacios donde cortar, asi que sin
+                break-all empuja el ancho de la pagina en el celular. */}
+            <code className="mt-0.5 block break-all font-mono text-[var(--color-tinta)]">
+              {RUTA_BASE_DATOS}
+            </code>
+          </div>
+        )}
       </Tarjeta>
 
       <EditorLineas
@@ -98,7 +107,11 @@ export default function Configuracion() {
 
       <ImportadorCSV />
 
-      <DireccionRed />
+      {/* La IP que veria la demostracion es la interna del servidor de
+          Vercel: no le sirve a nadie para entrar desde su celular. */}
+      {!MODO_DEMO && <DireccionRed />}
+
+      {MODO_DEMO && <ReiniciarDemo />}
 
       <Tarjeta>
         <h2 className="titulo text-lg">Como va el inventario</h2>

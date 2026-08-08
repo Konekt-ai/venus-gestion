@@ -173,8 +173,6 @@ export function ArmadorEnvio({
 
   return (
     <div className="space-y-4">
-      {error && <Aviso tipo="error">{error}</Aviso>}
-
       <Tarjeta className="space-y-3">
         <label htmlFor="buscar-modelo" className="etiqueta !mb-0">
           Agregar modelo
@@ -185,6 +183,12 @@ export function ArmadorEnvio({
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Escribe el codigo: VD 194, 84, midi..."
           autoComplete="off"
+          type="search"
+          inputMode="search"
+          enterKeyHint="search"
+          autoCorrect="off"
+          autoCapitalize="characters"
+          spellCheck={false}
           className="campo !py-3 !text-base"
         />
 
@@ -248,7 +252,12 @@ export function ArmadorEnvio({
                     min={0}
                     value={r.cantidad}
                     onChange={(e) => cambiarCantidad(r.modelo.id, e.target.value)}
+                    /* Nace en 1 y el cursor cae al final: sin esto, tocar y
+                       teclear 12 deja 112. */
+                    onFocus={(e) => e.currentTarget.select()}
+                    onClick={(e) => e.currentTarget.select()}
                     inputMode="numeric"
+                    enterKeyHint="done"
                     aria-label={`Cantidad de ${r.modelo.codigo}`}
                     className={`campo sin-flechas !w-20 !py-2 text-center !text-lg !font-bold ${
                       excede ? "!border-[var(--color-rojo)]" : ""
@@ -259,16 +268,18 @@ export function ArmadorEnvio({
                     type="button"
                     onClick={() => quitar(r.modelo.id)}
                     aria-label={`Quitar ${r.modelo.codigo}`}
-                    className="rounded-sm px-2 py-2 text-lg text-[var(--color-humo)] hover:bg-[var(--color-crema)]"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm text-[var(--color-humo)] hover:bg-[var(--color-crema)] active:bg-[var(--color-crema)]"
                   >
-                    <IconoCerrar tamano={16} />
+                    <IconoCerrar tamano={18} />
                   </button>
                 </li>
               );
             })}
           </ul>
 
-          <div className="flex items-center justify-between border-t border-[var(--color-linea)] bg-[var(--color-crema)] px-4 py-3">
+          {/* Pegado arriba de la barra de accesos: con varios renglones
+              capturados, el total dejaba de verse justo cuando mas importa. */}
+          <div className="pegado-arriba-barra flex items-center justify-between border-t border-[var(--color-linea)] bg-[var(--color-crema)] px-4 py-3 md:!static">
             <span className="text-sm font-semibold">
               {renglones.length} {renglones.length === 1 ? "modelo" : "modelos"}
             </span>
@@ -308,6 +319,11 @@ export function ArmadorEnvio({
             />
           </div>
         </div>
+
+        {/* El error va JUNTO al boton, no hasta arriba: con varios
+            renglones capturados, un aviso al inicio de la pagina queda
+            fuera de pantalla y parece que el boton no hizo nada. */}
+        {error && <Aviso tipo="error">{error}</Aviso>}
 
         <Boton
           onClick={confirmar}

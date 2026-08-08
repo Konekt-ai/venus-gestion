@@ -25,7 +25,11 @@ export default function PaginaUbicaciones() {
         descripcion="Los lugares de la bodega y que hay guardado en cada uno."
         accion={
           ubicaciones.length > 0 ? (
-            <BotonEnlace href="/ubicaciones/etiquetas" variante="secundario" className="no-imprimir">
+            <BotonEnlace
+              href="/ubicaciones/etiquetas"
+              variante="secundario"
+              className="no-imprimir w-full justify-center sm:w-auto"
+            >
               <IconoImprimir tamano={16} />
               Imprimir etiquetas
             </BotonEnlace>
@@ -66,7 +70,7 @@ export default function PaginaUbicaciones() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                   {lugares.map((u) => (
                     <Link
                       key={u.id}
@@ -83,7 +87,7 @@ export default function PaginaUbicaciones() {
                           {u.descripcion}
                         </div>
                       )}
-                      <div className="mt-2 text-xs text-[var(--color-humo)]">
+                      <div className="mt-2 text-[0.8125rem] text-[var(--color-humo)]">
                         {u.total_modelos === 0 ? (
                           "Vacio"
                         ) : (

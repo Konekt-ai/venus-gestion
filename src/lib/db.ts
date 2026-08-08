@@ -1,37 +1,93 @@
 import "server-only";
 import Database from "better-sqlite3";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { ESQUEMA } from "./esquema";
+import { sembrarEjemplo } from "./ejemplo";
 
 /**
  * Conexion unica a la base de datos.
  *
- * El archivo vive en  <proyecto>/data/venus.db  y es TODO el sistema:
- * copiarlo a una USB es respaldar el inventario completo.
+ * Hay dos formas de correr el sistema:
+ *
+ *   BODEGA (lo normal)
+ *     La base vive en <proyecto>/data/venus.db y es TODO el sistema:
+ *     copiar ese archivo a una USB es respaldar el inventario completo.
+ *
+ *   DEMOSTRACION (VENUS_DEMO=1, o cualquier despliegue en Vercel)
+ *     Es un escaparate para ensenar el sistema. Alla el disco es de solo
+ *     lectura salvo /tmp, y ese /tmp se borra cuando el servidor recicla
+ *     la instancia. Por eso la base se crea vacia, se llena sola con los
+ *     datos de ejemplo, y se acepta que se reinicie de vez en cuando.
+ *     No sirve para llevar un inventario de verdad, y la pantalla lo dice.
  */
 
+/**
+ * En la demostracion los datos son de mentiras y se pueden perder.
+ * Vercel siempre expone VERCEL, asi que alla es demo aunque se olvide
+ * poner la variable.
+ */
+export const MODO_DEMO = process.env.VENUS_DEMO === "1" || Boolean(process.env.VERCEL);
+
 const CARPETA_DATOS = path.join(process.cwd(), "data");
-const RUTA_DB = process.env.VENUS_DB ?? path.join(CARPETA_DATOS, "venus.db");
+
+/**
+ * En la demostracion lo unico escribible es la carpeta temporal del
+ * sistema; el resto del disco es de solo lectura. Que dependa de
+ * MODO_DEMO y no de VERCEL permite ademas probar la demo en la propia
+ * computadora sin tocar el inventario de data/venus.db.
+ * VENUS_DB apunta a otro archivo (lo usan las pruebas).
+ */
+const RUTA_DB =
+  process.env.VENUS_DB ??
+  (MODO_DEMO ? path.join(os.tmpdir(), "venus-demo.db") : path.join(CARPETA_DATOS, "venus.db"));
 
 // En desarrollo Next recarga los modulos en caliente; sin este cache
 // se abririan decenas de conexiones al mismo archivo.
 const global_ = globalThis as unknown as { __venusDb?: Database.Database };
 
 function abrir(): Database.Database {
-  fs.mkdirSync(path.dirname(RUTA_DB), { recursive: true });
+  try {
+    fs.mkdirSync(path.dirname(RUTA_DB), { recursive: true });
+  } catch {
+    // En la demostracion la carpeta temporal ya existe y el resto del
+    // disco es de solo lectura: no hay nada que crear ni por que fallar.
+  }
 
   const db = new Database(RUTA_DB);
 
-  // WAL permite leer mientras alguien escribe: varias personas pueden
-  // estar consultando desde el celular sin trabar a quien captura.
-  db.pragma("journal_mode = WAL");
+  if (MODO_DEMO) {
+    // Un solo proceso escribe esta base y nadie mas la toca: WAL no
+    // aporta y deja archivos sueltos. DELETE borra su bitacora al
+    // confirmar y aguanta que el servidor corte el proceso a media
+    // escritura, cosa que MEMORY no hace.
+    db.pragma("journal_mode = DELETE");
+  } else {
+    // WAL permite leer mientras alguien escribe: varias personas pueden
+    // estar consultando desde el celular sin trabar a quien captura.
+    db.pragma("journal_mode = WAL");
+  }
+
   db.pragma("foreign_keys = ON");
   // Espera hasta 5s si la base esta ocupada en vez de fallar de inmediato.
   db.pragma("busy_timeout = 5000");
 
   db.exec(ESQUEMA);
   sembrarCatalogos(db);
+
+  // La demo se llena sola: si no, se veria un sistema vacio. Va aqui
+  // dentro y no en getDb() para que ocurra una sola vez por instancia,
+  // en la misma pasada en que se crea el archivo.
+  if (MODO_DEMO) {
+    try {
+      sembrarEjemplo(db);
+    } catch (e) {
+      // Que la demo no se caiga por no poder sembrar: es preferible
+      // ensenarla vacia que con un error en pantalla.
+      console.error("No se pudieron cargar los datos de ejemplo:", e);
+    }
+  }
 
   return db;
 }

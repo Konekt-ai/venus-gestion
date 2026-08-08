@@ -28,8 +28,8 @@ export function AccionesUbicacion({
   }
 
   return (
-    <div className="no-imprimir rounded-sm border border-[var(--color-linea)] bg-white p-4">
-      <h2 className="text-base font-bold">Eliminar esta ubicacion</h2>
+    <div className="no-imprimir rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)] p-4">
+      <h2 className="titulo text-lg">Eliminar esta ubicacion</h2>
       <p className="mt-1 text-sm text-[var(--color-humo)]">
         {totalModelos > 0 ? (
           <>
@@ -48,18 +48,31 @@ export function AccionesUbicacion({
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         {confirmando ? (
           <>
-            <Boton variante="peligro" onClick={eliminar} disabled={enviando}>
+            <Boton
+              variante="peligro"
+              onClick={eliminar}
+              disabled={enviando}
+              className="w-full !py-3 sm:w-auto"
+            >
               {enviando ? "Eliminando..." : `Si, eliminar ${ubicacion.codigo}`}
             </Boton>
-            <Boton variante="secundario" onClick={() => setConfirmando(false)}>
+            <Boton
+              variante="secundario"
+              onClick={() => setConfirmando(false)}
+              className="w-full sm:w-auto"
+            >
               Mejor no
             </Boton>
           </>
         ) : (
-          <Boton variante="secundario" onClick={() => setConfirmando(true)}>
+          <Boton
+            variante="secundario"
+            onClick={() => setConfirmando(true)}
+            className="w-full sm:w-auto"
+          >
             Eliminar ubicacion
           </Boton>
         )}

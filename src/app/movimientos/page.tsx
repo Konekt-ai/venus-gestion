@@ -40,13 +40,15 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
         descripcion="Todo lo que ha entrado y salido de la bodega."
       />
 
-      <div className="flex flex-wrap gap-2">
+      {/* Los ocho filtros apilados empujaban el primer movimiento fuera de la
+          primera pantalla: en el telefono se recorren de lado, en una sola tira. */}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-x-visible sm:px-0 sm:pb-0">
         <Link
           href="/movimientos"
-          className={`rounded-sm border px-3 py-1.5 text-sm font-semibold ${
+          className={`shrink-0 rounded-sm border px-3 py-3 text-sm font-semibold whitespace-nowrap sm:py-1.5 ${
             !filtro
               ? "border-[var(--color-vino)] bg-[var(--color-vino-palido)] text-[var(--color-vino)]"
-              : "border-[var(--color-linea)] bg-white"
+              : "border-[var(--color-linea)] bg-[var(--color-papel)]"
           }`}
         >
           Todo
@@ -55,10 +57,10 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
           <Link
             key={t}
             href={`/movimientos?tipo=${t}`}
-            className={`rounded-sm border px-3 py-1.5 text-sm font-semibold ${
+            className={`shrink-0 rounded-sm border px-3 py-3 text-sm font-semibold whitespace-nowrap sm:py-1.5 ${
               filtro === t
                 ? "border-[var(--color-vino)] bg-[var(--color-vino-palido)] text-[var(--color-vino)]"
-                : "border-[var(--color-linea)] bg-white"
+                : "border-[var(--color-linea)] bg-[var(--color-papel)]"
             }`}
           >
             {NOMBRE_MOVIMIENTO[t]}
@@ -106,7 +108,7 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
                           </span>
                           <span className="shrink-0 text-right">
                             <span
-                              className={`block text-base font-bold ${
+                              className={`block text-xl leading-none font-bold tabular-nums ${
                                 diferencia > 0
                                   ? "text-[var(--color-verde)]"
                                   : diferencia < 0
@@ -116,7 +118,7 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
                             >
                               {diferencia > 0 ? `+${diferencia}` : diferencia}
                             </span>
-                            <span className="block text-xs text-[var(--color-humo)]">
+                            <span className="mt-1 block text-xs text-[var(--color-humo)]">
                               quedaron {mv.existencia_despues}
                             </span>
                           </span>

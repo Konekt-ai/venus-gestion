@@ -42,7 +42,7 @@ export function EditorLineas({
   return (
     <Tarjeta className="space-y-3">
       <div>
-        <h2 className="text-base font-bold">¿Que significa cada codigo?</h2>
+        <h2 className="titulo text-lg">¿Que significa cada codigo?</h2>
         <p className="mt-1 text-sm text-[var(--color-humo)]">
           Las letras del codigo dicen de que linea es la prenda. Ponles nombre y apareceran en el
           catalogo: asi cualquiera entiende que <span className="codigo">VN 178</span> es un
@@ -58,6 +58,8 @@ export function EditorLineas({
             <span className="codigo w-14 shrink-0 rounded-md bg-[var(--color-crema)] px-2 py-1.5 text-center">
               {p.prefijo}
             </span>
+            {/* En el telefono el nombre se escribe en su propio renglon: compartiendo
+                el renglon con el prefijo y la cuenta se quedaba en 180px de ancho. */}
             <input
               value={borradores[p.prefijo] ?? ""}
               onChange={(e) =>
@@ -72,9 +74,9 @@ export function EditorLineas({
               aria-label={`Nombre de la linea ${p.prefijo}`}
               disabled={guardando}
               autoComplete="off"
-              className="campo !w-auto min-w-0 flex-1 !py-1.5"
+              className="campo !w-auto min-w-0 order-last basis-full !py-3 sm:order-none sm:basis-auto sm:flex-1 sm:!py-1.5"
             />
-            <span className="shrink-0 text-xs text-[var(--color-humo)]">
+            <span className="ml-auto shrink-0 text-xs text-[var(--color-humo)] sm:ml-0">
               {p.total} {p.total === 1 ? "modelo" : "modelos"}
             </span>
           </li>

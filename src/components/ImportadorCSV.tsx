@@ -67,7 +67,7 @@ export function ImportadorCSV() {
   return (
     <Tarjeta className="space-y-4">
       <div>
-        <h2 className="text-base font-bold">Subir un archivo</h2>
+        <h2 className="titulo text-lg">Subir un archivo</h2>
         <p className="mt-1 text-sm text-[var(--color-humo)]">
           Guarda tu hoja de Excel como <strong>CSV</strong> y subela aqui. La primera fila debe
           traer los nombres de las columnas.
@@ -87,7 +87,7 @@ export function ImportadorCSV() {
           type="file"
           accept=".csv,text/csv"
           onChange={alElegirArchivo}
-          className="campo cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-vino)] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+          className="campo cursor-pointer file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--color-vino)] file:px-3 file:py-2.5 file:text-sm file:font-semibold file:text-white"
         />
       </div>
 
@@ -97,7 +97,7 @@ export function ImportadorCSV() {
 
       {vista && (
         <div className="space-y-3 rounded-sm border-2 border-[var(--color-oro)] bg-[var(--color-vino-palido)] p-4">
-          <p className="font-semibold">Asi quedaria «{nombreArchivo}»:</p>
+          <p className="font-semibold break-words">Asi quedaria «{nombreArchivo}»:</p>
 
           <ul className="space-y-1 text-sm">
             <li>
@@ -115,10 +115,10 @@ export function ImportadorCSV() {
 
           {vista.omitidos.length > 0 && (
             <details className="text-sm">
-              <summary className="cursor-pointer font-semibold">Ver que se omite</summary>
+              <summary className="cursor-pointer py-3 font-semibold">Ver que se omite</summary>
               <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
                 {vista.omitidos.slice(0, 50).map((o) => (
-                  <li key={o.fila} className="text-[var(--color-humo)]">
+                  <li key={o.fila} className="break-words text-[var(--color-humo)]">
                     Fila {o.fila}: {o.motivo}
                   </li>
                 ))}
@@ -148,7 +148,7 @@ export function ImportadorCSV() {
       )}
 
       <details className="text-sm">
-        <summary className="cursor-pointer font-semibold">¿Que columnas debe tener?</summary>
+        <summary className="cursor-pointer py-3 font-semibold">¿Que columnas debe tener?</summary>
         <div className="mt-2 space-y-2 text-[var(--color-humo)]">
           <p>
             La unica obligatoria es <strong>codigo</strong> (o <strong>modelo</strong>). Las demas

@@ -1,29 +1,51 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BarraLateral, BarraMovil, EncabezadoMovil } from "@/components/Navegacion";
+import { AvisoDemo } from "@/components/AvisoDemo";
 
 export const metadata: Metadata = {
   title: "Venus Bodega",
   description: "Control de inventario y ubicaciones de la bodega",
+  applicationName: "Venus Bodega",
+  appleWebApp: {
+    capable: true,
+    title: "Venus", // el nombre que queda bajo el icono en el iPhone
+    statusBarStyle: "black-translucent",
+  },
+  // iOS convierte solo cualquier serie de digitos en un enlace para
+  // llamar por telefono. Con codigos como "VD 194" y columnas de
+  // cantidades, la pantalla se llenaria de textos azules subrayados.
+  formatDetection: { telephone: false, date: false, address: false, email: false },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   // Sin maximumScale: la gente necesita poder acercar para leer un codigo.
+  // viewportFit "cover" hace que la pagina use toda la pantalla del
+  // telefono; el espacio del notch y la barra de gestos se respeta
+  // despues con las areas seguras, no dejando franjas en blanco.
+  viewportFit: "cover",
+  // En Android encoge la pagina al abrir el teclado, para que la barra de
+  // abajo se reacomode encima en vez de quedar tapada.
+  interactiveWidget: "resizes-content",
   themeColor: "#17130f",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-MX">
-      <body className="min-h-screen">
-        <div className="flex min-h-screen">
+      {/* min-h-dvh y no min-h-screen: 100vh incluye el alto de la barra
+          de direcciones del celular y deja contenido cortado abajo. */}
+      <body className="min-h-dvh">
+        <div className="flex min-h-dvh">
           <BarraLateral />
           <div className="flex min-w-0 flex-1 flex-col">
             <EncabezadoMovil />
-            {/* pb-24 deja aire para que la barra de abajo no tape el contenido */}
-            <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-8 sm:py-8 md:pb-10">
+            <AvisoDemo />
+            {/* En celular el contenido termina por encima de la barra de
+                abajo; en computadora esa barra no existe y sobra el hueco. */}
+            <main className="espacio-barra-inferior mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-8 sm:py-8 md:!pb-10">
               {children}
             </main>
           </div>
