@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Tema Venus
+   Colores claros y contrastados: la bodega tiene mucha luz y las
+   pantallas suelen ser viejas o de celular.
+   ============================================================ */
+@theme {
+  --color-fondo: #f6f7f9;
+  --color-panel: #ffffff;
+  --color-borde: #e2e5ea;
+  --color-texto: #14181f;
+  --color-suave: #64707f;
+
+  --color-marca-50: #fff1f4;
+  --color-marca-100: #ffe0e7;
+  --color-marca-200: #ffc7d4;
+  --color-marca-500: #e11d48;
+  --color-marca-600: #c81e4a;
+  --color-marca-700: #9f1239;
+  --color-marca-900: #641029;
+
+  --color-ok-50: #ecfdf5;
+  --color-ok-100: #d1fae5;
+  --color-ok-600: #059669;
+  --color-ok-700: #047857;
+
+  --color-aviso-50: #fffbeb;
+  --color-aviso-100: #fef3c7;
+  --color-aviso-600: #d97706;
+  --color-aviso-700: #b45309;
+
+  --color-alto-50: #fef2f2;
+  --color-alto-100: #fee2e2;
+  --color-alto-600: #dc2626;
+  --color-alto-700: #b91c1c;
+
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--font-sans);
+  /* Evita el zoom accidental al tocar dos veces en el celular */
+  touch-action: manipulation;
+}
+
+/* Los codigos de modelo se leen mejor en monoespaciada y con
+   los digitos de ancho fijo: "VD 194" vs "VD 84" se alinean. */
+.codigo {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+/* Campos comodos para dedos y para capturar rapido con teclado. */
+.campo {
+  width: 100%;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  font-size: 1rem;
+  background: #fff;
+  color: var(--color-texto);
+  outline: none;
+}
+.campo:focus {
+  border-color: var(--color-marca-500);
+  box-shadow: 0 0 0 3px var(--color-marca-100);
+}
+.campo::placeholder {
+  color: #9aa4b2;
+}
+
+.etiqueta {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-suave);
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* En los inputs de cantidad estorban las flechitas: se captura con teclado. */
+input[type="number"].sin-flechas::-webkit-outer-spin-button,
+input[type="number"].sin-flechas::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].sin-flechas {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ============================================================
+   Impresion: etiquetas de rack y hojas de remision.
+   Se oculta toda la navegacion para que salga solo el contenido.
+   ============================================================ */
+@media print {
+  .no-imprimir {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .hoja {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .salto-pagina {
+    break-after: page;
+  }
+}

@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+build/
+
+# Base de datos y respaldos: son datos del negocio, no van al repositorio
+data/*.db
+data/*.db-shm
+data/*.db-wal
+respaldos/
+
+# Fotos subidas de los modelos
+public/fotos/*
+!public/fotos/.gitkeep
+
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+Thumbs.db

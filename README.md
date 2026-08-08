@@ -1,0 +1,148 @@
+# Venus — Sistema de bodega
+
+Control de inventario y ubicaciones para la bodega. Sirve para saber, en
+segundos, **cuántas piezas hay de un modelo y en qué rack está**, y para
+llevar el registro de lo que sale a la tienda o al tianguis.
+
+Corre en la computadora de la bodega y se puede consultar desde cualquier
+celular conectado al mismo WiFi.
+
+---
+
+## Cómo encenderlo
+
+Doble clic en **`INICIAR.bat`**.
+
+La primera vez tarda unos minutos preparándose; después abre solo. Mientras
+esa ventana negra esté abierta, el sistema está encendido. Para apagarlo,
+se cierra la ventana.
+
+En la computadora de la bodega: <http://localhost:3000>
+
+Desde un celular en el mismo WiFi: la dirección que aparece en la ventana
+al arrancar, o en **Ajustes → Entrar desde el celular**.
+
+> Requiere Node.js instalado (<https://nodejs.org>, versión LTS). Si falta,
+> `INICIAR.bat` lo avisa con las instrucciones.
+
+---
+
+## Cómo está organizado el inventario
+
+### Modelos
+
+Cada prenda es un **modelo** con su código tal como viene en la etiqueta:
+`VD 194`, `084`, `PD 46`. El sistema guarda el código como se escribió, pero
+lo busca de forma tolerante:
+
+| Si escribes | Encuentra |
+|---|---|
+| `84` | `084` |
+| `vd194`, `VD-194`, `vd 194` | `VD 194` |
+| `194` | `VD 194` |
+| `olanes`, `midi`, `barbie` | por descripción o tela |
+
+Las letras del código son la **línea** (`VD`, `VN`, `PD`…) y el sistema las
+usa para agrupar y filtrar.
+
+El inventario se lleva **por modelo**: una existencia total por código.
+Tallas, colores y tela se guardan como datos descriptivos de la prenda, igual
+que en el cuaderno.
+
+### Ubicaciones
+
+Los lugares de la bodega se nombran **Zona → Rack → Repisa**, lo que da
+códigos que se leen solos: `A-03-2` es zona A, rack 3, segunda repisa.
+
+- Desde **Ubicaciones → Mapear la bodega** se crea una zona completa de
+  golpe (por ejemplo 5 racks × 4 repisas = 20 lugares).
+- **Imprimir etiquetas** genera hojas con el código en grande, 6 por hoja,
+  para recortar y pegar en cada anaquel.
+
+### Salidas y regresos
+
+Lo que sale de bodega se registra en **Salidas**, eligiendo si va a la
+tienda o al tianguis. Al confirmar se genera una **hoja con folio**
+(`TIE-0001`) lista para imprimir y firmar: es el reemplazo del cuaderno con
+el que hoy se compara bodega contra tienda.
+
+El sistema lleva tres cuentas por modelo: cuántas piezas están **en bodega**,
+cuántas **en la tienda** y cuántas **en el tianguis**. Los regresos del
+tianguis vuelven a sumar a bodega.
+
+### Conteo físico
+
+**Conteo** sirve para cuadrar lo que dice el sistema con lo que realmente
+hay. Se recorre la bodega anotando lo que se ve; nada cambia hasta cerrar el
+conteo, así que se puede dejar a medias y seguir después. Al cerrarlo se
+ajustan solo los modelos que no cuadraron, y queda registrado en el historial.
+
+---
+
+## Respaldos
+
+Todo el inventario vive en un solo archivo: `data/venus.db`.
+
+Desde **Ajustes** se puede descargar:
+
+- **Respaldo completo** (`.db`) — con ese archivo se recupera todo. Conviene
+  guardarlo en una USB o mandarlo por correo cada tanto.
+- **Inventario en Excel** (`.csv`) — para revisarlo o compartirlo.
+- **Historial en Excel** (`.csv`) — todos los movimientos.
+
+Para restaurar un respaldo: cerrar el sistema, reemplazar `data/venus.db` con
+el archivo guardado, y volver a abrir.
+
+---
+
+## Importar desde Excel
+
+En **Ajustes → Subir un archivo** se puede cargar el catálogo completo desde
+una hoja de cálculo guardada como CSV.
+
+La única columna obligatoria es `codigo` (o `modelo`). Las demás son
+opcionales y se reconocen escritas de varias formas:
+
+`descripcion` · `tallas` · `colores` · `tela` · `existencia` (o `cantidad`,
+`piezas`, `stock`) · `ubicacion` (o `lugar`, `rack`) · `minimo` · `notas`
+
+Antes de guardar nada, el sistema muestra cuántos modelos entrarían, cuántos
+se actualizarían y cuáles se omitirían y por qué. Las ubicaciones que no
+existan se crean solas.
+
+Los modelos que ya existen **conservan su historial**: si la cantidad del
+archivo es distinta a la registrada, se anota como un ajuste en vez de
+sobrescribir en silencio.
+
+---
+
+## Para desarrollo
+
+```bash
+npm install
+npm run dev              # servidor de desarrollo en el puerto 3000
+npm test                 # pruebas del núcleo
+npm run build && npm start
+npm run datos:ejemplo    # carga modelos de prueba
+npm run datos:ejemplo -- --limpiar   # borra todo y recarga
+```
+
+### Cómo está armado
+
+| Carpeta | Qué hay |
+|---|---|
+| `src/lib/` | Base de datos, esquema, códigos, motor de existencias, CSV |
+| `src/acciones/` | Operaciones de escritura (server actions) |
+| `src/app/` | Pantallas |
+| `src/components/` | Piezas de interfaz reutilizables |
+| `scripts/` | Pruebas y datos de ejemplo |
+| `data/` | La base de datos (no se sube al repositorio) |
+
+**Next.js 15** + **SQLite** (better-sqlite3) + **Tailwind 4**. Sin servicios
+externos ni cuentas: todo corre local.
+
+Las reglas de inventario están centralizadas en
+[`src/lib/inventario.ts`](src/lib/inventario.ts): cualquier cambio de
+existencias pasa por ahí, siempre dentro de una transacción y dejando su
+movimiento en el historial. Las existencias nunca pueden quedar negativas, y
+un envío de varios modelos se aplica completo o no se aplica.

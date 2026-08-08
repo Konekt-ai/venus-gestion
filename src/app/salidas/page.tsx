@@ -1,0 +1,130 @@
+import Link from "next/link";
+import { buscarModelos, listarRemisiones, resumen } from "@/lib/consultas";
+import { ArmadorEnvio, type ModeloElegible } from "@/components/ArmadorEnvio";
+import { Insignia, Tarjeta, TituloPagina } from "@/components/ui";
+import type { Destino } from "@/lib/tipos";
+
+export const dynamic = "force-dynamic";
+
+type Params = Promise<{ [k: string]: string | string[] | undefined }>;
+
+const PESTANAS = [
+  { clave: "tienda", texto: "Sacar a tienda", icono: "🏬" },
+  { clave: "tianguis", texto: "Sacar a tianguis", icono: "⛺" },
+  { clave: "regreso-tianguis", texto: "Regreso de tianguis", icono: "↩️" },
+  { clave: "regreso-tienda", texto: "Regreso de tienda", icono: "↩️" },
+] as const;
+
+type Clave = (typeof PESTANAS)[number]["clave"];
+
+function interpretar(clave: string): { clase: "envio" | "retorno"; destino: Destino } {
+  switch (clave as Clave) {
+    case "tianguis":
+      return { clase: "envio", destino: "TIANGUIS" };
+    case "regreso-tianguis":
+      return { clase: "retorno", destino: "TIANGUIS" };
+    case "regreso-tienda":
+      return { clase: "retorno", destino: "TIENDA" };
+    default:
+      return { clase: "envio", destino: "TIENDA" };
+  }
+}
+
+export default async function PaginaSalidas({ searchParams }: { searchParams: Params }) {
+  const sp = await searchParams;
+  const clave = (typeof sp.modo === "string" ? sp.modo : "tienda") as Clave;
+  const modo = interpretar(clave);
+
+  const modelos: ModeloElegible[] = buscarModelos({ limite: 2000 }).map((m) => ({
+    id: m.id,
+    codigo: m.codigo,
+    codigo_norm: m.codigo_norm,
+    numero: m.numero,
+    descripcion: m.descripcion,
+    existencia: m.existencia,
+    en_tienda: m.en_tienda,
+    en_tianguis: m.en_tianguis,
+    ubicacion_codigo: m.ubicacion_codigo,
+  }));
+
+  const datos = resumen();
+  const remisiones = listarRemisiones(5);
+
+  return (
+    <div className="space-y-5">
+      <TituloPagina
+        titulo="Salidas y regresos"
+        descripcion="Registra lo que sale de bodega y lo que vuelve. Al confirmar se genera una hoja con folio para firmar."
+      />
+
+      <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+        <Tarjeta className="!p-3 text-center">
+          <p className="etiqueta !mb-0">En tienda</p>
+          <p className="text-2xl font-bold">{datos.piezas_tienda}</p>
+        </Tarjeta>
+        <Tarjeta className="!p-3 text-center">
+          <p className="etiqueta !mb-0">En tianguis</p>
+          <p className="text-2xl font-bold">{datos.piezas_tianguis}</p>
+        </Tarjeta>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {PESTANAS.map((p) => {
+          const activa = p.clave === clave;
+          return (
+            <Link
+              key={p.clave}
+              href={`/salidas?modo=${p.clave}`}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                activa
+                  ? "border-[var(--color-marca-700)] bg-[var(--color-marca-50)] text-[var(--color-marca-700)]"
+                  : "border-[var(--color-borde)] bg-white hover:bg-slate-50"
+              }`}
+            >
+              <span aria-hidden="true">{p.icono}</span>
+              {p.texto}
+            </Link>
+          );
+        })}
+      </div>
+
+      <ArmadorEnvio
+        key={clave}
+        modelos={modelos}
+        modo={{ clase: modo.clase, destino: modo.destino }}
+      />
+
+      {remisiones.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-bold">Ultimas hojas</h2>
+          <Tarjeta className="!p-0">
+            <ul className="divide-y divide-[var(--color-borde)]">
+              {remisiones.map((r) => (
+                <li key={r.id}>
+                  <Link
+                    href={`/remisiones/${r.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50"
+                  >
+                    <span className="min-w-0">
+                      <span className="codigo block text-sm">{r.folio}</span>
+                      <span className="block text-xs text-[var(--color-suave)]">
+                        {r.fecha.slice(0, 16)}
+                        {r.persona && ` · ${r.persona}`}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <Insignia tono={r.tipo === "envio" ? "marca" : "ok"}>
+                        {r.tipo === "envio" ? "Salida" : "Regreso"} · {r.destino}
+                      </Insignia>
+                      <span className="text-sm font-bold">{r.total_piezas} pzas</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Tarjeta>
+        </section>
+      )}
+    </div>
+  );
+}
