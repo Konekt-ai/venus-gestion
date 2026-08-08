@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listarCatalogo, nombresDeLineas, prefijosEnUso, resumen } from "@/lib/consultas";
 import { MODO_DEMO, RUTA_BASE_DATOS } from "@/lib/db";
+import { rutaLogo } from "@/lib/logo";
 import { DESARROLLADOR, NOMBRE_SISTEMA } from "@/lib/marca";
 import { ImportadorCSV } from "@/components/ImportadorCSV";
 import { DireccionRed } from "@/components/DireccionRed";
@@ -65,7 +66,7 @@ export default function Configuracion() {
         <div className="flex flex-wrap gap-2">
           <a
             href="/api/respaldo"
-            className="inline-flex items-center gap-2 rounded-sm bg-[var(--color-tinta)] px-4 py-2.5 text-sm font-semibold text-[var(--color-oro-claro)] transition-colors hover:bg-[var(--color-carbon)]"
+            className="inline-flex items-center gap-2 rounded-sm bg-[var(--color-tinta)] px-4 py-2.5 text-sm font-semibold text-[var(--color-marfil)] transition-colors hover:bg-[var(--color-carbon)]"
           >
             <IconoDescargar tamano={16} />
             Descargar respaldo completo
@@ -99,6 +100,25 @@ export default function Configuracion() {
           </div>
         )}
       </Tarjeta>
+
+      {/* Se quita solo en cuanto el archivo este en su lugar. */}
+      {!rutaLogo() && (
+        <Tarjeta className="space-y-2">
+          <h2 className="titulo text-lg">Poner el logo de la tienda</h2>
+          <p className="text-sm leading-relaxed text-[var(--color-humo)]">
+            Mientras tanto el sistema escribe el nombre con letras. Para que salga el logo de
+            verdad, guarda el archivo en la carpeta{" "}
+            <code className="font-mono text-[var(--color-tinta)]">public</code> del proyecto con el
+            nombre <code className="font-mono text-[var(--color-tinta)]">logo.png</code> (o{" "}
+            <code className="font-mono text-[var(--color-tinta)]">logo.svg</code>, que se ve mejor)
+            y vuelve a abrir el sistema. Aparece solo, sin tocar nada mas.
+          </p>
+          <p className="text-sm leading-relaxed text-[var(--color-humo)]">
+            Conviene que tenga el fondo transparente y que sea el logo en oscuro, porque va sobre
+            marfil.
+          </p>
+        </Tarjeta>
+      )}
 
       <EditorLineas
         prefijos={prefijosEnUso()}
@@ -156,7 +176,7 @@ export default function Configuracion() {
       </Tarjeta>
 
       <footer className="border-t border-[var(--color-linea)] pt-5 pb-2 text-center">
-        <p className="marca text-lg text-[var(--color-oro)]">{NOMBRE_SISTEMA}</p>
+        <p className="marca text-lg text-[var(--color-tinta)]">{NOMBRE_SISTEMA}</p>
         <p className="mt-1 text-xs text-[var(--color-humo)]">
           Sistema de bodega · Software desarrollado por{" "}
           <span className="font-semibold text-[var(--color-tinta)]">{DESARROLLADOR}</span>

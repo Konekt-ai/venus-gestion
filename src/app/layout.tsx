@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BarraLateral, BarraMovil, EncabezadoMovil } from "@/components/Navegacion";
 import { AvisoDemo } from "@/components/AvisoDemo";
+import { rutaLogo } from "@/lib/logo";
 
 export const metadata: Metadata = {
   title: "Venus Bodega",
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Venus", // el nombre que queda bajo el icono en el iPhone
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
   // iOS convierte solo cualquier serie de digitos en un enlace para
   // llamar por telefono. Con codigos como "VD 194" y columnas de
@@ -29,19 +30,23 @@ export const viewport: Viewport = {
   // En Android encoge la pagina al abrir el teclado, para que la barra de
   // abajo se reacomode encima en vez de quedar tapada.
   interactiveWidget: "resizes-content",
-  themeColor: "#17130f",
+  themeColor: "#eee5d4",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // El archivo del logo se busca aqui, en el servidor, y se reparte a la
+  // barra y al encabezado, que corren en el navegador y no pueden leer disco.
+  const logo = rutaLogo();
+
   return (
     <html lang="es-MX">
       {/* min-h-dvh y no min-h-screen: 100vh incluye el alto de la barra
           de direcciones del celular y deja contenido cortado abajo. */}
       <body className="min-h-dvh">
         <div className="flex min-h-dvh">
-          <BarraLateral />
+          <BarraLateral logo={logo} />
           <div className="flex min-w-0 flex-1 flex-col">
-            <EncabezadoMovil />
+            <EncabezadoMovil logo={logo} />
             <AvisoDemo />
             {/* En celular el contenido termina por encima de la barra de
                 abajo; en computadora esa barra no existe y sobra el hueco. */}

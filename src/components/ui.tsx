@@ -101,7 +101,7 @@ const BOTONES = {
   secundario:
     "bg-[var(--color-papel)] text-[var(--color-tinta)] border border-[var(--color-linea-fuerte)] hover:border-[var(--color-oro)] hover:bg-[var(--color-oro-tenue)] active:bg-[var(--color-oro-palido)] active:scale-[0.98] disabled:text-[var(--color-humo)] disabled:hover:border-[var(--color-linea-fuerte)] disabled:hover:bg-[var(--color-papel)] disabled:active:scale-100",
   oscuro:
-    "bg-[var(--color-tinta)] text-[var(--color-oro-claro)] hover:bg-[var(--color-carbon)] active:bg-[var(--color-carbon)] active:scale-[0.98] disabled:bg-[var(--color-linea-fuerte)] disabled:text-white disabled:active:scale-100",
+    "bg-[var(--color-tinta)] text-[var(--color-marfil)] hover:bg-[var(--color-carbon)] active:bg-[var(--color-carbon)] active:scale-[0.98] disabled:bg-[var(--color-linea-fuerte)] disabled:text-white disabled:active:scale-100",
   peligro:
     "bg-[var(--color-rojo)] text-white hover:brightness-90 active:brightness-90 active:scale-[0.98]",
 };

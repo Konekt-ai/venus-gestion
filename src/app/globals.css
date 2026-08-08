@@ -1,43 +1,52 @@
 @import "tailwindcss";
 
 /* ============================================================
-   VENUS
-   La paleta viene de la tienda: pared negra, letrero dorado y
-   ropa de colores. Por eso la interfaz se mantiene sobria —
-   negro, crema y dorado — y deja que el color lo pongan los
-   datos: las existencias, los avisos, las prendas.
+   VENUS BOUTIQUE
+   Marfil y beige, como se pidio, con la tinta negra del logo.
+   La interfaz se mantiene en esos tonos y deja que el color
+   lo pongan los datos: existencias, avisos, prendas.
    ============================================================ */
 @theme {
-  /* Neutros calidos: nada de grises azulados de plantilla */
-  --color-tinta: #17130f;
-  --color-carbon: #211b15;
-  --color-humo: #6d6157;
-  --color-crema: #faf7f2;
-  --color-papel: #ffffff;
-  --color-linea: #e5ddd1;
-  --color-linea-fuerte: #d3c7b5;
+  /* Marfil y beige: los fondos */
+  --color-marfil: #faf6ee;
+  --color-beige: #eee5d4;
+  --color-beige-hondo: #e2d6be;
+  --color-papel: #fffdf9;
 
-  /* Dorado del letrero */
-  --color-oro: #b4903c;
-  --color-oro-claro: #d9bc74;
-  --color-oro-palido: #f5edd9;
-  --color-oro-tenue: #fdfaf1;
+  /* El negro del logo, y sus grados */
+  --color-tinta: #1a1613;
+  --color-carbon: #2b241d;
+  --color-humo: #6f6558;
+  --color-linea: #e6dcc7;
+  --color-linea-fuerte: #d5c7ac;
 
-  /* Vino: el acento de marca para acciones */
+  /* Dorado: solo para detalles y foco, no para texto */
+  --color-oro: #a98a44;
+  --color-oro-claro: #cbaa66;
+  --color-oro-palido: #f2e9d4;
+  --color-oro-tenue: #fbf6ea;
+
+  /* Vino: el acento de las acciones */
   --color-vino: #8c2740;
   --color-vino-oscuro: #6d1c31;
-  --color-vino-palido: #fbeef1;
+  --color-vino-palido: #f9ecef;
 
   /* Estados, en tonos de boutique y no de semaforo */
   --color-verde: #3f6f52;
-  --color-verde-palido: #eef4ef;
-  --color-ambar: #9a6b12;
-  --color-ambar-palido: #fbf3e2;
+  --color-verde-palido: #ecf3ee;
+  --color-ambar: #8f6410;
+  --color-ambar-palido: #f9f0dc;
   --color-rojo: #a02c2c;
-  --color-rojo-palido: #fbeeed;
+  --color-rojo-palido: #faece9;
 
   --font-sans: "Segoe UI", ui-sans-serif, system-ui, Roboto, Helvetica, Arial, sans-serif;
   --font-titulo: Georgia, "Hoefler Text", "Times New Roman", serif;
+}
+
+/* La crema de antes queda como alias del marfil: la usan muchas
+   pantallas para fondos suaves y no vale la pena tocarlas todas. */
+@theme {
+  --color-crema: #f4eee2;
 }
 
 /* Las fuentes son las del sistema a proposito: el sistema corre en la
@@ -58,7 +67,7 @@ html {
 }
 
 body {
-  background: var(--color-crema);
+  background: var(--color-marfil);
   color: var(--color-tinta);
   font-family: var(--font-sans);
   touch-action: manipulation;
@@ -229,12 +238,20 @@ input[type="number"].sin-flechas {
 
 /* ---------- Detalles de marca ---------- */
 
-/* Capitoné de la pared del local, muy tenue, detras del wordmark */
+/* Capitoné de la pared del local, ahora en beige para que el logo
+   negro se lea encima. La trama va muy tenue: se nota de cerca y
+   desaparece de lejos, que es justo lo que hace una textura. */
 .capitone {
-  background-color: var(--color-tinta);
+  background-color: var(--color-beige);
   background-image:
-    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.045) 1px, transparent 1.5px),
-    linear-gradient(135deg, rgb(255 255 255 / 0.02) 25%, transparent 25%, transparent 75%, rgb(255 255 255 / 0.02) 75%);
+    radial-gradient(circle at 50% 50%, rgb(26 22 19 / 0.05) 1px, transparent 1.5px),
+    linear-gradient(
+      135deg,
+      rgb(26 22 19 / 0.022) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgb(26 22 19 / 0.022) 75%
+    );
   background-size: 22px 22px, 22px 22px;
   background-position: 0 0, 0 0;
 }

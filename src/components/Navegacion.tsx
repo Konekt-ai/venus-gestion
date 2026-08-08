@@ -13,6 +13,7 @@ import {
   IconoSalida,
   IconoUbicacion,
 } from "@/components/iconos";
+import { Logo } from "@/components/Logo";
 import { creditoCorto, DESARROLLADOR } from "@/lib/marca";
 
 /**
@@ -47,29 +48,13 @@ function estaActivo(pathname: string, href: string, exacto?: boolean) {
   return exacto ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 }
 
-/** El wordmark, con el aire del letrero de la tienda. */
-function Wordmark({ compacto = false }: { compacto?: boolean }) {
-  return (
-    <span className="flex items-baseline gap-2">
-      <span
-        className={`marca text-[var(--color-oro-claro)] ${compacto ? "text-xl" : "text-2xl"}`}
-      >
-        Venus
-      </span>
-      <span className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-[var(--color-humo)]">
-        Bodega
-      </span>
-    </span>
-  );
-}
-
-export function BarraLateral() {
+export function BarraLateral({ logo }: { logo: string | null }) {
   const pathname = usePathname();
 
   return (
-    <aside className="no-imprimir hidden shrink-0 flex-col bg-[var(--color-tinta)] md:flex md:w-56 lg:w-60">
-      <Link href="/" className="capitone block border-b border-white/8 px-6 py-6">
-        <Wordmark />
+    <aside className="no-imprimir hidden shrink-0 flex-col border-r border-[var(--color-linea)] bg-[var(--color-beige)] md:flex md:w-56 lg:w-60">
+      <Link href="/" className="capitone block border-b border-[var(--color-linea-fuerte)] px-5 py-5">
+        <Logo archivo={logo} />
       </Link>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 py-4">
@@ -82,12 +67,12 @@ export function BarraLateral() {
               aria-current={activo ? "page" : undefined}
               className={`relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm transition-colors ${
                 activo
-                  ? "bg-white/6 font-semibold text-[var(--color-oro-claro)]"
-                  : "font-medium text-white/55 hover:bg-white/4 hover:text-white/90"
+                  ? "bg-[var(--color-papel)] font-semibold text-[var(--color-vino)]"
+                  : "font-medium text-[var(--color-humo)] hover:bg-[var(--color-papel)]/60 hover:text-[var(--color-tinta)]"
               }`}
             >
               {activo && (
-                <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-[var(--color-oro)]" />
+                <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-[var(--color-vino)]" />
               )}
               <Icono tamano={19} />
               {texto}
@@ -96,13 +81,13 @@ export function BarraLateral() {
         })}
       </nav>
 
-      <footer className="border-t border-white/8 px-6 py-4">
-        <p className="text-[0.65rem] leading-relaxed text-white/30">
+      <footer className="border-t border-[var(--color-linea-fuerte)] px-5 py-4">
+        <p className="text-[0.65rem] leading-relaxed text-[var(--color-humo)]">
           Todo se guarda en esta computadora.
         </p>
-        <p className="mt-2 text-[0.65rem] leading-relaxed text-white/25">
+        <p className="mt-2 text-[0.65rem] leading-relaxed text-[var(--color-humo)]/75">
           Software por{" "}
-          <span className="font-semibold text-[var(--color-oro)]/70">{DESARROLLADOR}</span>
+          <span className="font-semibold text-[var(--color-tinta)]">{DESARROLLADOR}</span>
           <br />
           {creditoCorto()} · Todos los derechos reservados
         </p>
@@ -115,7 +100,7 @@ export function BarraMovil() {
   const pathname = usePathname();
 
   return (
-    <nav className="no-imprimir margen-abajo-seguro fixed inset-x-0 bottom-0 z-40 flex bg-[var(--color-tinta)] md:hidden">
+    <nav className="no-imprimir margen-abajo-seguro fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--color-linea-fuerte)] bg-[var(--color-beige)] md:hidden">
       {ENLACES_MOVIL.map(({ href, texto, Icono, exacto }) => {
         const activo = estaActivo(pathname, href, exacto);
         return (
@@ -124,11 +109,11 @@ export function BarraMovil() {
             href={href}
             aria-current={activo ? "page" : undefined}
             className={`relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[0.7rem] font-medium ${
-              activo ? "text-[var(--color-oro-claro)]" : "text-white/55"
+              activo ? "text-[var(--color-vino)]" : "text-[var(--color-humo)]"
             }`}
           >
             {activo && (
-              <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-[var(--color-oro)]" />
+              <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-[var(--color-vino)]" />
             )}
             <Icono tamano={22} />
             {texto}
@@ -140,16 +125,16 @@ export function BarraMovil() {
 }
 
 /** Encabezado que solo aparece en celular. */
-export function EncabezadoMovil() {
+export function EncabezadoMovil({ logo }: { logo: string | null }) {
   return (
-    <header className="no-imprimir capitone encabezado-seguro sticky top-0 z-30 flex items-center justify-between pb-3 md:hidden">
+    <header className="no-imprimir capitone encabezado-seguro sticky top-0 z-30 flex items-center justify-between border-b border-[var(--color-linea-fuerte)] pb-3 md:hidden">
       <Link href="/">
-        <Wordmark compacto />
+        <Logo archivo={logo} compacto />
       </Link>
       <Link
         href="/configuracion"
         aria-label="Ajustes"
-        className="toque -mr-2 flex items-center justify-center text-white/60 transition-colors hover:text-[var(--color-oro-claro)]"
+        className="toque -mr-2 flex items-center justify-center text-[var(--color-humo)] transition-colors hover:text-[var(--color-tinta)]"
       >
         <IconoAjustes tamano={21} />
       </Link>

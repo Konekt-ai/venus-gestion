@@ -9,7 +9,8 @@
     "start": "next start -H 0.0.0.0",
     "lint": "next lint",
     "datos:ejemplo": "node scripts/datos-ejemplo.mjs",
-    "test": "node --conditions=react-server scripts/pruebas.mjs"
+    "test": "node --conditions=react-server scripts/pruebas.mjs",
+    "logo": "node scripts/preparar-logo.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",
