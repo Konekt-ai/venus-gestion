@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { lineasDeRemision, obtenerRemision } from "@/lib/consultas";
 import { BotonImprimir } from "@/components/BotonImprimir";
+import { IconoVolver } from "@/components/iconos";
+import { creditoCompleto } from "@/lib/marca";
 
 export const dynamic = "force-dynamic";
 
@@ -27,14 +29,15 @@ export default async function HojaRemision({ params }: { params: Promise<{ id: s
       <div className="no-imprimir flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/salidas"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-suave)] hover:text-[var(--color-texto)]"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-humo)] transition-colors hover:text-[var(--color-tinta)]"
         >
-          ← Volver a salidas
+          <IconoVolver tamano={16} />
+          Volver a salidas
         </Link>
-        <BotonImprimir texto="🖨️ Imprimir hoja" />
+        <BotonImprimir texto="Imprimir hoja" />
       </div>
 
-      <div className="hoja rounded-xl border border-[var(--color-borde)] bg-white p-6 sm:p-8">
+      <div className="hoja rounded-sm border border-[var(--color-linea)] bg-white p-6 sm:p-8">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-slate-800 pb-4">
           <div>
             <h1 className="text-2xl font-bold">VENUS</h1>
@@ -116,6 +119,10 @@ export default async function HojaRemision({ params }: { params: Promise<{ id: s
             Recibe ({destino.toLowerCase()})
           </div>
         </div>
+
+        <p className="mt-10 border-t border-slate-200 pt-3 text-center text-[0.65rem] text-slate-400">
+          {creditoCompleto()}
+        </p>
       </div>
     </div>
   );

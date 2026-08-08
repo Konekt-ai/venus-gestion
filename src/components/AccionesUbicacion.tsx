@@ -28,9 +28,9 @@ export function AccionesUbicacion({
   }
 
   return (
-    <div className="no-imprimir rounded-xl border border-[var(--color-borde)] bg-white p-4">
+    <div className="no-imprimir rounded-sm border border-[var(--color-linea)] bg-white p-4">
       <h2 className="text-base font-bold">Eliminar esta ubicacion</h2>
-      <p className="mt-1 text-sm text-[var(--color-suave)]">
+      <p className="mt-1 text-sm text-[var(--color-humo)]">
         {totalModelos > 0 ? (
           <>
             Los <strong>{totalModelos}</strong>{" "}

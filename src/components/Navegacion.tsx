@@ -2,69 +2,111 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { SVGProps } from "react";
+import {
+  IconoAjustes,
+  IconoConteo,
+  IconoEntrada,
+  IconoHistorial,
+  IconoInicio,
+  IconoPrenda,
+  IconoSalida,
+  IconoUbicacion,
+} from "@/components/iconos";
+import { creditoCorto, DESARROLLADOR } from "@/lib/marca";
 
 /**
  * Navegacion principal.
- * En computadora va como barra lateral fija; en celular se convierte
- * en una barra de accesos abajo, al alcance del pulgar.
+ * En computadora es una barra lateral oscura, como la pared del local;
+ * en celular se vuelve una barra de accesos abajo, al alcance del pulgar.
  */
 
-const ENLACES = [
-  { href: "/", texto: "Inicio", icono: "🏠", exacto: true },
-  { href: "/modelos", texto: "Modelos", icono: "👗" },
-  { href: "/ubicaciones", texto: "Ubicaciones", icono: "📍" },
-  { href: "/salidas", texto: "Salidas", icono: "📦" },
-  { href: "/entradas", texto: "Entradas", icono: "📥" },
-  { href: "/conteo", texto: "Conteo", icono: "✅" },
-  { href: "/movimientos", texto: "Historial", icono: "🕘" },
-  { href: "/configuracion", texto: "Ajustes", icono: "⚙️" },
+type Enlace = {
+  href: string;
+  texto: string;
+  Icono: (p: SVGProps<SVGSVGElement> & { tamano?: number }) => React.ReactElement;
+  exacto?: boolean;
+};
+
+const ENLACES: Enlace[] = [
+  { href: "/", texto: "Inicio", Icono: IconoInicio, exacto: true },
+  { href: "/modelos", texto: "Modelos", Icono: IconoPrenda },
+  { href: "/ubicaciones", texto: "Ubicaciones", Icono: IconoUbicacion },
+  { href: "/salidas", texto: "Salidas", Icono: IconoSalida },
+  { href: "/entradas", texto: "Entradas", Icono: IconoEntrada },
+  { href: "/conteo", texto: "Conteo", Icono: IconoConteo },
+  { href: "/movimientos", texto: "Historial", Icono: IconoHistorial },
+  { href: "/configuracion", texto: "Ajustes", Icono: IconoAjustes },
 ];
 
 // En el celular solo caben los mas usados; el resto vive en Ajustes.
-const ENLACES_MOVIL = ENLACES.filter((e) =>
-  ["/", "/modelos", "/ubicaciones", "/salidas", "/conteo"].includes(e.href)
-);
+const EN_CELULAR = ["/", "/modelos", "/ubicaciones", "/salidas", "/conteo"];
+const ENLACES_MOVIL = ENLACES.filter((e) => EN_CELULAR.includes(e.href));
 
 function estaActivo(pathname: string, href: string, exacto?: boolean) {
   return exacto ? pathname === href : pathname === href || pathname.startsWith(href + "/");
+}
+
+/** El wordmark, con el aire del letrero de la tienda. */
+function Wordmark({ compacto = false }: { compacto?: boolean }) {
+  return (
+    <span className="flex items-baseline gap-2">
+      <span
+        className={`marca text-[var(--color-oro-claro)] ${compacto ? "text-xl" : "text-2xl"}`}
+      >
+        Venus
+      </span>
+      <span className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-[var(--color-humo)]">
+        Bodega
+      </span>
+    </span>
+  );
 }
 
 export function BarraLateral() {
   const pathname = usePathname();
 
   return (
-    <aside className="no-imprimir hidden md:flex md:w-56 lg:w-64 shrink-0 flex-col border-r border-[var(--color-borde)] bg-white">
-      <Link href="/" className="flex items-center gap-2 px-5 py-5">
-        <span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--color-marca-700)] text-lg font-bold text-white">
-          V
-        </span>
-        <span>
-          <span className="block text-base font-bold leading-tight">Venus</span>
-          <span className="block text-xs text-[var(--color-suave)]">Bodega</span>
-        </span>
+    <aside className="no-imprimir hidden shrink-0 flex-col bg-[var(--color-tinta)] md:flex md:w-56 lg:w-60">
+      <Link href="/" className="capitone block border-b border-white/8 px-6 py-6">
+        <Wordmark />
       </Link>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3 pb-4">
-        {ENLACES.map((enlace) => {
-          const activo = estaActivo(pathname, enlace.href, enlace.exacto);
+      <nav className="flex flex-1 flex-col gap-0.5 px-3 py-4">
+        {ENLACES.map(({ href, texto, Icono, exacto }) => {
+          const activo = estaActivo(pathname, href, exacto);
           return (
             <Link
-              key={enlace.href}
-              href={enlace.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+              key={href}
+              href={href}
+              aria-current={activo ? "page" : undefined}
+              className={`relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm transition-colors ${
                 activo
-                  ? "bg-[var(--color-marca-50)] text-[var(--color-marca-700)]"
-                  : "text-[var(--color-suave)] hover:bg-slate-50 hover:text-[var(--color-texto)]"
+                  ? "bg-white/6 font-semibold text-[var(--color-oro-claro)]"
+                  : "font-medium text-white/55 hover:bg-white/4 hover:text-white/90"
               }`}
             >
-              <span aria-hidden="true" className="text-base">
-                {enlace.icono}
-              </span>
-              {enlace.texto}
+              {activo && (
+                <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-[var(--color-oro)]" />
+              )}
+              <Icono tamano={19} />
+              {texto}
             </Link>
           );
         })}
       </nav>
+
+      <footer className="border-t border-white/8 px-6 py-4">
+        <p className="text-[0.65rem] leading-relaxed text-white/30">
+          Todo se guarda en esta computadora.
+        </p>
+        <p className="mt-2 text-[0.65rem] leading-relaxed text-white/25">
+          Software por{" "}
+          <span className="font-semibold text-[var(--color-oro)]/70">{DESARROLLADOR}</span>
+          <br />
+          {creditoCorto()} · Todos los derechos reservados
+        </p>
+      </footer>
     </aside>
   );
 }
@@ -73,21 +115,23 @@ export function BarraMovil() {
   const pathname = usePathname();
 
   return (
-    <nav className="no-imprimir fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--color-borde)] bg-white md:hidden">
-      {ENLACES_MOVIL.map((enlace) => {
-        const activo = estaActivo(pathname, enlace.href, enlace.exacto);
+    <nav className="no-imprimir fixed inset-x-0 bottom-0 z-40 flex bg-[var(--color-tinta)] md:hidden">
+      {ENLACES_MOVIL.map(({ href, texto, Icono, exacto }) => {
+        const activo = estaActivo(pathname, href, exacto);
         return (
           <Link
-            key={enlace.href}
-            href={enlace.href}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${
-              activo ? "text-[var(--color-marca-700)]" : "text-[var(--color-suave)]"
+            key={href}
+            href={href}
+            aria-current={activo ? "page" : undefined}
+            className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-medium ${
+              activo ? "text-[var(--color-oro-claro)]" : "text-white/50"
             }`}
           >
-            <span aria-hidden="true" className="text-lg leading-none">
-              {enlace.icono}
-            </span>
-            {enlace.texto}
+            {activo && (
+              <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-[var(--color-oro)]" />
+            )}
+            <Icono tamano={21} />
+            {texto}
           </Link>
         );
       })}
@@ -95,22 +139,19 @@ export function BarraMovil() {
   );
 }
 
-/** Encabezado que solo aparece en celular, con el nombre y acceso a ajustes. */
+/** Encabezado que solo aparece en celular. */
 export function EncabezadoMovil() {
   return (
-    <header className="no-imprimir sticky top-0 z-30 flex items-center justify-between border-b border-[var(--color-borde)] bg-white px-4 py-3 md:hidden">
-      <Link href="/" className="flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-marca-700)] text-sm font-bold text-white">
-          V
-        </span>
-        <span className="text-base font-bold">Venus Bodega</span>
+    <header className="no-imprimir capitone sticky top-0 z-30 flex items-center justify-between px-4 py-3 md:hidden">
+      <Link href="/">
+        <Wordmark compacto />
       </Link>
       <Link
         href="/configuracion"
         aria-label="Ajustes"
-        className="rounded-lg px-2 py-1 text-lg text-[var(--color-suave)]"
+        className="p-1.5 text-white/60 transition-colors hover:text-[var(--color-oro-claro)]"
       >
-        ⚙️
+        <IconoAjustes tamano={20} />
       </Link>
     </header>
   );

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { anotarConteo, borrarLineaConteo, cerrarConteo } from "@/acciones/conteos";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "@/lib/codigos";
 import { Aviso, Boton, Insignia, Tarjeta } from "@/components/ui";
+import { IconoCerrar, IconoPin } from "@/components/iconos";
 import type { ConteoLineaConModelo } from "@/lib/tipos";
 import type { ModeloElegible } from "@/components/ArmadorEnvio";
 
@@ -131,25 +132,25 @@ export function PanelConteo({
             />
 
             {busqueda.trim() && sugerencias.length === 0 && (
-              <p className="text-sm text-[var(--color-suave)]">
+              <p className="text-sm text-[var(--color-humo)]">
                 No encontre ese modelo. Revisa el codigo o dalo de alta primero.
               </p>
             )}
 
             {sugerencias.length > 0 && (
-              <ul className="divide-y divide-[var(--color-borde)] overflow-hidden rounded-lg border border-[var(--color-borde)]">
+              <ul className="divide-y divide-[var(--color-linea)] overflow-hidden rounded-sm border border-[var(--color-linea)]">
                 {sugerencias.map((m) => (
                   <li key={m.id}>
                     <button
                       type="button"
                       onClick={() => elegir(m)}
-                      className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition hover:bg-[var(--color-marca-50)]"
+                      className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-[var(--color-vino-palido)]"
                     >
                       <span className="min-w-0">
                         <span className="codigo block text-sm">{m.codigo}</span>
-                        <span className="block truncate text-xs text-[var(--color-suave)]">
+                        <span className="block truncate text-xs text-[var(--color-humo)]">
                           {m.descripcion}
-                          {m.ubicacion_codigo && ` · 📍 ${m.ubicacion_codigo}`}
+                          {m.ubicacion_codigo && ` · ${m.ubicacion_codigo}`}
                         </span>
                       </span>
                       {yaContados.has(m.id) && <Insignia tono="ok">Ya contado</Insignia>}
@@ -163,9 +164,12 @@ export function PanelConteo({
           <form onSubmit={anotar} className="space-y-3">
             <div>
               <p className="codigo text-xl">{elegido.codigo}</p>
-              <p className="text-sm text-[var(--color-suave)]">{elegido.descripcion}</p>
+              <p className="text-sm text-[var(--color-humo)]">{elegido.descripcion}</p>
               {elegido.ubicacion_codigo && (
-                <p className="mt-1 text-sm">📍 {elegido.ubicacion_codigo}</p>
+                <p className="mt-1 flex items-center gap-1 text-sm text-[var(--color-humo)]">
+                  <IconoPin tamano={14} />
+                  {elegido.ubicacion_codigo}
+                </p>
               )}
             </div>
 
@@ -184,7 +188,7 @@ export function PanelConteo({
                 required
                 className="campo sin-flechas !py-4 text-center !text-3xl !font-bold"
               />
-              <p className="mt-1 text-xs text-[var(--color-suave)]">
+              <p className="mt-1 text-xs text-[var(--color-humo)]">
                 Cuenta lo que ves, sin fijarte en lo que dice el sistema.
               </p>
             </div>
@@ -222,7 +226,7 @@ export function PanelConteo({
           <p className="etiqueta !mb-0">Con diferencia</p>
           <p
             className={`text-2xl font-bold ${
-              conDiferencia.length > 0 ? "text-[var(--color-aviso-700)]" : ""
+              conDiferencia.length > 0 ? "text-[var(--color-ambar)]" : ""
             }`}
           >
             {conDiferencia.length}
@@ -232,30 +236,30 @@ export function PanelConteo({
 
       {lineas.length > 0 && (
         <Tarjeta className="!p-0">
-          <div className="border-b border-[var(--color-borde)] px-4 py-3">
+          <div className="border-b border-[var(--color-linea)] px-4 py-3">
             <h2 className="font-bold">Lo que llevas contado</h2>
           </div>
-          <ul className="divide-y divide-[var(--color-borde)]">
+          <ul className="divide-y divide-[var(--color-linea)]">
             {lineas.map((l) => {
               const dif = l.contado - l.esperado;
               return (
                 <li key={l.id} className="flex items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="codigo text-sm">{l.modelo_codigo}</p>
-                    <p className="truncate text-xs text-[var(--color-suave)]">
+                    <p className="truncate text-xs text-[var(--color-humo)]">
                       {l.modelo_descripcion}
-                      {l.ubicacion_codigo && ` · 📍 ${l.ubicacion_codigo}`}
+                      {l.ubicacion_codigo && ` · ${l.ubicacion_codigo}`}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm">
                       <span className="font-bold">{l.contado}</span>
-                      <span className="text-[var(--color-suave)]"> / {l.esperado}</span>
+                      <span className="text-[var(--color-humo)]"> / {l.esperado}</span>
                     </p>
                     {dif !== 0 && (
                       <p
                         className={`text-xs font-bold ${
-                          dif > 0 ? "text-[var(--color-ok-700)]" : "text-[var(--color-alto-700)]"
+                          dif > 0 ? "text-[var(--color-verde)]" : "text-[var(--color-rojo)]"
                         }`}
                       >
                         {dif > 0 ? `+${dif}` : dif}
@@ -266,9 +270,9 @@ export function PanelConteo({
                     type="button"
                     onClick={() => quitar(l.modelo_id)}
                     aria-label={`Quitar ${l.modelo_codigo} del conteo`}
-                    className="rounded-lg px-2 py-1 text-[var(--color-suave)] hover:bg-slate-100"
+                    className="rounded-sm px-2 py-1 text-[var(--color-humo)] hover:bg-[var(--color-crema)]"
                   >
-                    ✕
+                    <IconoCerrar tamano={15} />
                   </button>
                 </li>
               );
@@ -314,7 +318,7 @@ function CerrarConteo({
     <Tarjeta className="space-y-3">
       <div>
         <h2 className="text-base font-bold">Terminar el conteo</h2>
-        <p className="mt-1 text-sm text-[var(--color-suave)]">
+        <p className="mt-1 text-sm text-[var(--color-humo)]">
           {conDiferencia === 0 ? (
             "Todo cuadra: al cerrar no cambiara ninguna existencia."
           ) : (

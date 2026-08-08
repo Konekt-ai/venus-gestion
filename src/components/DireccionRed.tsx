@@ -32,14 +32,14 @@ export function DireccionRed() {
     <Tarjeta className="space-y-3">
       <div>
         <h2 className="text-base font-bold">Entrar desde el celular</h2>
-        <p className="mt-1 text-sm text-[var(--color-suave)]">
+        <p className="mt-1 text-sm text-[var(--color-humo)]">
           Con el celular conectado al mismo WiFi que esta computadora, abre el navegador y escribe
           esta direccion:
         </p>
       </div>
 
       {direcciones.length === 0 ? (
-        <p className="rounded-lg bg-[var(--color-aviso-50)] px-3 py-2 text-sm text-[var(--color-aviso-700)]">
+        <p className="rounded-sm bg-[var(--color-ambar-palido)] px-3 py-2 text-sm text-[var(--color-ambar)]">
           No detecte una conexion de red. Revisa que la computadora este conectada al WiFi o por
           cable.
         </p>
@@ -47,7 +47,7 @@ export function DireccionRed() {
         <ul className="space-y-2">
           {direcciones.map((ip) => (
             <li key={ip}>
-              <span className="codigo inline-block rounded-lg bg-slate-100 px-3 py-2 text-lg">
+              <span className="codigo inline-block rounded-sm bg-[var(--color-crema)] px-3 py-2 text-lg">
                 {ip}:{puerto}
               </span>
             </li>
@@ -56,7 +56,7 @@ export function DireccionRed() {
       )}
 
       {direcciones.length > 1 && (
-        <p className="text-xs text-[var(--color-suave)]">
+        <p className="text-xs text-[var(--color-humo)]">
           Aparecen varias porque la computadora tiene mas de una conexion. Prueba la primera; si no
           abre, prueba la siguiente.
         </p>

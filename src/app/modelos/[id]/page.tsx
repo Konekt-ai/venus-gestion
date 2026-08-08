@@ -9,6 +9,7 @@ import {
   PastillaUbicacion,
   Tarjeta,
 } from "@/components/ui";
+import { IconoEditar, IconoEstrella, IconoVolver } from "@/components/iconos";
 import { NOMBRE_MOVIMIENTO } from "@/lib/tipos";
 
 export const dynamic = "force-dynamic";
@@ -35,15 +36,16 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
     <div className="space-y-5">
       <Link
         href="/modelos"
-        className="no-imprimir inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-suave)] hover:text-[var(--color-texto)]"
+        className="no-imprimir inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-humo)] transition-colors hover:text-[var(--color-tinta)]"
       >
-        ← Volver a modelos
+        <IconoVolver tamano={16} />
+        Volver a modelos
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="codigo text-3xl sm:text-4xl">{modelo.codigo}</h1>
-          <p className="mt-1 text-base text-[var(--color-suave)]">{modelo.descripcion}</p>
+          <p className="titulo mt-1 text-lg text-[var(--color-humo)]">{modelo.descripcion}</p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <PastillaUbicacion
               codigo={modelo.ubicacion_codigo}
@@ -55,13 +57,19 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
               </Insignia>
             )}
             {modelo.categoria && <Insignia>{modelo.categoria}</Insignia>}
-            {Boolean(modelo.destacado) && <Insignia tono="marca">⭐ Mas vendido</Insignia>}
+            {Boolean(modelo.destacado) && (
+              <Insignia tono="oro">
+                <IconoEstrella tamano={12} />
+                Mas vendido
+              </Insignia>
+            )}
           </div>
         </div>
 
         <div className="no-imprimir flex gap-2">
           <BotonEnlace href={`/modelos/${modelo.id}/editar`} variante="secundario">
-            ✏️ Editar
+            <IconoEditar tamano={16} />
+            Editar
           </BotonEnlace>
         </div>
       </div>
@@ -75,16 +83,16 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
         </Tarjeta>
         <Tarjeta className="text-center">
           <p className="etiqueta">En la tienda</p>
-          <p className="mt-2 text-2xl font-bold">{modelo.en_tienda}</p>
+          <p className="titulo mt-1 text-3xl tabular-nums">{modelo.en_tienda}</p>
         </Tarjeta>
         <Tarjeta className="text-center">
           <p className="etiqueta">En el tianguis</p>
-          <p className="mt-2 text-2xl font-bold">{modelo.en_tianguis}</p>
+          <p className="titulo mt-1 text-3xl tabular-nums">{modelo.en_tianguis}</p>
         </Tarjeta>
       </div>
 
       <section className="no-imprimir">
-        <h2 className="mb-3 text-lg font-bold">¿Que paso con este modelo?</h2>
+        <h2 className="titulo mb-3 text-xl">¿Que paso con este modelo?</h2>
         <AccionesMovimiento
           modeloId={modelo.id}
           existencia={modelo.existencia}
@@ -94,8 +102,8 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
       </section>
 
       <Tarjeta>
-        <h2 className="mb-3 text-lg font-bold">Datos de la prenda</h2>
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <h2 className="titulo mb-4 text-xl">Datos de la prenda</h2>
+        <dl className="grid grid-cols-2 gap-5 sm:grid-cols-4">
           <Dato etiqueta="Tallas" valor={modelo.tallas} />
           <Dato etiqueta="Colores" valor={modelo.colores} />
           <Dato etiqueta="Tela" valor={modelo.tela} />
@@ -105,7 +113,7 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
           />
         </dl>
         {modelo.notas && (
-          <div className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+          <div className="mt-5 border-l-2 border-[var(--color-oro)] bg-[var(--color-oro-tenue)] px-3 py-2 text-sm">
             <span className="etiqueta">Notas</span>
             {modelo.notas}
           </div>
@@ -113,16 +121,16 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
       </Tarjeta>
 
       <section>
-        <h2 className="mb-3 text-lg font-bold">Historial</h2>
+        <h2 className="titulo mb-3 text-xl">Historial</h2>
         {historial.length === 0 ? (
           <Tarjeta>
-            <p className="text-sm text-[var(--color-suave)]">
+            <p className="text-sm text-[var(--color-humo)]">
               Todavia no hay movimientos registrados.
             </p>
           </Tarjeta>
         ) : (
           <Tarjeta className="!p-0">
-            <ul className="divide-y divide-[var(--color-borde)]">
+            <ul className="divide-y divide-[var(--color-linea)]">
               {historial.map((mv) => {
                 const diferencia = mv.existencia_despues - mv.existencia_antes;
                 return (
@@ -131,7 +139,7 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
                       <p className="text-sm font-semibold">
                         {NOMBRE_MOVIMIENTO[mv.tipo] ?? mv.tipo}
                       </p>
-                      <p className="text-xs text-[var(--color-suave)]">
+                      <p className="text-xs text-[var(--color-humo)]">
                         {mv.fecha.slice(0, 16)}
                         {mv.persona && ` · ${mv.persona}`}
                         {mv.nota && ` · ${mv.nota}`}
@@ -139,17 +147,17 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
                     </div>
                     <div className="shrink-0 text-right">
                       <p
-                        className={`text-sm font-bold ${
+                        className={`text-sm font-semibold tabular-nums ${
                           diferencia > 0
-                            ? "text-[var(--color-ok-700)]"
+                            ? "text-[var(--color-verde)]"
                             : diferencia < 0
-                              ? "text-[var(--color-alto-700)]"
-                              : "text-[var(--color-suave)]"
+                              ? "text-[var(--color-rojo)]"
+                              : "text-[var(--color-humo)]"
                         }`}
                       >
                         {diferencia > 0 ? `+${diferencia}` : diferencia}
                       </p>
-                      <p className="text-xs text-[var(--color-suave)]">
+                      <p className="text-xs text-[var(--color-humo)]">
                         quedaron {mv.existencia_despues}
                       </p>
                     </div>

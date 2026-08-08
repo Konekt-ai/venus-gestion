@@ -29,7 +29,7 @@ export default function PaginaEntradas() {
         <Tarjeta>
           <p className="text-sm">
             Todavia no hay modelos en el catalogo.{" "}
-            <Link href="/modelos/nuevo" className="font-semibold text-[var(--color-marca-700)]">
+            <Link href="/modelos/nuevo" className="font-semibold text-[var(--color-vino)]">
               Da de alta el primero
             </Link>{" "}
             y despues podras registrar entradas.
@@ -41,9 +41,9 @@ export default function PaginaEntradas() {
 
       <Tarjeta>
         <h2 className="text-base font-bold">¿Y si el modelo es nuevo?</h2>
-        <p className="mt-1 text-sm text-[var(--color-suave)]">
+        <p className="mt-1 text-sm text-[var(--color-humo)]">
           Si la prenda que llego todavia no existe en el sistema,{" "}
-          <Link href="/modelos/nuevo" className="font-semibold text-[var(--color-marca-700)]">
+          <Link href="/modelos/nuevo" className="font-semibold text-[var(--color-vino)]">
             dala de alta aqui
           </Link>{" "}
           capturando de una vez las piezas que llegaron.

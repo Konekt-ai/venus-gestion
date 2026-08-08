@@ -8,6 +8,7 @@ import {
 import { PanelConteo } from "@/components/PanelConteo";
 import { IniciarConteo } from "@/components/IniciarConteo";
 import { Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
+import { IconoPrenda } from "@/components/iconos";
 import type { ModeloElegible } from "@/components/ArmadorEnvio";
 
 export const dynamic = "force-dynamic";
@@ -25,8 +26,8 @@ export default function PaginaConteo() {
         />
 
         <Tarjeta className="space-y-3">
-          <h2 className="text-base font-bold">¿Como funciona?</h2>
-          <ol className="ml-5 list-decimal space-y-1.5 text-sm text-[var(--color-suave)]">
+          <h2 className="titulo text-lg">¿Como funciona?</h2>
+          <ol className="ml-5 list-decimal space-y-1.5 text-sm leading-relaxed text-[var(--color-humo)] marker:text-[var(--color-oro)]">
             <li>Inicias el conteo y recorres la bodega con el celular.</li>
             <li>Por cada modelo escribes el codigo y cuantas piezas ves.</li>
             <li>Nada cambia mientras cuentas: puedes dejarlo a medias y seguir despues.</li>
@@ -38,14 +39,14 @@ export default function PaginaConteo() {
 
         {historial.length > 0 && (
           <section>
-            <h2 className="mb-3 text-lg font-bold">Conteos anteriores</h2>
+            <h2 className="titulo mb-3 text-xl">Conteos anteriores</h2>
             <Tarjeta className="!p-0">
-              <ul className="divide-y divide-[var(--color-borde)]">
+              <ul className="divide-y divide-[var(--color-linea)]">
                 {historial.map((c) => (
                   <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold">{c.nombre}</span>
-                      <span className="block text-xs text-[var(--color-suave)]">
+                      <span className="block text-xs text-[var(--color-humo)]">
                         Cerrado el {c.cerrado_en?.slice(0, 16)}
                       </span>
                     </span>
@@ -75,7 +76,7 @@ export default function PaginaConteo() {
   if (modelos.length === 0) {
     return (
       <Vacio
-        icono="👗"
+        icono={<IconoPrenda tamano={24} />}
         titulo="No hay modelos que contar"
         descripcion="Da de alta el catalogo antes de hacer un conteo."
       />
@@ -93,8 +94,11 @@ export default function PaginaConteo() {
 
       <PanelConteo conteoId={abierto.id} modelos={modelos} lineas={lineas} />
 
-      <p className="text-center text-sm text-[var(--color-suave)]">
-        <Link href="/modelos?orden=ubicacion" className="font-semibold hover:underline">
+      <p className="text-center text-sm text-[var(--color-humo)]">
+        <Link
+          href="/modelos?orden=ubicacion"
+          className="font-semibold text-[var(--color-vino)] hover:underline"
+        >
           Ver la lista ordenada por ubicacion
         </Link>{" "}
         para recorrer la bodega en orden.

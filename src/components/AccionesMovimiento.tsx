@@ -2,8 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import type { SVGProps } from "react";
 import { registrarMovimiento } from "@/acciones/movimientos";
 import { Aviso, Boton } from "@/components/ui";
+import {
+  IconoEditar,
+  IconoEntrada,
+  IconoRegresar,
+  IconoTianguis,
+  IconoTienda,
+} from "@/components/iconos";
 import type { TipoMovimiento } from "@/lib/tipos";
 
 /**
@@ -16,53 +24,57 @@ import type { TipoMovimiento } from "@/lib/tipos";
 type Opcion = {
   tipo: TipoMovimiento;
   texto: string;
-  icono: string;
+  Icono: (p: SVGProps<SVGSVGElement> & { tamano?: number }) => React.ReactElement;
   pregunta: string;
   color: string;
 };
+
+const ENTRA = "border-[var(--color-verde)]/25 bg-[var(--color-verde-palido)] text-[var(--color-verde)] hover:border-[var(--color-verde)]";
+const SALE = "border-[var(--color-vino)]/25 bg-[var(--color-vino-palido)] text-[var(--color-vino)] hover:border-[var(--color-vino)]";
 
 const OPCIONES: Opcion[] = [
   {
     tipo: "entrada",
     texto: "Entraron",
-    icono: "📥",
+    Icono: IconoEntrada,
     pregunta: "¿Cuantas piezas entraron a bodega?",
-    color: "border-[var(--color-ok-600)] bg-[var(--color-ok-50)] text-[var(--color-ok-700)]",
+    color: ENTRA,
   },
   {
     tipo: "salida_tienda",
     texto: "A tienda",
-    icono: "🏬",
+    Icono: IconoTienda,
     pregunta: "¿Cuantas piezas se llevaron a la tienda?",
-    color: "border-[var(--color-marca-500)] bg-[var(--color-marca-50)] text-[var(--color-marca-700)]",
+    color: SALE,
   },
   {
     tipo: "salida_tianguis",
     texto: "A tianguis",
-    icono: "⛺",
+    Icono: IconoTianguis,
     pregunta: "¿Cuantas piezas se llevaron al tianguis?",
-    color: "border-[var(--color-marca-500)] bg-[var(--color-marca-50)] text-[var(--color-marca-700)]",
+    color: SALE,
   },
   {
     tipo: "retorno_tianguis",
     texto: "Regreso de tianguis",
-    icono: "↩️",
+    Icono: IconoRegresar,
     pregunta: "¿Cuantas piezas regresaron del tianguis?",
-    color: "border-[var(--color-ok-600)] bg-[var(--color-ok-50)] text-[var(--color-ok-700)]",
+    color: ENTRA,
   },
   {
     tipo: "retorno_tienda",
     texto: "Regreso de tienda",
-    icono: "↩️",
+    Icono: IconoRegresar,
     pregunta: "¿Cuantas piezas regresaron de la tienda?",
-    color: "border-[var(--color-ok-600)] bg-[var(--color-ok-50)] text-[var(--color-ok-700)]",
+    color: ENTRA,
   },
   {
     tipo: "ajuste",
     texto: "Corregir",
-    icono: "✏️",
+    Icono: IconoEditar,
     pregunta: "¿Con cuantas piezas debe quedar? Se registrara la correccion.",
-    color: "border-[var(--color-borde)] bg-white text-[var(--color-suave)]",
+    color:
+      "border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] text-[var(--color-humo)] hover:border-[var(--color-oro)]",
   },
 ];
 
@@ -147,24 +159,22 @@ export function AccionesMovimiento({
 
       {!abierta ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {visibles.map((o) => (
+          {visibles.map(({ tipo, texto, Icono, color }) => (
             <button
-              key={o.tipo}
+              key={tipo}
               type="button"
-              onClick={() => abrir(o)}
-              className={`flex flex-col items-center gap-1 rounded-xl border-2 px-3 py-4 text-sm font-semibold transition hover:brightness-95 ${o.color}`}
+              onClick={() => abrir(OPCIONES.find((o) => o.tipo === tipo)!)}
+              className={`flex flex-col items-center gap-2 rounded-sm border px-3 py-4 text-sm font-semibold transition-colors ${color}`}
             >
-              <span aria-hidden="true" className="text-2xl">
-                {o.icono}
-              </span>
-              {o.texto}
+              <Icono tamano={24} />
+              {texto}
             </button>
           ))}
         </div>
       ) : (
         <form
           onSubmit={confirmar}
-          className="space-y-3 rounded-xl border-2 border-[var(--color-marca-500)] bg-white p-4"
+          className="space-y-3 rounded-sm border border-[var(--color-oro)] bg-[var(--color-papel)] p-4"
         >
           <p className="font-semibold">{abierta.pregunta}</p>
 

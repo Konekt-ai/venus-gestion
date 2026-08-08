@@ -61,7 +61,7 @@ export function FormularioModelo({
               autoComplete="off"
               className="campo codigo !text-lg"
             />
-            <p className="mt-1 text-xs text-[var(--color-suave)]">
+            <p className="mt-1 text-xs text-[var(--color-humo)]">
               Como viene en la etiqueta. Se guardara como{" "}
               <strong>{formatearCodigo(codigo) || "—"}</strong> y se podra buscar escrito de
               cualquier forma.
@@ -190,9 +190,9 @@ export function FormularioModelo({
               ))}
             </select>
             {ubicaciones.length === 0 && (
-              <p className="mt-1 text-xs text-[var(--color-suave)]">
+              <p className="mt-1 text-xs text-[var(--color-humo)]">
                 Todavia no hay ubicaciones.{" "}
-                <Link href="/ubicaciones" className="font-semibold text-[var(--color-marca-700)]">
+                <Link href="/ubicaciones" className="font-semibold text-[var(--color-vino)]">
                   Crear las de la bodega
                 </Link>
               </p>
@@ -229,7 +229,7 @@ export function FormularioModelo({
               inputMode="numeric"
               className="campo sin-flechas"
             />
-            <p className="mt-1 text-xs text-[var(--color-suave)]">0 = no avisar</p>
+            <p className="mt-1 text-xs text-[var(--color-humo)]">0 = no avisar</p>
           </div>
         </div>
 
@@ -252,7 +252,7 @@ export function FormularioModelo({
             type="checkbox"
             name="destacado"
             defaultChecked={Boolean(modelo?.destacado)}
-            className="h-5 w-5 accent-[var(--color-marca-700)]"
+            className="h-5 w-5 accent-[var(--color-vino)]"
           />
           <span className="text-sm font-medium">
             Marcar como uno de los mas vendidos
@@ -266,7 +266,7 @@ export function FormularioModelo({
         </Boton>
         <Link
           href={modelo ? `/modelos/${modelo.id}` : "/modelos"}
-          className="inline-flex items-center justify-center rounded-lg border border-[var(--color-borde)] bg-white px-4 py-2.5 text-sm font-semibold"
+          className="inline-flex items-center justify-center rounded-sm border border-[var(--color-linea)] bg-white px-4 py-2.5 text-sm font-semibold"
         >
           Cancelar
         </Link>

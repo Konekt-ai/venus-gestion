@@ -1,18 +1,19 @@
 import Link from "next/link";
 import { movimientosRecientes } from "@/lib/consultas";
 import { Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
+import { IconoHistorial } from "@/components/iconos";
 import { NOMBRE_MOVIMIENTO, TIPOS_MOVIMIENTO, type TipoMovimiento } from "@/lib/tipos";
 
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ [k: string]: string | string[] | undefined }>;
 
-const TONO_POR_TIPO: Record<TipoMovimiento, "ok" | "marca" | "neutro"> = {
+const TONO_POR_TIPO: Record<TipoMovimiento, "ok" | "vino" | "neutro"> = {
   entrada: "ok",
   retorno_tienda: "ok",
   retorno_tianguis: "ok",
-  salida_tienda: "marca",
-  salida_tianguis: "marca",
+  salida_tienda: "vino",
+  salida_tianguis: "vino",
   ajuste: "neutro",
   conteo: "neutro",
 };
@@ -42,10 +43,10 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
       <div className="flex flex-wrap gap-2">
         <Link
           href="/movimientos"
-          className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
+          className={`rounded-sm border px-3 py-1.5 text-sm font-semibold ${
             !filtro
-              ? "border-[var(--color-marca-700)] bg-[var(--color-marca-50)] text-[var(--color-marca-700)]"
-              : "border-[var(--color-borde)] bg-white"
+              ? "border-[var(--color-vino)] bg-[var(--color-vino-palido)] text-[var(--color-vino)]"
+              : "border-[var(--color-linea)] bg-white"
           }`}
         >
           Todo
@@ -54,10 +55,10 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
           <Link
             key={t}
             href={`/movimientos?tipo=${t}`}
-            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
+            className={`rounded-sm border px-3 py-1.5 text-sm font-semibold ${
               filtro === t
-                ? "border-[var(--color-marca-700)] bg-[var(--color-marca-50)] text-[var(--color-marca-700)]"
-                : "border-[var(--color-borde)] bg-white"
+                ? "border-[var(--color-vino)] bg-[var(--color-vino-palido)] text-[var(--color-vino)]"
+                : "border-[var(--color-linea)] bg-white"
             }`}
           >
             {NOMBRE_MOVIMIENTO[t]}
@@ -67,7 +68,7 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
 
       {movimientos.length === 0 ? (
         <Vacio
-          icono="🕘"
+          icono={<IconoHistorial tamano={24} />}
           titulo="No hay movimientos todavia"
           descripcion="Cuando registres entradas o salidas apareceran aqui."
         />
@@ -75,29 +76,29 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
         <div className="space-y-5">
           {[...porDia.entries()].map(([dia, delDia]) => (
             <section key={dia}>
-              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-[var(--color-suave)]">
+              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-[var(--color-humo)]">
                 {dia}
               </h2>
               <Tarjeta className="!p-0">
-                <ul className="divide-y divide-[var(--color-borde)]">
+                <ul className="divide-y divide-[var(--color-linea)]">
                   {delDia.map((mv) => {
                     const diferencia = mv.existencia_despues - mv.existencia_antes;
                     return (
                       <li key={mv.id}>
                         <Link
                           href={`/modelos/${mv.modelo_id}`}
-                          className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50"
+                          className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-oro-tenue)]"
                         >
                           <span className="min-w-0">
                             <span className="codigo block text-sm">{mv.modelo_codigo}</span>
-                            <span className="block truncate text-xs text-[var(--color-suave)]">
+                            <span className="block truncate text-xs text-[var(--color-humo)]">
                               {mv.modelo_descripcion}
                             </span>
                             <span className="mt-1 flex flex-wrap items-center gap-1.5">
                               <Insignia tono={TONO_POR_TIPO[mv.tipo] ?? "neutro"}>
                                 {NOMBRE_MOVIMIENTO[mv.tipo] ?? mv.tipo}
                               </Insignia>
-                              <span className="text-xs text-[var(--color-suave)]">
+                              <span className="text-xs text-[var(--color-humo)]">
                                 {mv.fecha.slice(11, 16)}
                                 {mv.persona && ` · ${mv.persona}`}
                               </span>
@@ -107,15 +108,15 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
                             <span
                               className={`block text-base font-bold ${
                                 diferencia > 0
-                                  ? "text-[var(--color-ok-700)]"
+                                  ? "text-[var(--color-verde)]"
                                   : diferencia < 0
-                                    ? "text-[var(--color-alto-700)]"
-                                    : "text-[var(--color-suave)]"
+                                    ? "text-[var(--color-rojo)]"
+                                    : "text-[var(--color-humo)]"
                               }`}
                             >
                               {diferencia > 0 ? `+${diferencia}` : diferencia}
                             </span>
-                            <span className="block text-xs text-[var(--color-suave)]">
+                            <span className="block text-xs text-[var(--color-humo)]">
                               quedaron {mv.existencia_despues}
                             </span>
                           </span>

@@ -25,11 +25,11 @@ export function ArchivarModelo({ modeloId, codigo }: { modeloId: number; codigo:
   }
 
   return (
-    <div className="rounded-xl border border-[var(--color-alto-100)] bg-[var(--color-alto-50)] p-4">
-      <h2 className="text-base font-bold text-[var(--color-alto-700)]">
+    <div className="rounded-sm border border-[var(--color-rojo-palido)] bg-[var(--color-rojo-palido)] p-4">
+      <h2 className="text-base font-bold text-[var(--color-rojo)]">
         Dar de baja este modelo
       </h2>
-      <p className="mt-1 text-sm text-[var(--color-alto-700)]">
+      <p className="mt-1 text-sm text-[var(--color-rojo)]">
         Deja de aparecer en las busquedas, pero se conserva su historial por si hay que
         consultarlo despues.
       </p>

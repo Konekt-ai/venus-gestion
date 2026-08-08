@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { registrarEntrada, registrarRemision } from "@/acciones/movimientos";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "@/lib/codigos";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
+import { IconoCerrar } from "@/components/iconos";
 import type { Destino } from "@/lib/tipos";
 
 /** Version ligera del modelo: lo justo para buscar y mostrar en la lista. */
@@ -188,29 +189,29 @@ export function ArmadorEnvio({
         />
 
         {busqueda.trim() && sugerencias.length === 0 && (
-          <p className="text-sm text-[var(--color-suave)]">
+          <p className="text-sm text-[var(--color-humo)]">
             No hay modelos disponibles con esa busqueda
             {modo.clase !== "entrada" && " (revisa que tengan piezas)"}.
           </p>
         )}
 
         {sugerencias.length > 0 && (
-          <ul className="divide-y divide-[var(--color-borde)] overflow-hidden rounded-lg border border-[var(--color-borde)]">
+          <ul className="divide-y divide-[var(--color-linea)] overflow-hidden rounded-sm border border-[var(--color-linea)]">
             {sugerencias.map((m) => (
               <li key={m.id}>
                 <button
                   type="button"
                   onClick={() => agregar(m)}
-                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition hover:bg-[var(--color-marca-50)]"
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[var(--color-vino-palido)]"
                 >
                   <span className="min-w-0">
                     <span className="codigo block text-sm">{m.codigo}</span>
-                    <span className="block truncate text-xs text-[var(--color-suave)]">
+                    <span className="block truncate text-xs text-[var(--color-humo)]">
                       {m.descripcion}
-                      {m.ubicacion_codigo && ` · 📍 ${m.ubicacion_codigo}`}
+                      {m.ubicacion_codigo && ` · ${m.ubicacion_codigo}`}
                     </span>
                   </span>
-                  <span className="shrink-0 text-xs font-semibold text-[var(--color-suave)]">
+                  <span className="shrink-0 text-xs font-semibold text-[var(--color-humo)]">
                     {modo.clase === "entrada"
                       ? `hay ${m.existencia}`
                       : `disponibles ${disponible(m)}`}
@@ -224,7 +225,7 @@ export function ArmadorEnvio({
 
       {renglones.length > 0 && (
         <Tarjeta className="!p-0">
-          <ul className="divide-y divide-[var(--color-borde)]">
+          <ul className="divide-y divide-[var(--color-linea)]">
             {renglones.map((r) => {
               const max = disponible(r.modelo);
               const excede = modo.clase !== "entrada" && r.cantidad > max;
@@ -232,11 +233,11 @@ export function ArmadorEnvio({
                 <li key={r.modelo.id} className="flex items-center gap-3 p-3">
                   <div className="min-w-0 flex-1">
                     <div className="codigo text-sm">{r.modelo.codigo}</div>
-                    <div className="truncate text-xs text-[var(--color-suave)]">
+                    <div className="truncate text-xs text-[var(--color-humo)]">
                       {r.modelo.descripcion}
                     </div>
                     {modo.clase !== "entrada" && (
-                      <div className="mt-0.5 text-xs text-[var(--color-suave)]">
+                      <div className="mt-0.5 text-xs text-[var(--color-humo)]">
                         Disponibles: {max}
                       </div>
                     )}
@@ -250,7 +251,7 @@ export function ArmadorEnvio({
                     inputMode="numeric"
                     aria-label={`Cantidad de ${r.modelo.codigo}`}
                     className={`campo sin-flechas !w-20 !py-2 text-center !text-lg !font-bold ${
-                      excede ? "!border-[var(--color-alto-600)]" : ""
+                      excede ? "!border-[var(--color-rojo)]" : ""
                     }`}
                   />
 
@@ -258,16 +259,16 @@ export function ArmadorEnvio({
                     type="button"
                     onClick={() => quitar(r.modelo.id)}
                     aria-label={`Quitar ${r.modelo.codigo}`}
-                    className="rounded-lg px-2 py-2 text-lg text-[var(--color-suave)] hover:bg-slate-100"
+                    className="rounded-sm px-2 py-2 text-lg text-[var(--color-humo)] hover:bg-[var(--color-crema)]"
                   >
-                    ✕
+                    <IconoCerrar tamano={16} />
                   </button>
                 </li>
               );
             })}
           </ul>
 
-          <div className="flex items-center justify-between border-t border-[var(--color-borde)] bg-slate-50 px-4 py-3">
+          <div className="flex items-center justify-between border-t border-[var(--color-linea)] bg-[var(--color-crema)] px-4 py-3">
             <span className="text-sm font-semibold">
               {renglones.length} {renglones.length === 1 ? "modelo" : "modelos"}
             </span>

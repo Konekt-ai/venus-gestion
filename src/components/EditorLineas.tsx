@@ -43,7 +43,7 @@ export function EditorLineas({
     <Tarjeta className="space-y-3">
       <div>
         <h2 className="text-base font-bold">¿Que significa cada codigo?</h2>
-        <p className="mt-1 text-sm text-[var(--color-suave)]">
+        <p className="mt-1 text-sm text-[var(--color-humo)]">
           Las letras del codigo dicen de que linea es la prenda. Ponles nombre y apareceran en el
           catalogo: asi cualquiera entiende que <span className="codigo">VN 178</span> es un
           vestido de Nelly.
@@ -55,7 +55,7 @@ export function EditorLineas({
       <ul className="space-y-2">
         {conLetras.map((p) => (
           <li key={p.prefijo} className="flex flex-wrap items-center gap-2">
-            <span className="codigo w-14 shrink-0 rounded-md bg-slate-100 px-2 py-1.5 text-center">
+            <span className="codigo w-14 shrink-0 rounded-md bg-[var(--color-crema)] px-2 py-1.5 text-center">
               {p.prefijo}
             </span>
             <input
@@ -74,7 +74,7 @@ export function EditorLineas({
               autoComplete="off"
               className="campo !w-auto min-w-0 flex-1 !py-1.5"
             />
-            <span className="shrink-0 text-xs text-[var(--color-suave)]">
+            <span className="shrink-0 text-xs text-[var(--color-humo)]">
               {p.total} {p.total === 1 ? "modelo" : "modelos"}
             </span>
           </li>

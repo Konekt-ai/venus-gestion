@@ -11,6 +11,7 @@ import {
   TituloPagina,
   Vacio,
 } from "@/components/ui";
+import { IconoBuscar, IconoMas } from "@/components/iconos";
 
 export const dynamic = "force-dynamic";
 
@@ -59,12 +60,13 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
         }
         accion={
           <BotonEnlace href="/modelos/nuevo" className="no-imprimir">
-            ➕ Nuevo modelo
+            <IconoMas tamano={17} />
+            Nuevo modelo
           </BotonEnlace>
         }
       />
 
-      <Suspense fallback={<div className="h-14 rounded-lg bg-white" />}>
+      <Suspense fallback={<div className="h-14 rounded-sm bg-white" />}>
         <Buscador valorInicial={q} enVivo />
       </Suspense>
 
@@ -74,7 +76,7 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
 
       {modelos.length === 0 ? (
         <Vacio
-          icono="🔍"
+          icono={<IconoBuscar tamano={24} />}
           titulo={q ? `No encontre nada con "${q}"` : "No hay modelos con esos filtros"}
           descripcion={
             q
@@ -91,19 +93,19 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
         />
       ) : (
         <>
-          <p className="text-sm text-[var(--color-suave)]">
-            <strong className="text-[var(--color-texto)]">{modelos.length}</strong>{" "}
+          <p className="text-sm text-[var(--color-humo)]">
+            <strong className="font-semibold text-[var(--color-tinta)]">{modelos.length}</strong>{" "}
             {modelos.length === 1 ? "modelo" : "modelos"} ·{" "}
-            <strong className="text-[var(--color-texto)]">
+            <strong className="font-semibold text-[var(--color-tinta)]">
               {totalPiezas.toLocaleString("es-MX")}
             </strong>{" "}
             piezas en bodega
           </p>
 
           {/* Tabla en computadora */}
-          <div className="hidden overflow-hidden rounded-xl border border-[var(--color-borde)] bg-white md:block">
+          <div className="hidden overflow-hidden rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)] md:block">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-[var(--color-borde)] bg-slate-50 text-xs uppercase tracking-wide text-[var(--color-suave)]">
+              <thead className="border-b border-[var(--color-linea)] bg-[var(--color-crema)] text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-humo)]">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Codigo</th>
                   <th className="px-4 py-3 font-semibold">Descripcion</th>
@@ -113,9 +115,9 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                   <th className="px-4 py-3 text-right font-semibold">Bodega</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--color-borde)]">
+              <tbody className="divide-y divide-[var(--color-linea)]">
                 {modelos.map((m) => (
-                  <tr key={m.id} className="transition hover:bg-slate-50">
+                  <tr key={m.id} className="transition-colors hover:bg-[var(--color-oro-tenue)]">
                     <td className="px-4 py-3">
                       <Link href={`/modelos/${m.id}`} className="codigo hover:underline">
                         {m.codigo}
@@ -128,16 +130,16 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                       {(m.en_tienda > 0 || m.en_tianguis > 0) && (
                         <span className="mt-1 flex gap-1">
                           {m.en_tienda > 0 && (
-                            <Insignia tono="marca">{m.en_tienda} en tienda</Insignia>
+                            <Insignia tono="vino">{m.en_tienda} en tienda</Insignia>
                           )}
                           {m.en_tianguis > 0 && (
-                            <Insignia tono="marca">{m.en_tianguis} en tianguis</Insignia>
+                            <Insignia tono="vino">{m.en_tianguis} en tianguis</Insignia>
                           )}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[var(--color-suave)]">{m.tallas || "—"}</td>
-                    <td className="px-4 py-3 text-[var(--color-suave)]">{m.tela || "—"}</td>
+                    <td className="px-4 py-3 text-[var(--color-humo)]">{m.tallas || "—"}</td>
+                    <td className="px-4 py-3 text-[var(--color-humo)]">{m.tela || "—"}</td>
                     <td className="px-4 py-3">
                       <PastillaUbicacion
                         codigo={m.ubicacion_codigo}
@@ -159,23 +161,23 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
               <li key={m.id}>
                 <Link
                   href={`/modelos/${m.id}`}
-                  className="block rounded-xl border border-[var(--color-borde)] bg-white p-4"
+                  className="block rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)] p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="codigo text-base">{m.codigo}</div>
-                      <div className="mt-0.5 text-sm text-[var(--color-suave)]">
+                      <div className="mt-0.5 text-sm text-[var(--color-humo)]">
                         {m.descripcion}
                       </div>
                     </div>
                     <Existencia cantidad={m.existencia} minimo={m.minimo} />
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                     <PastillaUbicacion codigo={m.ubicacion_codigo} />
                     {m.tallas && <Insignia>{m.tallas}</Insignia>}
-                    {m.en_tienda > 0 && <Insignia tono="marca">{m.en_tienda} en tienda</Insignia>}
+                    {m.en_tienda > 0 && <Insignia tono="vino">{m.en_tienda} en tienda</Insignia>}
                     {m.en_tianguis > 0 && (
-                      <Insignia tono="marca">{m.en_tianguis} en tianguis</Insignia>
+                      <Insignia tono="vino">{m.en_tianguis} en tianguis</Insignia>
                     )}
                   </div>
                 </Link>

@@ -3,6 +3,13 @@ import Link from "next/link";
 import { modelosPorSurtir, movimientosRecientes, resumen } from "@/lib/consultas";
 import { Buscador } from "@/components/Buscador";
 import { Cifra, Existencia, PastillaUbicacion, Tarjeta, Vacio } from "@/components/ui";
+import {
+  IconoConteo,
+  IconoEntrada,
+  IconoMas,
+  IconoPrenda,
+  IconoSalida,
+} from "@/components/iconos";
 import { NOMBRE_MOVIMIENTO } from "@/lib/tipos";
 
 export const dynamic = "force-dynamic";
@@ -10,25 +17,25 @@ export const dynamic = "force-dynamic";
 const ACCESOS = [
   {
     href: "/modelos/nuevo",
-    icono: "➕",
+    Icono: IconoMas,
     titulo: "Dar de alta un modelo",
     texto: "Registrar una prenda nueva en el catalogo",
   },
   {
     href: "/entradas",
-    icono: "📥",
+    Icono: IconoEntrada,
     titulo: "Llego mercancia",
     texto: "Sumar piezas que acaban de entrar a bodega",
   },
   {
     href: "/salidas",
-    icono: "📦",
+    Icono: IconoSalida,
     titulo: "Sacar a tienda o tianguis",
     texto: "Armar el envio y generar la hoja para firmar",
   },
   {
     href: "/conteo",
-    icono: "✅",
+    Icono: IconoConteo,
     titulo: "Contar la bodega",
     texto: "Revisar rack por rack y cuadrar existencias",
   },
@@ -41,38 +48,40 @@ export default function Inicio() {
   const bodegaVacia = datos.total_modelos === 0;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">
-          {bodegaVacia ? "Bienvenido a Venus Bodega" : "¿Que buscamos hoy?"}
+    <div className="space-y-8">
+      <section>
+        <h1 className="titulo text-[1.75rem] leading-tight sm:text-[2.125rem]">
+          {bodegaVacia ? "Bienvenido a Venus" : "¿Que buscamos hoy?"}
         </h1>
-        <p className="mt-1 text-sm text-[var(--color-suave)]">
+        <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-humo)]">
           {bodegaVacia
-            ? "Empieza dando de alta tus modelos o importando la lista que ya tienes."
-            : "Escribe el codigo del modelo y te digo cuantos hay y en que rack esta."}
+            ? "Empieza dando de alta tus modelos o subiendo la lista que ya tienes."
+            : "Escribe el codigo del modelo y te digo cuantas piezas hay y en que rack estan."}
         </p>
-      </div>
 
-      <Suspense fallback={<div className="h-14 rounded-lg bg-white" />}>
-        <Buscador autoFoco />
-      </Suspense>
+        <div className="mt-4">
+          <Suspense fallback={<div className="h-[52px] rounded-sm bg-[var(--color-papel)]" />}>
+            <Buscador autoFoco />
+          </Suspense>
+        </div>
+      </section>
 
       {bodegaVacia ? (
         <Vacio
-          icono="👗"
+          icono={<IconoPrenda tamano={24} />}
           titulo="Todavia no hay modelos registrados"
           descripcion="Puedes capturarlos uno por uno, o subir de golpe la lista que ya tienes en Excel desde Ajustes."
           accion={
             <div className="flex flex-wrap justify-center gap-2">
               <Link
                 href="/modelos/nuevo"
-                className="rounded-lg bg-[var(--color-marca-700)] px-4 py-2.5 text-sm font-semibold text-white"
+                className="rounded-sm bg-[var(--color-vino)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-vino-oscuro)]"
               >
                 Dar de alta el primero
               </Link>
               <Link
                 href="/configuracion"
-                className="rounded-lg border border-[var(--color-borde)] bg-white px-4 py-2.5 text-sm font-semibold"
+                className="rounded-sm border border-[var(--color-linea-fuerte)] bg-white px-4 py-2.5 text-sm font-semibold hover:border-[var(--color-oro)]"
               >
                 Importar desde Excel
               </Link>
@@ -129,7 +138,7 @@ export default function Inicio() {
                 <Cifra
                   valor={datos.sin_ubicacion}
                   texto="sin ubicacion asignada"
-                  tono="aviso"
+                  tono="oro"
                   href="/modelos?sinubicacion=1"
                 />
               )}
@@ -139,20 +148,22 @@ export default function Inicio() {
       )}
 
       <section>
-        <h2 className="mb-3 text-lg font-bold">¿Que quieres hacer?</h2>
+        <h2 className="titulo mb-3 text-xl">¿Que quieres hacer?</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          {ACCESOS.map((a) => (
+          {ACCESOS.map(({ href, Icono, titulo, texto }) => (
             <Link
-              key={a.href}
-              href={a.href}
-              className="flex items-start gap-3 rounded-xl border border-[var(--color-borde)] bg-white p-4 transition hover:border-[var(--color-marca-500)]"
+              key={href}
+              href={href}
+              className="group flex items-start gap-3.5 rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)] p-4 transition-colors hover:border-[var(--color-oro)]"
             >
-              <span aria-hidden="true" className="text-2xl">
-                {a.icono}
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-[var(--color-crema)] text-[var(--color-oro)] transition-colors group-hover:bg-[var(--color-oro-palido)]">
+                <Icono tamano={19} />
               </span>
               <span className="min-w-0">
-                <span className="block font-semibold">{a.titulo}</span>
-                <span className="mt-0.5 block text-sm text-[var(--color-suave)]">{a.texto}</span>
+                <span className="block font-semibold">{titulo}</span>
+                <span className="mt-0.5 block text-sm leading-relaxed text-[var(--color-humo)]">
+                  {texto}
+                </span>
               </span>
             </Link>
           ))}
@@ -161,26 +172,26 @@ export default function Inicio() {
 
       {porSurtir.length > 0 && (
         <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Hay que surtir</h2>
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 className="titulo text-xl">Hay que surtir</h2>
             <Link
               href="/modelos?existencia=bajo"
-              className="text-sm font-semibold text-[var(--color-marca-700)]"
+              className="text-sm font-semibold text-[var(--color-vino)] hover:underline"
             >
               Ver todos
             </Link>
           </div>
-          <Tarjeta className="!p-0">
-            <ul className="divide-y divide-[var(--color-borde)]">
+          <div className="overflow-hidden rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)]">
+            <ul className="divide-y divide-[var(--color-linea)]">
               {porSurtir.map((m) => (
                 <li key={m.id}>
                   <Link
                     href={`/modelos/${m.id}`}
-                    className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50"
+                    className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-oro-tenue)]"
                   >
                     <span className="min-w-0">
                       <span className="codigo block">{m.codigo}</span>
-                      <span className="block truncate text-sm text-[var(--color-suave)]">
+                      <span className="block truncate text-sm text-[var(--color-humo)]">
                         {m.descripcion}
                       </span>
                     </span>
@@ -192,42 +203,45 @@ export default function Inicio() {
                 </li>
               ))}
             </ul>
-          </Tarjeta>
+          </div>
         </section>
       )}
 
       {recientes.length > 0 && (
         <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Ultimos movimientos</h2>
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 className="titulo text-xl">Ultimos movimientos</h2>
             <Link
               href="/movimientos"
-              className="text-sm font-semibold text-[var(--color-marca-700)]"
+              className="text-sm font-semibold text-[var(--color-vino)] hover:underline"
             >
               Ver historial
             </Link>
           </div>
-          <Tarjeta className="!p-0">
-            <ul className="divide-y divide-[var(--color-borde)]">
-              {recientes.map((mv) => (
-                <li key={mv.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                  <span className="min-w-0">
-                    <span className="codigo block text-sm">{mv.modelo_codigo}</span>
-                    <span className="block text-xs text-[var(--color-suave)]">
-                      {NOMBRE_MOVIMIENTO[mv.tipo] ?? mv.tipo} · {mv.fecha.slice(0, 16)}
+          <div className="overflow-hidden rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)]">
+            <ul className="divide-y divide-[var(--color-linea)]">
+              {recientes.map((mv) => {
+                const diferencia = mv.existencia_despues - mv.existencia_antes;
+                return (
+                  <li key={mv.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <span className="min-w-0">
+                      <span className="codigo block text-sm">{mv.modelo_codigo}</span>
+                      <span className="block text-xs text-[var(--color-humo)]">
+                        {NOMBRE_MOVIMIENTO[mv.tipo] ?? mv.tipo} · {mv.fecha.slice(0, 16)}
+                      </span>
                     </span>
-                  </span>
-                  <span className="shrink-0 text-sm font-bold">
-                    {mv.tipo === "conteo"
-                      ? `= ${mv.existencia_despues}`
-                      : mv.existencia_despues > mv.existencia_antes
-                        ? `+${mv.existencia_despues - mv.existencia_antes}`
-                        : `${mv.existencia_despues - mv.existencia_antes}`}
-                  </span>
-                </li>
-              ))}
+                    <span className="shrink-0 text-sm font-semibold tabular-nums">
+                      {mv.tipo === "conteo"
+                        ? `= ${mv.existencia_despues}`
+                        : diferencia > 0
+                          ? `+${diferencia}`
+                          : diferencia}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
-          </Tarjeta>
+          </div>
         </section>
       )}
     </div>

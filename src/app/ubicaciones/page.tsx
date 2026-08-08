@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listarUbicaciones, resumen } from "@/lib/consultas";
 import { GestorUbicaciones } from "@/components/GestorUbicaciones";
 import { BotonEnlace, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
+import { IconoImprimir, IconoUbicacion } from "@/components/iconos";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,8 @@ export default function PaginaUbicaciones() {
         accion={
           ubicaciones.length > 0 ? (
             <BotonEnlace href="/ubicaciones/etiquetas" variante="secundario" className="no-imprimir">
-              🖨️ Imprimir etiquetas
+              <IconoImprimir tamano={16} />
+              Imprimir etiquetas
             </BotonEnlace>
           ) : undefined
         }
@@ -34,7 +36,7 @@ export default function PaginaUbicaciones() {
       {datos.sin_ubicacion > 0 && (
         <Link
           href="/modelos?sinubicacion=1"
-          className="block rounded-xl border-l-4 border-[var(--color-aviso-600)] bg-[var(--color-aviso-50)] px-4 py-3 text-sm font-medium text-[var(--color-aviso-700)]"
+          className="block rounded-sm border-l-2 border-[var(--color-ambar)] bg-[var(--color-ambar-palido)] px-4 py-3 text-sm font-medium text-[var(--color-ambar)]"
         >
           Hay <strong>{datos.sin_ubicacion}</strong>{" "}
           {datos.sin_ubicacion === 1 ? "modelo" : "modelos"} sin lugar asignado. Tocalo para
@@ -46,7 +48,7 @@ export default function PaginaUbicaciones() {
 
       {ubicaciones.length === 0 ? (
         <Vacio
-          icono="📍"
+          icono={<IconoUbicacion tamano={24} />}
           titulo="Todavia no hay ubicaciones"
           descripcion="Crea las zonas y racks de tu bodega. Despues podras imprimir una etiqueta para cada lugar y pegarla en el anaquel."
         />
@@ -56,9 +58,9 @@ export default function PaginaUbicaciones() {
             const piezasZona = lugares.reduce((s, u) => s + u.total_piezas, 0);
             return (
               <section key={zona}>
-                <div className="mb-2 flex items-baseline justify-between gap-3">
-                  <h2 className="text-lg font-bold">Zona {zona}</h2>
-                  <span className="text-sm text-[var(--color-suave)]">
+                <div className="mb-3 flex items-baseline justify-between gap-3">
+                  <h2 className="titulo text-xl">Zona {zona}</h2>
+                  <span className="text-sm text-[var(--color-humo)]">
                     {lugares.length} {lugares.length === 1 ? "lugar" : "lugares"} ·{" "}
                     {piezasZona.toLocaleString("es-MX")} piezas
                   </span>
@@ -69,26 +71,30 @@ export default function PaginaUbicaciones() {
                     <Link
                       key={u.id}
                       href={`/ubicaciones/${u.id}`}
-                      className={`rounded-xl border p-3 transition hover:border-[var(--color-marca-500)] ${
+                      className={`rounded-sm border p-3 transition-colors hover:border-[var(--color-oro)] ${
                         u.total_modelos === 0
-                          ? "border-dashed border-[var(--color-borde)] bg-slate-50"
-                          : "border-[var(--color-borde)] bg-white"
+                          ? "border-dashed border-[var(--color-linea-fuerte)] bg-transparent"
+                          : "border-[var(--color-linea)] bg-[var(--color-papel)]"
                       }`}
                     >
                       <div className="codigo text-base">{u.codigo}</div>
                       {u.descripcion && (
-                        <div className="mt-0.5 truncate text-xs text-[var(--color-suave)]">
+                        <div className="mt-0.5 truncate text-xs text-[var(--color-humo)]">
                           {u.descripcion}
                         </div>
                       )}
-                      <div className="mt-2 text-xs text-[var(--color-suave)]">
+                      <div className="mt-2 text-xs text-[var(--color-humo)]">
                         {u.total_modelos === 0 ? (
                           "Vacio"
                         ) : (
                           <>
-                            <strong className="text-[var(--color-texto)]">{u.total_modelos}</strong>{" "}
+                            <strong className="font-semibold text-[var(--color-tinta)]">
+                              {u.total_modelos}
+                            </strong>{" "}
                             {u.total_modelos === 1 ? "modelo" : "modelos"} ·{" "}
-                            <strong className="text-[var(--color-texto)]">{u.total_piezas}</strong>{" "}
+                            <strong className="font-semibold text-[var(--color-tinta)]">
+                              {u.total_piezas}
+                            </strong>{" "}
                             pzas
                           </>
                         )}
@@ -104,8 +110,8 @@ export default function PaginaUbicaciones() {
 
       {ubicaciones.length > 0 && (
         <Tarjeta>
-          <h2 className="text-base font-bold">¿Como conviene nombrar los lugares?</h2>
-          <p className="mt-1 text-sm text-[var(--color-suave)]">
+          <h2 className="titulo text-lg">¿Como conviene nombrar los lugares?</h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-humo)]">
             Lo mas practico es <strong>Zona</strong> (una letra por pared o pasillo),{" "}
             <strong>Rack</strong> (el anaquel numerado) y <strong>Nivel</strong> (la repisa,
             contando de abajo hacia arriba). Asi el codigo <span className="codigo">A-03-2</span>{" "}

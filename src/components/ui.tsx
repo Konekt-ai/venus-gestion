@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { IconoPin, IconoVacio } from "@/components/iconos";
 
 /** Piezas visuales que se repiten en todo el sistema. */
 
@@ -12,7 +13,7 @@ export function Tarjeta({
 }) {
   return (
     <div
-      className={`rounded-xl border border-[var(--color-borde)] bg-white p-4 sm:p-5 ${className}`}
+      className={`rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)] p-5 ${className}`}
     >
       {children}
     </div>
@@ -29,26 +30,32 @@ export function TituloPagina({
   accion?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">{titulo}</h1>
-        {descripcion && (
-          <p className="mt-1 text-sm text-[var(--color-suave)]">{descripcion}</p>
-        )}
+    <div className="mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="titulo text-[1.75rem] leading-tight sm:text-[2rem]">{titulo}</h1>
+          {descripcion && (
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-[var(--color-humo)]">
+              {descripcion}
+            </p>
+          )}
+        </div>
+        {accion}
       </div>
-      {accion}
+      <div className="filete mt-4" />
     </div>
   );
 }
 
-type Tono = "marca" | "ok" | "aviso" | "alto" | "neutro";
+type Tono = "oro" | "vino" | "ok" | "aviso" | "alto" | "neutro";
 
 const TONOS: Record<Tono, string> = {
-  marca: "bg-[var(--color-marca-50)] text-[var(--color-marca-700)]",
-  ok: "bg-[var(--color-ok-50)] text-[var(--color-ok-700)]",
-  aviso: "bg-[var(--color-aviso-50)] text-[var(--color-aviso-700)]",
-  alto: "bg-[var(--color-alto-50)] text-[var(--color-alto-700)]",
-  neutro: "bg-slate-100 text-slate-600",
+  oro: "bg-[var(--color-oro-palido)] text-[#7a6220]",
+  vino: "bg-[var(--color-vino-palido)] text-[var(--color-vino)]",
+  ok: "bg-[var(--color-verde-palido)] text-[var(--color-verde)]",
+  aviso: "bg-[var(--color-ambar-palido)] text-[var(--color-ambar)]",
+  alto: "bg-[var(--color-rojo-palido)] text-[var(--color-rojo)]",
+  neutro: "bg-[var(--color-crema)] text-[var(--color-humo)]",
 };
 
 export function Insignia({
@@ -60,7 +67,7 @@ export function Insignia({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold ${TONOS[tono]}`}
+      className={`inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[0.7rem] font-semibold ${TONOS[tono]}`}
     >
       {children}
     </span>
@@ -69,15 +76,16 @@ export function Insignia({
 
 const BOTONES = {
   primario:
-    "bg-[var(--color-marca-700)] text-white hover:bg-[var(--color-marca-900)] disabled:bg-slate-300",
+    "bg-[var(--color-vino)] text-white hover:bg-[var(--color-vino-oscuro)] disabled:bg-[var(--color-linea-fuerte)] disabled:text-white",
   secundario:
-    "bg-white text-[var(--color-texto)] border border-[var(--color-borde)] hover:bg-slate-50 disabled:text-slate-400",
-  peligro: "bg-[var(--color-alto-600)] text-white hover:bg-[var(--color-alto-700)]",
-  fantasma: "text-[var(--color-suave)] hover:bg-slate-100 hover:text-[var(--color-texto)]",
+    "bg-[var(--color-papel)] text-[var(--color-tinta)] border border-[var(--color-linea-fuerte)] hover:border-[var(--color-oro)] hover:bg-[var(--color-oro-tenue)] disabled:text-[var(--color-humo)] disabled:hover:border-[var(--color-linea-fuerte)] disabled:hover:bg-[var(--color-papel)]",
+  oscuro:
+    "bg-[var(--color-tinta)] text-[var(--color-oro-claro)] hover:bg-[var(--color-carbon)] disabled:bg-[var(--color-linea-fuerte)] disabled:text-white",
+  peligro: "bg-[var(--color-rojo)] text-white hover:brightness-90",
 };
 
 const BASE_BOTON =
-  "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed";
 
 export function Boton({
   children,
@@ -121,13 +129,13 @@ export function Aviso({
   children: ReactNode;
 }) {
   const estilos = {
-    ok: "border-[var(--color-ok-600)] bg-[var(--color-ok-50)] text-[var(--color-ok-700)]",
-    error: "border-[var(--color-alto-600)] bg-[var(--color-alto-50)] text-[var(--color-alto-700)]",
-    info: "border-[var(--color-borde)] bg-slate-50 text-[var(--color-suave)]",
+    ok: "border-[var(--color-verde)] bg-[var(--color-verde-palido)] text-[var(--color-verde)]",
+    error: "border-[var(--color-rojo)] bg-[var(--color-rojo-palido)] text-[var(--color-rojo)]",
+    info: "border-[var(--color-oro)] bg-[var(--color-oro-tenue)] text-[var(--color-humo)]",
   }[tipo];
 
   return (
-    <div className={`rounded-lg border-l-4 px-4 py-3 text-sm font-medium ${estilos}`}>
+    <div className={`rounded-sm border-l-2 px-4 py-3 text-sm font-medium ${estilos}`}>
       {children}
     </div>
   );
@@ -135,26 +143,28 @@ export function Aviso({
 
 /** Mensaje para cuando una lista no tiene nada que mostrar. */
 export function Vacio({
-  icono = "📭",
+  icono,
   titulo,
   descripcion,
   accion,
 }: {
-  icono?: string;
+  icono?: ReactNode;
   titulo: string;
   descripcion?: string;
   accion?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-[var(--color-borde)] bg-white px-6 py-12 text-center">
-      <div className="text-4xl" aria-hidden="true">
-        {icono}
+    <div className="rounded-sm border border-dashed border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] px-6 py-14 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-crema)] text-[var(--color-oro)]">
+        {icono ?? <IconoVacio tamano={24} />}
       </div>
-      <p className="mt-3 text-base font-semibold">{titulo}</p>
+      <p className="titulo text-lg">{titulo}</p>
       {descripcion && (
-        <p className="mx-auto mt-1 max-w-md text-sm text-[var(--color-suave)]">{descripcion}</p>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--color-humo)]">
+          {descripcion}
+        </p>
       )}
-      {accion && <div className="mt-4 flex justify-center">{accion}</div>}
+      {accion && <div className="mt-5 flex justify-center">{accion}</div>}
     </div>
   );
 }
@@ -173,14 +183,19 @@ export function Cifra({
 }) {
   const contenido = (
     <>
-      <div className="text-2xl font-bold sm:text-3xl">{valor}</div>
-      <div className="mt-0.5 text-xs font-medium text-[var(--color-suave)] sm:text-sm">{texto}</div>
+      <div className="titulo text-[1.75rem] leading-none sm:text-[2rem]">{valor}</div>
+      <div className="mt-1.5 text-xs leading-snug text-[var(--color-humo)] sm:text-[0.8125rem]">
+        {texto}
+      </div>
     </>
   );
 
-  const clases = `rounded-xl border border-[var(--color-borde)] p-4 ${
-    tono === "neutro" ? "bg-white" : TONOS[tono]
-  } ${href ? "transition hover:border-[var(--color-marca-500)]" : ""}`;
+  const base = "rounded-sm border p-4 transition-colors";
+  const color =
+    tono === "neutro"
+      ? "border-[var(--color-linea)] bg-[var(--color-papel)]"
+      : `border-transparent ${TONOS[tono]}`;
+  const clases = `${base} ${color} ${href ? "hover:border-[var(--color-oro)]" : ""}`;
 
   return href ? (
     <Link href={href} className={`block ${clases}`}>
@@ -204,20 +219,16 @@ export function Existencia({
   minimo?: number;
   tamano?: "normal" | "grande";
 }) {
-  const tono: Tono =
-    cantidad <= 0 ? "alto" : minimo > 0 && cantidad <= minimo ? "aviso" : "ok";
-
+  const tono: Tono = cantidad <= 0 ? "alto" : minimo > 0 && cantidad <= minimo ? "aviso" : "ok";
   const clases =
-    tamano === "grande"
-      ? "px-3 py-1.5 text-xl sm:text-2xl"
-      : "px-2 py-0.5 text-sm";
+    tamano === "grande" ? "px-3 py-1.5 text-2xl sm:text-3xl" : "px-2 py-0.5 text-sm";
 
   return (
     <span
-      className={`inline-flex items-baseline gap-1 rounded-lg font-bold ${TONOS[tono]} ${clases}`}
+      className={`inline-flex items-baseline gap-1 rounded-sm font-semibold tabular-nums ${TONOS[tono]} ${clases}`}
     >
       {cantidad}
-      <span className="text-[0.65em] font-semibold opacity-70">
+      <span className="text-[0.6em] font-semibold opacity-70">
         {cantidad === 1 ? "pza" : "pzas"}
       </span>
     </span>
@@ -234,18 +245,24 @@ export function PastillaUbicacion({
 }) {
   if (!codigo) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md bg-[var(--color-aviso-50)] px-2 py-0.5 text-xs font-semibold text-[var(--color-aviso-700)]">
+      <span className="inline-flex items-center rounded-sm bg-[var(--color-ambar-palido)] px-2 py-0.5 text-[0.7rem] font-semibold text-[var(--color-ambar)]">
         Sin ubicacion
       </span>
     );
   }
 
   const contenido = (
-    <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
-      <span aria-hidden="true">📍</span>
+    <span className="codigo inline-flex items-center gap-1 rounded-sm bg-[var(--color-crema)] px-2 py-0.5 text-[0.7rem] text-[var(--color-tinta)]">
+      <IconoPin tamano={12} />
       {codigo}
     </span>
   );
 
-  return href ? <Link href={href}>{contenido}</Link> : contenido;
+  return href ? (
+    <Link href={href} className="hover:opacity-70">
+      {contenido}
+    </Link>
+  ) : (
+    contenido
+  );
 }

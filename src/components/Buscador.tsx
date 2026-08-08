@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { IconoBuscar } from "@/components/iconos";
 
 /**
  * Buscador de modelos.
@@ -60,11 +61,8 @@ export function Buscador({
 
   return (
     <form onSubmit={enviar} className="relative">
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg"
-      >
-        🔎
+      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-oro)]">
+        <IconoBuscar tamano={19} />
       </span>
       <input
         ref={input}
@@ -75,7 +73,7 @@ export function Buscador({
         placeholder={placeholder}
         aria-label="Buscar modelo"
         autoComplete="off"
-        className="campo !py-3.5 !pl-12 !pr-4 !text-base"
+        className="campo !py-3.5 !pl-11 !pr-4 !text-base"
       />
     </form>
   );

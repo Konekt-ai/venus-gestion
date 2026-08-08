@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { buscarModelos, obtenerUbicacion } from "@/lib/consultas";
 import { AccionesUbicacion } from "@/components/AccionesUbicacion";
 import { BotonEnlace, Existencia, Tarjeta, Vacio } from "@/components/ui";
+import { IconoCaja, IconoEtiqueta, IconoVolver } from "@/components/iconos";
 
 export const dynamic = "force-dynamic";
 
@@ -20,15 +21,16 @@ export default async function DetalleUbicacion({ params }: { params: Promise<{ i
     <div className="space-y-5">
       <Link
         href="/ubicaciones"
-        className="no-imprimir inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-suave)] hover:text-[var(--color-texto)]"
+        className="no-imprimir inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-humo)] transition-colors hover:text-[var(--color-tinta)]"
       >
-        ← Volver a ubicaciones
+        <IconoVolver tamano={16} />
+        Volver a ubicaciones
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="codigo text-3xl sm:text-4xl">{ubicacion.codigo}</h1>
-          <p className="mt-1 text-sm text-[var(--color-suave)]">
+          <p className="mt-1 text-sm text-[var(--color-humo)]">
             Zona {ubicacion.zona}
             {ubicacion.rack && ` · Rack ${ubicacion.rack}`}
             {ubicacion.nivel && ` · Repisa ${ubicacion.nivel}`}
@@ -42,24 +44,27 @@ export default async function DetalleUbicacion({ params }: { params: Promise<{ i
           variante="secundario"
           className="no-imprimir"
         >
-          🖨️ Etiqueta
+          <IconoEtiqueta tamano={16} />
+          Etiqueta
         </BotonEnlace>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Tarjeta className="text-center">
           <p className="etiqueta">Modelos aqui</p>
-          <p className="mt-1 text-3xl font-bold">{modelos.length}</p>
+          <p className="titulo mt-1 text-3xl tabular-nums">{modelos.length}</p>
         </Tarjeta>
         <Tarjeta className="text-center">
           <p className="etiqueta">Piezas en total</p>
-          <p className="mt-1 text-3xl font-bold">{totalPiezas.toLocaleString("es-MX")}</p>
+          <p className="titulo mt-1 text-3xl tabular-nums">
+            {totalPiezas.toLocaleString("es-MX")}
+          </p>
         </Tarjeta>
       </div>
 
       {modelos.length === 0 ? (
         <Vacio
-          icono="📦"
+          icono={<IconoCaja tamano={24} />}
           titulo="Este lugar esta vacio"
           descripcion="Cuando asignes modelos a esta ubicacion apareceran aqui."
           accion={
@@ -70,18 +75,18 @@ export default async function DetalleUbicacion({ params }: { params: Promise<{ i
         />
       ) : (
         <section>
-          <h2 className="mb-3 text-lg font-bold">Que hay guardado aqui</h2>
+          <h2 className="titulo mb-3 text-xl">Que hay guardado aqui</h2>
           <Tarjeta className="!p-0">
-            <ul className="divide-y divide-[var(--color-borde)]">
+            <ul className="divide-y divide-[var(--color-linea)]">
               {modelos.map((m) => (
                 <li key={m.id}>
                   <Link
                     href={`/modelos/${m.id}`}
-                    className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50"
+                    className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-oro-tenue)]"
                   >
                     <span className="min-w-0">
                       <span className="codigo block">{m.codigo}</span>
-                      <span className="block truncate text-sm text-[var(--color-suave)]">
+                      <span className="block truncate text-sm text-[var(--color-humo)]">
                         {m.descripcion}
                       </span>
                     </span>

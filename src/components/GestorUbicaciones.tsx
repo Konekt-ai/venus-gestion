@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { generarUbicaciones, guardarUbicacion } from "@/acciones/ubicaciones";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
+import { IconoMas } from "@/components/iconos";
 
 /**
  * Alta de ubicaciones, en dos modos:
@@ -20,7 +21,8 @@ export function GestorUbicaciones({ hayUbicaciones }: { hayUbicaciones: boolean 
       {modo === null ? (
         <div className="flex flex-wrap gap-2">
           <Boton onClick={() => setModo("lote")}>
-            {hayUbicaciones ? "➕ Crear una zona completa" : "➕ Mapear la bodega"}
+            <IconoMas tamano={17} />
+            {hayUbicaciones ? "Crear una zona completa" : "Mapear la bodega"}
           </Boton>
           <Boton variante="secundario" onClick={() => setModo("una")}>
             Agregar un lugar suelto
@@ -82,7 +84,7 @@ function FormularioLote({
     <Tarjeta className="space-y-4">
       <div>
         <h2 className="text-base font-bold">Crear una zona completa</h2>
-        <p className="mt-0.5 text-sm text-[var(--color-suave)]">
+        <p className="mt-0.5 text-sm text-[var(--color-humo)]">
           Dile cuantos racks tiene la zona y cuantas repisas cada uno; se crean todos los lugares
           de una vez.
         </p>
@@ -139,7 +141,7 @@ function FormularioLote({
         </div>
 
         {total > 0 && (
-          <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+          <p className="rounded-sm bg-[var(--color-crema)] px-3 py-2 text-sm">
             Se crearan <strong>{total}</strong> lugares, desde{" "}
             <span className="codigo">
               {zona.toUpperCase()}-01-1
@@ -185,7 +187,7 @@ function FormularioUno({
     <Tarjeta className="space-y-4">
       <div>
         <h2 className="text-base font-bold">Agregar un lugar</h2>
-        <p className="mt-0.5 text-sm text-[var(--color-suave)]">
+        <p className="mt-0.5 text-sm text-[var(--color-humo)]">
           Solo la zona es obligatoria. Puedes usarlo para una tarima o una mesa dejando el rack y
           la repisa vacios.
         </p>

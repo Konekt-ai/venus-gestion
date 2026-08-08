@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listarUbicaciones } from "@/lib/consultas";
 import { BotonImprimir } from "@/components/BotonImprimir";
 import { Vacio } from "@/components/ui";
+import { IconoEtiqueta, IconoVolver } from "@/components/iconos";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function Etiquetas({ searchParams }: { searchParams: Params
   if (todas.length === 0) {
     return (
       <Vacio
-        icono="🏷️"
+        icono={<IconoEtiqueta tamano={24} />}
         titulo="No hay ubicaciones que etiquetar"
         descripcion="Primero crea las zonas y racks de la bodega."
       />
@@ -37,15 +38,16 @@ export default async function Etiquetas({ searchParams }: { searchParams: Params
       <div className="no-imprimir mb-5">
         <Link
           href="/ubicaciones"
-          className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-suave)] hover:text-[var(--color-texto)]"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-humo)] transition-colors hover:text-[var(--color-tinta)]"
         >
-          ← Volver a ubicaciones
+          <IconoVolver tamano={16} />
+          Volver a ubicaciones
         </Link>
 
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold sm:text-3xl">Etiquetas para los racks</h1>
-            <p className="mt-1 text-sm text-[var(--color-suave)]">
+            <h1 className="titulo text-[1.75rem] sm:text-[2rem]">Etiquetas para los racks</h1>
+            <p className="mt-1.5 text-sm text-[var(--color-humo)]">
               Imprime, recorta por la linea y pega cada etiqueta en su lugar. Salen 6 por hoja.
             </p>
           </div>
@@ -56,10 +58,10 @@ export default async function Etiquetas({ searchParams }: { searchParams: Params
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/ubicaciones/etiquetas"
-              className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
+              className={`rounded-sm border px-3 py-1.5 text-sm font-semibold transition-colors ${
                 !zonaFiltro
-                  ? "border-[var(--color-marca-700)] bg-[var(--color-marca-50)] text-[var(--color-marca-700)]"
-                  : "border-[var(--color-borde)] bg-white"
+                  ? "border-[var(--color-vino)] bg-[var(--color-vino-palido)] text-[var(--color-vino)]"
+                  : "border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] text-[var(--color-humo)] hover:border-[var(--color-oro)]"
               }`}
             >
               Todas ({todas.length})
@@ -70,10 +72,10 @@ export default async function Etiquetas({ searchParams }: { searchParams: Params
                 <Link
                   key={z}
                   href={`/ubicaciones/etiquetas?zona=${encodeURIComponent(z)}`}
-                  className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
+                  className={`rounded-sm border px-3 py-1.5 text-sm font-semibold transition-colors ${
                     zonaFiltro === z
-                      ? "border-[var(--color-marca-700)] bg-[var(--color-marca-50)] text-[var(--color-marca-700)]"
-                      : "border-[var(--color-borde)] bg-white"
+                      ? "border-[var(--color-vino)] bg-[var(--color-vino-palido)] text-[var(--color-vino)]"
+                      : "border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] text-[var(--color-humo)] hover:border-[var(--color-oro)]"
                   }`}
                 >
                   Zona {z} ({n})
@@ -90,18 +92,15 @@ export default async function Etiquetas({ searchParams }: { searchParams: Params
             key={u.id}
             className="hoja flex aspect-[3/2] flex-col items-center justify-center border border-dashed border-slate-300 p-4 text-center"
           >
-            <div className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-              Venus · Bodega
-            </div>
-            <div className="codigo my-2 text-5xl leading-none sm:text-6xl">{u.codigo}</div>
+            <div className="marca text-base text-[#8a6d1f]">Venus</div>
+            <div className="mt-0.5 h-px w-10 bg-[#c9ad63]" />
+            <div className="codigo my-3 text-5xl leading-none sm:text-6xl">{u.codigo}</div>
             <div className="text-sm text-slate-600">
               Zona {u.zona}
               {u.rack && ` · Rack ${u.rack}`}
               {u.nivel && ` · Repisa ${u.nivel}`}
             </div>
-            {u.descripcion && (
-              <div className="mt-1 text-xs text-slate-500">{u.descripcion}</div>
-            )}
+            {u.descripcion && <div className="mt-1 text-xs text-slate-500">{u.descripcion}</div>}
           </div>
         ))}
       </div>

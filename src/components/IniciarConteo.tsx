@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { iniciarConteo } from "@/acciones/conteos";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
+import { IconoConteo } from "@/components/iconos";
 
 /** Arranca un conteo nuevo, con un nombre para distinguirlo despues. */
 export function IniciarConteo() {
@@ -40,7 +41,8 @@ export function IniciarConteo() {
           />
         </div>
         <Boton type="submit" disabled={enviando} className="!py-3.5 !text-base">
-          {enviando ? "Iniciando..." : "✅ Empezar a contar"}
+          <IconoConteo tamano={18} />
+          {enviando ? "Iniciando..." : "Empezar a contar"}
         </Boton>
       </form>
     </Tarjeta>

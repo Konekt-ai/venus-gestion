@@ -68,7 +68,7 @@ export function ImportadorCSV() {
     <Tarjeta className="space-y-4">
       <div>
         <h2 className="text-base font-bold">Subir un archivo</h2>
-        <p className="mt-1 text-sm text-[var(--color-suave)]">
+        <p className="mt-1 text-sm text-[var(--color-humo)]">
           Guarda tu hoja de Excel como <strong>CSV</strong> y subela aqui. La primera fila debe
           traer los nombres de las columnas.
         </p>
@@ -87,16 +87,16 @@ export function ImportadorCSV() {
           type="file"
           accept=".csv,text/csv"
           onChange={alElegirArchivo}
-          className="campo cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-marca-700)] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+          className="campo cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-vino)] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
         />
       </div>
 
       {procesando && !vista && (
-        <p className="text-sm text-[var(--color-suave)]">Revisando el archivo...</p>
+        <p className="text-sm text-[var(--color-humo)]">Revisando el archivo...</p>
       )}
 
       {vista && (
-        <div className="space-y-3 rounded-lg border-2 border-[var(--color-marca-500)] bg-[var(--color-marca-50)] p-4">
+        <div className="space-y-3 rounded-sm border-2 border-[var(--color-oro)] bg-[var(--color-vino-palido)] p-4">
           <p className="font-semibold">Asi quedaria «{nombreArchivo}»:</p>
 
           <ul className="space-y-1 text-sm">
@@ -107,7 +107,7 @@ export function ImportadorCSV() {
               <strong>{vista.actualizados}</strong> modelos que ya existen y se actualizarian
             </li>
             {vista.omitidos.length > 0 && (
-              <li className="text-[var(--color-alto-700)]">
+              <li className="text-[var(--color-rojo)]">
                 <strong>{vista.omitidos.length}</strong> renglones se omitirian
               </li>
             )}
@@ -118,12 +118,12 @@ export function ImportadorCSV() {
               <summary className="cursor-pointer font-semibold">Ver que se omite</summary>
               <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
                 {vista.omitidos.slice(0, 50).map((o) => (
-                  <li key={o.fila} className="text-[var(--color-suave)]">
+                  <li key={o.fila} className="text-[var(--color-humo)]">
                     Fila {o.fila}: {o.motivo}
                   </li>
                 ))}
                 {vista.omitidos.length > 50 && (
-                  <li className="text-[var(--color-suave)]">
+                  <li className="text-[var(--color-humo)]">
                     …y {vista.omitidos.length - 50} mas
                   </li>
                 )}
@@ -131,7 +131,7 @@ export function ImportadorCSV() {
             </details>
           )}
 
-          <p className="text-xs text-[var(--color-suave)]">
+          <p className="text-xs text-[var(--color-humo)]">
             Todavia no se ha guardado nada. Los modelos que ya existen conservan su historial: si
             la cantidad del archivo es distinta, se registra como un ajuste.
           </p>
@@ -149,7 +149,7 @@ export function ImportadorCSV() {
 
       <details className="text-sm">
         <summary className="cursor-pointer font-semibold">¿Que columnas debe tener?</summary>
-        <div className="mt-2 space-y-2 text-[var(--color-suave)]">
+        <div className="mt-2 space-y-2 text-[var(--color-humo)]">
           <p>
             La unica obligatoria es <strong>codigo</strong> (o <strong>modelo</strong>). Las demas
             son opcionales y se reconocen con varios nombres:

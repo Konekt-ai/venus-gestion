@@ -116,7 +116,7 @@ export function FiltrosModelos({
             const q = parametros.get("q");
             router.replace(q ? `/modelos?q=${encodeURIComponent(q)}` : "/modelos");
           }}
-          className="rounded-lg px-3 py-2 text-sm font-semibold text-[var(--color-suave)] hover:bg-slate-100"
+          className="rounded-sm px-3 py-2 text-sm font-semibold text-[var(--color-humo)] hover:bg-[var(--color-crema)]"
         >
           Quitar filtros
         </button>
