@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ESQUEMA } from "./esquema";
-import { sembrarEjemplo } from "./ejemplo";
+import { sembrarCatalogo, sembrarDemostracion } from "./siembra";
 
 /**
  * Conexion unica a la base de datos.
@@ -76,17 +76,19 @@ function abrir(): Database.Database {
   db.exec(ESQUEMA);
   sembrarCatalogos(db);
 
-  // La demo se llena sola: si no, se veria un sistema vacio. Va aqui
-  // dentro y no en getDb() para que ocurra una sola vez por instancia,
-  // en la misma pasada en que se crea el archivo.
-  if (MODO_DEMO) {
-    try {
-      sembrarEjemplo(db);
-    } catch (e) {
-      // Que la demo no se caiga por no poder sembrar: es preferible
-      // ensenarla vacia que con un error en pantalla.
-      console.error("No se pudieron cargar los datos de ejemplo:", e);
-    }
+  // El catalogo del cliente se carga solo la primera vez, en la bodega y
+  // en la demostracion por igual: un sistema vacio no le sirve a nadie.
+  // Va aqui dentro y no en getDb() para que ocurra una sola vez por
+  // instancia, en la misma pasada en que se crea el archivo.
+  try {
+    sembrarCatalogo(db);
+    // En la demostracion ademas se inventan ubicaciones y existencias,
+    // para que se vea como se veria una bodega ya acomodada.
+    if (MODO_DEMO) sembrarDemostracion(db);
+  } catch (e) {
+    // Que el sistema no se caiga por no poder sembrar: es preferible
+    // abrirlo vacio que con un error en pantalla.
+    console.error("No se pudo cargar el catalogo inicial:", e);
   }
 
   return db;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { registrarEntrada, registrarRemision } from "@/acciones/movimientos";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "@/lib/codigos";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
+import { FotoModelo } from "@/components/FotoModelo";
 import { IconoCerrar } from "@/components/iconos";
 import type { Destino } from "@/lib/tipos";
 
@@ -19,6 +20,9 @@ export type ModeloElegible = {
   en_tienda: number;
   en_tianguis: number;
   ubicacion_codigo: string | null;
+  /* Opcional a proposito: las pantallas que arman este objeto se fueron
+     sumando una por una y sin foto siguen funcionando. */
+  foto?: string | null;
 };
 
 type Renglon = { modelo: ModeloElegible; cantidad: number };
@@ -206,9 +210,12 @@ export function ArmadorEnvio({
                 <button
                   type="button"
                   onClick={() => agregar(m)}
-                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[var(--color-vino-palido)]"
+                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[var(--color-vino-palido)]"
                 >
-                  <span className="min-w-0">
+                  {/* La foto va antes que el codigo: con 129 modelos, lo que
+                      confirma que es la prenda buena es verla, no leerla. */}
+                  <FotoModelo foto={m.foto ?? null} descripcion={m.descripcion} tamano="mini" />
+                  <span className="min-w-0 flex-1">
                     <span className="codigo block text-sm">{m.codigo}</span>
                     <span className="block truncate text-xs text-[var(--color-humo)]">
                       {m.descripcion}
@@ -235,6 +242,11 @@ export function ArmadorEnvio({
               const excede = modo.clase !== "entrada" && r.cantidad > max;
               return (
                 <li key={r.modelo.id} className="flex items-center gap-3 p-3">
+                  <FotoModelo
+                    foto={r.modelo.foto ?? null}
+                    descripcion={r.modelo.descripcion}
+                    tamano="mini"
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="codigo text-sm">{r.modelo.codigo}</div>
                     <div className="truncate text-xs text-[var(--color-humo)]">

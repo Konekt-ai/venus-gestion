@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listarCatalogo, nombresDeLineas, prefijosEnUso, resumen } from "@/lib/consultas";
+import { usaTianguis } from "@/lib/ajustes";
 import { MODO_DEMO, RUTA_BASE_DATOS } from "@/lib/db";
 import { rutaLogo } from "@/lib/logo";
 import { DESARROLLADOR, NOMBRE_SISTEMA } from "@/lib/marca";
@@ -7,6 +8,7 @@ import { ImportadorCSV } from "@/components/ImportadorCSV";
 import { DireccionRed } from "@/components/DireccionRed";
 import { ReiniciarDemo } from "@/components/ReiniciarDemo";
 import { EditorLineas } from "@/components/EditorLineas";
+import { InterruptorTianguis } from "@/components/InterruptorTianguis";
 import { Tarjeta, TituloPagina } from "@/components/ui";
 import {
   IconoDescargar,
@@ -14,12 +16,14 @@ import {
   IconoEntrada,
   IconoEtiqueta,
   IconoHistorial,
+  IconoPersona,
 } from "@/components/iconos";
 
 export const dynamic = "force-dynamic";
 
 const ENLACES_EXTRA = [
   { href: "/entradas", texto: "Entradas de mercancia", Icono: IconoEntrada },
+  { href: "/personal", texto: "Personal", Icono: IconoPersona },
   { href: "/movimientos", texto: "Historial completo", Icono: IconoHistorial },
   { href: "/ubicaciones/etiquetas", texto: "Etiquetas de racks", Icono: IconoEtiqueta },
 ];
@@ -39,7 +43,7 @@ export default function Configuracion() {
       <TituloPagina titulo="Ajustes" descripcion="Respaldos, importacion y datos del sistema." />
 
       {/* En celular la barra de abajo no lleva todo; aqui esta el resto. */}
-      <div className="grid gap-2 sm:grid-cols-3 md:hidden">
+      <div className="grid gap-2 sm:grid-cols-2 md:hidden">
         {ENLACES_EXTRA.map(({ href, texto, Icono }) => (
           <Link
             key={href}
@@ -124,6 +128,8 @@ export default function Configuracion() {
         prefijos={prefijosEnUso()}
         nombres={Object.fromEntries(nombresDeLineas())}
       />
+
+      <InterruptorTianguis encendido={usaTianguis()} />
 
       <ImportadorCSV />
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { guardarModelo } from "@/acciones/modelos";
 import { formatearCodigo } from "@/lib/codigos";
+import { FotoModelo } from "@/components/FotoModelo";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
 import type { ModeloConUbicacion } from "@/lib/tipos";
 import type { UbicacionConTotales } from "@/lib/consultas";
@@ -32,6 +33,7 @@ export function FormularioModelo({
   const editando = Boolean(modelo);
 
   const [codigo, setCodigo] = useState(modelo?.codigo ?? codigoSugerido);
+  const [foto, setFoto] = useState(modelo?.foto ?? "");
 
   useEffect(() => {
     if (estado?.ok && estado.datos) {
@@ -165,6 +167,47 @@ export function FormularioModelo({
                 <option key={t} value={t} />
               ))}
             </datalist>
+          </div>
+        </div>
+      </Tarjeta>
+
+      <Tarjeta className="space-y-4">
+        <h2 className="titulo text-lg">Foto de la prenda</h2>
+
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-start">
+          <div>
+            <label htmlFor="foto" className="etiqueta">
+              Ruta de la foto
+            </label>
+            <input
+              id="foto"
+              name="foto"
+              value={foto}
+              onChange={(e) => setFoto(e.target.value)}
+              placeholder="/catalogo/VD194.jpg"
+              autoComplete="off"
+              spellCheck={false}
+              className="campo"
+            />
+            <p className="mt-1 text-xs leading-relaxed text-[var(--color-humo)]">
+              El archivo va en la carpeta <strong>public/catalogo</strong> y aqui se escribe
+              su ruta, empezando con diagonal: <strong>/catalogo/VD194.jpg</strong>. Todavia
+              no se pueden subir fotos desde aqui.
+            </p>
+          </div>
+
+          {/* La vista previa es la unica forma de saber que la ruta esta bien
+              escrita sin guardar y regresar. Si el archivo no existe, el
+              navegador pinta su icono de imagen rota, que tambien avisa. */}
+          <div className="w-40 sm:w-full">
+            <span className="etiqueta">Asi se vera</span>
+            <div className="aspect-[3/4] w-full overflow-hidden rounded-sm border border-[var(--color-linea)] bg-[var(--color-crema)]">
+              <FotoModelo
+                foto={foto.trim() || null}
+                descripcion={modelo?.descripcion}
+                tamano="grande"
+              />
+            </div>
           </div>
         </div>
       </Tarjeta>

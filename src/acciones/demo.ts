@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getDb, MODO_DEMO } from "@/lib/db";
-import { sembrarEjemplo } from "@/lib/ejemplo";
+import { sembrarCatalogo, sembrarDemostracion } from "@/lib/siembra";
 import type { Resultado } from "@/lib/tipos";
 
 /**
@@ -31,7 +31,8 @@ export async function reiniciarDemo(): Promise<Resultado> {
         DELETE FROM lineas;
         DELETE FROM config;
       `);
-      sembrarEjemplo(db);
+      sembrarCatalogo(db);
+      sembrarDemostracion(db);
     })();
   } catch {
     return { ok: false, error: "No se pudo reiniciar la demostracion." };

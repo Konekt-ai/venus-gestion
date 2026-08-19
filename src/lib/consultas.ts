@@ -1,7 +1,9 @@
 import "server-only";
 import { getDb } from "./db";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "./codigos";
+import { hayFoto } from "./fotos";
 import type {
+  Persona,
   Conteo,
   ConteoLineaConModelo,
   Linea,
@@ -18,6 +20,19 @@ const CAMPOS_MODELO = `
   u.zona   AS ubicacion_zona
 `;
 
+
+/**
+ * Deja en blanco la foto de los modelos cuyo archivo no esta en el disco.
+ *
+ * La carpeta de fotos no viaja en el repositorio (son del cliente), asi
+ * que una copia recien clonada tiene los modelos apuntando a fotos que
+ * no existen. Vaciarlo aqui, de una vez, hace que todas las pantallas
+ * dibujen la percha en vez de una imagen rota.
+ */
+function conFotosReales<T extends { foto: string }>(filas: T[]): T[] {
+  return filas.map((f) => (hayFoto(f.foto) ? f : { ...f, foto: "" }));
+}
+
 /* ============================================================
    BUSQUEDA
    ============================================================ */
@@ -30,6 +45,13 @@ export type FiltrosBusqueda = {
   /** Filtra por la linea del codigo: VD, VN, PD... */
   prefijo?: string;
   categoria?: string;
+  /** Solo los que el cliente marco como "mas vendidos". */
+  soloDestacados?: boolean;
+  /**
+   * Muestra los modelos dados de baja en vez de los activos.
+   * Es la unica forma de encontrarlos para volver a activarlos.
+   */
+  archivados?: boolean;
   /** 'todos' | 'con' (hay piezas) | 'sin' (agotado) | 'bajo' (por debajo del minimo) */
   existencia?: string;
   /** 'codigo' | 'existencia' | 'reciente' | 'ubicacion' */
@@ -49,7 +71,7 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConUbicacion
   const q = (filtros.q ?? "").trim();
   const limite = Math.min(filtros.limite ?? 300, 2000);
 
-  const condiciones: string[] = ["m.activo = 1"];
+  const condiciones: string[] = [filtros.archivados ? "m.activo = 0" : "m.activo = 1"];
   const params: Record<string, unknown> = { limite };
 
   if (q) {
@@ -94,6 +116,10 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConUbicacion
   if (filtros.categoria) {
     condiciones.push("m.categoria = @categoria");
     params.categoria = normalizarTexto(filtros.categoria);
+  }
+
+  if (filtros.soloDestacados) {
+    condiciones.push("m.destacado = 1");
   }
 
   switch (filtros.existencia) {
@@ -149,7 +175,7 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConUbicacion
     LIMIT @limite
   `;
 
-  return db.prepare(sql).all(params) as ModeloConUbicacion[];
+  return conFotosReales(db.prepare(sql).all(params) as ModeloConUbicacion[]);
 }
 
 /* ============================================================
@@ -166,7 +192,7 @@ export function obtenerModelo(id: number): ModeloConUbicacion | null {
        WHERE m.id = ?`
     )
     .get(id) as ModeloConUbicacion | undefined;
-  return fila ?? null;
+  return fila ? conFotosReales([fila])[0] : null;
 }
 
 export function obtenerModeloPorCodigo(codigo: string): ModeloConUbicacion | null {
@@ -179,7 +205,7 @@ export function obtenerModeloPorCodigo(codigo: string): ModeloConUbicacion | nul
        WHERE m.codigo_norm = ?`
     )
     .get(normalizarCodigo(codigo)) as ModeloConUbicacion | undefined;
-  return fila ?? null;
+  return fila ? conFotosReales([fila])[0] : null;
 }
 
 export function movimientosDeModelo(modeloId: number, limite = 50): MovimientoConModelo[] {
@@ -260,6 +286,22 @@ export function prefijosEnUso(): { prefijo: string; total: number }[] {
        GROUP BY prefijo ORDER BY total DESC, prefijo`
     )
     .all() as { prefijo: string; total: number }[];
+}
+
+/**
+ * Tipos de prenda que de verdad hay capturados, del mas comun al menos.
+ * Se cuentan aqui y no se listan a mano porque el catalogo del cliente
+ * crece: si un dia da de alta un CHALECO nuevo, aparece solo.
+ */
+export function categoriasEnUso(): { categoria: string; total: number }[] {
+  const db = getDb();
+  return db
+    .prepare(
+      `SELECT categoria, COUNT(*) AS total
+       FROM modelos WHERE activo = 1 AND categoria <> ''
+       GROUP BY categoria ORDER BY total DESC, categoria`
+    )
+    .all() as { categoria: string; total: number }[];
 }
 
 /* ============================================================
@@ -362,6 +404,13 @@ export type Resumen = {
   bajos: number;
   sin_ubicacion: number;
   total_ubicaciones: number;
+  /**
+   * false mientras la bodega no se haya contado ni una vez.
+   * Recien instalado, el catalogo esta cargado pero todo vale cero: los
+   * avisos de "agotado" son ruido y lo que hace falta es cargar las
+   * cantidades, no surtir.
+   */
+  ya_hubo_inventario: boolean;
 };
 
 export function resumen(): Resumen {
@@ -385,13 +434,18 @@ export function resumen(): Resumen {
     n: number;
   };
 
-  return { ...r, total_ubicaciones: u.n };
+  // Cualquier movimiento sirve como senal de que ya empezaron a usarlo.
+  const mov = db.prepare("SELECT EXISTS(SELECT 1 FROM movimientos) AS hay").get() as {
+    hay: number;
+  };
+
+  return { ...r, total_ubicaciones: u.n, ya_hubo_inventario: mov.hay === 1 };
 }
 
 /** Modelos que ya se agotaron o van bajos, para avisar en el inicio. */
 export function modelosPorSurtir(limite = 12): ModeloConUbicacion[] {
   const db = getDb();
-  return db
+  return conFotosReales(db
     .prepare(
       `SELECT ${CAMPOS_MODELO}
        FROM modelos m
@@ -401,12 +455,25 @@ export function modelosPorSurtir(limite = 12): ModeloConUbicacion[] {
        ORDER BY m.existencia, m.prefijo, m.numero
        LIMIT ?`
     )
-    .all(limite) as ModeloConUbicacion[];
+    .all(limite) as ModeloConUbicacion[]);
 }
 
 export function todosLosModelos(): Modelo[] {
   const db = getDb();
+  return conFotosReales(
+    db.prepare("SELECT * FROM modelos WHERE activo = 1 ORDER BY prefijo, numero").all() as Modelo[]
+  );
+}
+
+/* ============================================================
+   PERSONAL
+   ============================================================ */
+
+/** Personal activo, para elegir quien hace cada movimiento. */
+export function listarPersonal(soloActivos = true): Persona[] {
+  const db = getDb();
+  const donde = soloActivos ? "WHERE activo = 1" : "";
   return db
-    .prepare("SELECT * FROM modelos WHERE activo = 1 ORDER BY prefijo, numero")
-    .all() as Modelo[];
+    .prepare(`SELECT * FROM personal ${donde} ORDER BY activo DESC, orden, nombre`)
+    .all() as Persona[];
 }

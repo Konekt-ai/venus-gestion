@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { modelosPorSurtir, movimientosRecientes, resumen } from "@/lib/consultas";
+import { usaTianguis } from "@/lib/ajustes";
 import { Buscador } from "@/components/Buscador";
-import { Cifra, Existencia, PastillaUbicacion, Vacio } from "@/components/ui";
+import { BotonEnlace, Cifra, Existencia, PastillaUbicacion, Vacio } from "@/components/ui";
 import {
   IconoConteo,
   IconoEntrada,
@@ -14,38 +15,57 @@ import { NOMBRE_MOVIMIENTO } from "@/lib/tipos";
 
 export const dynamic = "force-dynamic";
 
-const ACCESOS = [
-  {
-    href: "/modelos/nuevo",
-    Icono: IconoMas,
-    titulo: "Dar de alta un modelo",
-    texto: "Registrar una prenda nueva en el catalogo",
-  },
-  {
-    href: "/entradas",
-    Icono: IconoEntrada,
-    titulo: "Llego mercancia",
-    texto: "Sumar piezas que acaban de entrar a bodega",
-  },
-  {
-    href: "/salidas",
-    Icono: IconoSalida,
-    titulo: "Sacar a tienda o tianguis",
-    texto: "Armar el envio y generar la hoja para firmar",
-  },
-  {
-    href: "/conteo",
-    Icono: IconoConteo,
-    titulo: "Contar la bodega",
-    texto: "Revisar rack por rack y cuadrar existencias",
-  },
-];
+// Nombrar el tianguis en el atajo mientras esta apagado manda a buscar una
+// pestana que no existe, por eso el titulo depende del ajuste.
+function accesos(conTianguis: boolean) {
+  return [
+    {
+      href: "/modelos/nuevo",
+      Icono: IconoMas,
+      titulo: "Dar de alta un modelo",
+      texto: "Registrar una prenda nueva en el catalogo",
+    },
+    {
+      href: "/entradas",
+      Icono: IconoEntrada,
+      titulo: "Llego mercancia",
+      texto: "Sumar piezas que acaban de entrar a bodega",
+    },
+    {
+      href: "/salidas",
+      Icono: IconoSalida,
+      titulo: conTianguis ? "Sacar a tienda o tianguis" : "Sacar a tienda",
+      texto: "Armar el envio y generar la hoja para firmar",
+    },
+    {
+      href: "/conteo",
+      Icono: IconoConteo,
+      titulo: "Contar la bodega",
+      texto: "Revisar rack por rack y cuadrar existencias",
+    },
+  ];
+}
 
 export default function Inicio() {
   const datos = resumen();
+  const conTianguis = usaTianguis();
   const porSurtir = modelosPorSurtir(6);
   const recientes = movimientosRecientes(6);
   const bodegaVacia = datos.total_modelos === 0;
+  // Recien instalado: el catalogo esta cargado pero nadie ha contado nada.
+  // Ahi los avisos de "agotado" y "hay que surtir" no dicen nada util,
+  // porque TODO esta en cero. Lo que hace falta es cargar las cantidades.
+  const faltaInventariar = !bodegaVacia && !datos.ya_hubo_inventario;
+
+  // Se arma aparte porque, sin la cifra del tianguis, esta es la que se
+  // lleva el renglon completo del telefono.
+  const cifraTienda = (
+    <Cifra
+      valor={datos.piezas_tienda.toLocaleString("es-MX")}
+      texto="Estan en la tienda"
+      href="/movimientos?tipo=salida_tienda"
+    />
+  );
 
   return (
     <div className="space-y-8">
@@ -65,6 +85,37 @@ export default function Inicio() {
           </Suspense>
         </div>
       </section>
+
+      {/* El primer dia el catalogo ya esta, pero todo vale cero. En vez de
+          la alarma roja de "129 agotados", que ahi no significa nada, se
+          dice cual es el siguiente paso y se lleva directo a hacerlo. */}
+      {faltaInventariar && (
+        <section className="rounded-sm border border-[var(--color-oro)] bg-[var(--color-oro-tenue)] p-5">
+          <h2 className="titulo text-xl">Falta cargar cuantas piezas hay</h2>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-[var(--color-humo)]">
+            El catalogo ya tiene los{" "}
+            <strong className="font-semibold text-[var(--color-tinta)]">
+              {datos.total_modelos}
+            </strong>{" "}
+            modelos con su foto, pero todavia nadie ha contado la bodega, por eso todo aparece en
+            cero. Recorre los racks con el celular y anota lo que veas: las cantidades quedan al
+            cerrar el conteo.
+          </p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <BotonEnlace href="/conteo" className="w-full justify-center sm:w-auto">
+              <IconoConteo tamano={17} />
+              Empezar a contar la bodega
+            </BotonEnlace>
+            <BotonEnlace
+              href="/ubicaciones"
+              variante="secundario"
+              className="w-full justify-center sm:w-auto"
+            >
+              Antes: mapear los racks
+            </BotonEnlace>
+          </div>
+        </section>
+      )}
 
       {bodegaVacia ? (
         <Vacio
@@ -92,7 +143,11 @@ export default function Inicio() {
         <>
           <section>
             <h2 className="sr-only">Resumen</h2>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div
+              className={`grid grid-cols-2 gap-3 ${
+                conTianguis ? "lg:grid-cols-4" : "lg:grid-cols-3"
+              }`}
+            >
               <Cifra
                 valor={datos.total_piezas.toLocaleString("es-MX")}
                 texto="Piezas en bodega"
@@ -103,20 +158,23 @@ export default function Inicio() {
                 texto="Modelos distintos"
                 href="/modelos"
               />
-              <Cifra
-                valor={datos.piezas_tienda.toLocaleString("es-MX")}
-                texto="Estan en la tienda"
-                href="/movimientos?tipo=salida_tienda"
-              />
-              <Cifra
-                valor={datos.piezas_tianguis.toLocaleString("es-MX")}
-                texto="Estan en el tianguis"
-                href="/movimientos?tipo=salida_tianguis"
-              />
+              {conTianguis ? (
+                <>
+                  {cifraTienda}
+                  <Cifra
+                    valor={datos.piezas_tianguis.toLocaleString("es-MX")}
+                    texto="Estan en el tianguis"
+                    href="/movimientos?tipo=salida_tianguis"
+                  />
+                </>
+              ) : (
+                <div className="col-span-2 lg:col-span-1">{cifraTienda}</div>
+              )}
             </div>
           </section>
 
-          {(datos.agotados > 0 || datos.bajos > 0 || datos.sin_ubicacion > 0) && (
+          {!faltaInventariar &&
+            (datos.agotados > 0 || datos.bajos > 0 || datos.sin_ubicacion > 0) && (
             <section className="grid gap-3 sm:grid-cols-3">
               {datos.agotados > 0 && (
                 <Cifra
@@ -150,7 +208,7 @@ export default function Inicio() {
       <section>
         <h2 className="titulo mb-3 text-xl">¿Que quieres hacer?</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          {ACCESOS.map(({ href, Icono, titulo, texto }) => (
+          {accesos(conTianguis).map(({ href, Icono, titulo, texto }) => (
             <Link
               key={href}
               href={href}
@@ -170,7 +228,7 @@ export default function Inicio() {
         </div>
       </section>
 
-      {porSurtir.length > 0 && (
+      {!faltaInventariar && porSurtir.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="titulo text-xl">Hay que surtir</h2>

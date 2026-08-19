@@ -124,6 +124,17 @@ export function IconoAjustes(p: Props) {
   );
 }
 
+
+/** Cabeza y hombros: el personal del negocio. */
+export function IconoPersona(p: Props) {
+  return (
+    <Base {...p}>
+      <circle cx="12" cy="8.25" r="3.5" />
+      <path d="M5 19.75c0-3.2 3.13-5.25 7-5.25s7 2.05 7 5.25" />
+    </Base>
+  );
+}
+
 /* ---------- Acciones ---------- */
 
 export function IconoBuscar(p: Props) {

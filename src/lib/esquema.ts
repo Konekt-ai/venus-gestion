@@ -165,6 +165,22 @@ CREATE TABLE IF NOT EXISTS catalogos (
 );
 
 -- ------------------------------------------------------------
+-- Personal: quien trabaja en la bodega y en la tienda.
+-- Sirve para firmar los movimientos (quien saco, quien recibio) en
+-- vez de escribir el nombre a mano cada vez.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS personal (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  nombre     TEXT    NOT NULL,
+  puesto     TEXT    NOT NULL DEFAULT '',
+  activo     INTEGER NOT NULL DEFAULT 1,
+  orden      INTEGER NOT NULL DEFAULT 0,
+  creado_en  TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_personal_activo ON personal(activo, nombre);
+
+-- ------------------------------------------------------------
 -- Configuracion general (nombre del negocio, folio actual, etc.)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS config (

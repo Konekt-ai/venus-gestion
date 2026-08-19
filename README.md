@@ -116,6 +116,84 @@ sobrescribir en silencio.
 
 ---
 
+## El catalogo del cliente
+
+Los **129 modelos** que la boutique tiene a la venta ya vienen cargados, con
+la foto de cada prenda. Salieron del PDF del cliente
+(*MODELOS MAS VENDIDOS + MODELOS VARIADOS*), que trae una ficha por modelo.
+
+| | |
+| --- | --- |
+| Vestidos | 49 |
+| Conjuntos | 23 |
+| Blusas | 19 |
+| Palazzos | 8 |
+| Pantalones | 7 |
+| Shorts, sacos, faldas y demas | 23 |
+
+Los 14 que el cliente marca como **mas vendidos** salen con estrella y se
+pueden filtrar aparte. El catalogo tambien trae la ficha tecnica de cada
+prenda (tela, indicaciones de confeccion y avios), que aparece en su pantalla.
+
+**Los modelos entran sin existencias, y eso es lo correcto**: el catalogo dice
+que se vende, no cuanto hay. Las cantidades salen del primer conteo fisico.
+
+### Si el cliente manda un catálogo nuevo
+
+```bash
+npm run catalogo -- "ruta/del/catalogo.pdf"   # lee el PDF, saca fotos y fichas
+npm run catalogo:importar                     # lo mete a la base
+```
+
+El segundo paso **no pisa el inventario**: a los modelos que ya existen sólo
+les actualiza la ficha (nombre, tela, foto), nunca las existencias ni la
+ubicación.
+
+---
+
+### Lo que NO viaja en el repositorio
+
+Estas carpetas estan fuera de GitHub a proposito, porque son material del
+cliente:
+
+| Carpeta | Qué trae |
+| --- | --- |
+| `public/catalogo/` | Las 129 fotos de las prendas |
+| `public/logo.png` | El logo de la tienda |
+| `docs/` | Documentos internos del proyecto |
+| `data/venus.db` | El inventario |
+| El PDF del catálogo | El original que mandó el cliente |
+
+**Al instalar en otra computadora hay que copiarlas a mano** (por USB o por
+correo), después de clonar el repositorio. El sistema arranca igual sin ellas
+—los modelos aparecen con una percha en vez de la foto, y el nombre se escribe
+con letras en lugar del logo— pero se ve a medias.
+
+Si se perdieran las fotos, se vuelven a sacar del PDF:
+
+```bash
+npm run catalogo -- "MODELOS MAS VENDIDOS + MODELOS VARIADOS.pdf"
+```
+
+---
+
+## Personal
+
+En **Personal** se da de alta a quien trabaja en la bodega y en la tienda. Al
+registrar un movimiento se elige de esa lista en vez de escribir el nombre,
+asi queda firmado quien saco y quien recibio. Dar de baja a alguien no borra
+su historial.
+
+---
+
+## Tianguis
+
+Viene **apagado**, como pidio el cliente: por ahora solo bodega y tienda. Se
+prende desde *Ajustes* cuando lo necesiten y todas las pantallas lo vuelven a
+ofrecer solas. Apagarlo nunca borra lo que se haya registrado.
+
+---
+
 ## Desde el celular
 
 El sistema está pensado para usarse de pie entre los racks, con el teléfono
@@ -169,9 +247,15 @@ npm install
 npm run dev              # servidor de desarrollo en el puerto 3000
 npm test                 # pruebas del núcleo
 npm run build && npm start
-npm run datos:ejemplo    # carga modelos de prueba
-npm run datos:ejemplo -- --limpiar   # borra todo y recarga
+npm run datos                      # carga el catálogo (sin existencias)
+npm run datos -- --demo            # además inventa existencias, para enseñarlo
+npm run datos -- --limpiar         # borra todo y recarga
+npm run catalogo -- "cat.pdf"      # regenera el catálogo desde un PDF nuevo
+npm run logo                       # quita el fondo a public/logo.jpeg
 ```
+
+> En la bodega nada de esto hace falta: el sistema carga el catálogo solo la
+> primera vez que se abre.
 
 ### Cómo está armado
 

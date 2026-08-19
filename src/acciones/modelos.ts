@@ -54,6 +54,7 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
     minimo,
     ubicacion_id: ubicacionId,
     notas: texto(form.get("notas")),
+    foto: texto(form.get("foto")),
     destacado: form.get("destacado") ? 1 : 0,
   };
 
@@ -73,7 +74,7 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
            codigo = @codigo, codigo_norm = @codigo_norm, prefijo = @prefijo, numero = @numero,
            descripcion = @descripcion, categoria = @categoria, tallas = @tallas,
            colores = @colores, tela = @tela, minimo = @minimo, ubicacion_id = @ubicacion_id,
-           notas = @notas, destacado = @destacado,
+           notas = @notas, foto = @foto, destacado = @destacado,
            actualizado_en = datetime('now','localtime')
          WHERE id = @id`
       ).run({ ...campos, id });
@@ -91,9 +92,9 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
         .prepare(
           `INSERT INTO modelos
              (codigo, codigo_norm, prefijo, numero, descripcion, categoria,
-              tallas, colores, tela, minimo, ubicacion_id, notas, destacado)
+              tallas, colores, tela, minimo, ubicacion_id, notas, foto, destacado)
            VALUES (@codigo, @codigo_norm, @prefijo, @numero, @descripcion, @categoria,
-                   @tallas, @colores, @tela, @minimo, @ubicacion_id, @notas, @destacado)`
+                   @tallas, @colores, @tela, @minimo, @ubicacion_id, @notas, @foto, @destacado)`
         )
         .run(campos);
 

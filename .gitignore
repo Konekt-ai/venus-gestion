@@ -9,9 +9,16 @@ data/*.db-shm
 data/*.db-wal
 respaldos/
 
-# Fotos subidas de los modelos
-public/fotos/*
-!public/fotos/.gitkeep
+# Material del cliente: su catalogo de prendas, las fotos y el logo.
+# NO va a GitHub. Vive solo en la computadora donde se instala.
+# Si hiciera falta rehacerlo:  npm run catalogo -- "catalogo.pdf"
+public/
+
+# Documentos internos del proyecto (entregables, prompts, notas)
+docs/
+
+# El PDF original del cliente: pesa 11 MB y ya esta procesado.
+*.pdf
 
 .env
 .env.local

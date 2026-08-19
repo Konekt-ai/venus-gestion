@@ -72,6 +72,7 @@ export default function PaginaConteo() {
     en_tienda: m.en_tienda,
     en_tianguis: m.en_tianguis,
     ubicacion_codigo: m.ubicacion_codigo,
+    foto: m.foto,
   }));
 
   if (modelos.length === 0) {

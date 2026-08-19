@@ -134,3 +134,12 @@ export type ConteoLineaConModelo = ConteoLinea & {
 export type Resultado<T = undefined> =
   | { ok: true; datos?: T; mensaje?: string }
   | { ok: false; error: string };
+
+/** Quien trabaja en el negocio: firma los movimientos. */
+export type Persona = {
+  id: number;
+  nombre: string;
+  puesto: string;
+  activo: number;
+  orden: number;
+};

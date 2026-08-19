@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { buscarModelos, obtenerUbicacion } from "@/lib/consultas";
 import { AccionesUbicacion } from "@/components/AccionesUbicacion";
 import { BotonEnlace, EnlaceVolver, Existencia, Tarjeta, Vacio } from "@/components/ui";
+import { FotoModelo } from "@/components/FotoModelo";
 import { IconoCaja, IconoEtiqueta } from "@/components/iconos";
 
 export const dynamic = "force-dynamic";
@@ -78,6 +79,11 @@ export default async function DetalleUbicacion({ params }: { params: Promise<{ i
                     href={`/modelos/${m.id}`}
                     className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-oro-tenue)]"
                   >
+                    <FotoModelo
+                      foto={m.foto || null}
+                      descripcion={m.descripcion}
+                      tamano="mini"
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="codigo block">{m.codigo}</span>
                       <span className="block truncate text-sm text-[var(--color-humo)]">

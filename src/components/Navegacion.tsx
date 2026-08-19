@@ -7,6 +7,7 @@ import {
   IconoAjustes,
   IconoConteo,
   IconoEntrada,
+  IconoPersona,
   IconoHistorial,
   IconoInicio,
   IconoPrenda,
@@ -37,6 +38,9 @@ const ENLACES: Enlace[] = [
   { href: "/entradas", texto: "Entradas", Icono: IconoEntrada },
   { href: "/conteo", texto: "Conteo", Icono: IconoConteo },
   { href: "/movimientos", texto: "Historial", Icono: IconoHistorial },
+  // No hay icono de persona en la familia; la etiqueta hace de gafete,
+  // que es lo mas cercano a "quien trabaja aqui".
+  { href: "/personal", texto: "Personal", Icono: IconoPersona },
   { href: "/configuracion", texto: "Ajustes", Icono: IconoAjustes },
 ];
 

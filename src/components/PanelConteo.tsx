@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { anotarConteo, borrarLineaConteo, cerrarConteo } from "@/acciones/conteos";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "@/lib/codigos";
 import { Aviso, Boton, Insignia, Tarjeta } from "@/components/ui";
+import { FotoModelo } from "@/components/FotoModelo";
 import { IconoCerrar, IconoPin } from "@/components/iconos";
 import type { ConteoLineaConModelo } from "@/lib/tipos";
 import type { ModeloElegible } from "@/components/ArmadorEnvio";
@@ -37,6 +38,13 @@ export function PanelConteo({
   const campoCantidad = useRef<HTMLInputElement>(null);
 
   const yaContados = useMemo(() => new Set(lineas.map((l) => l.modelo_id)), [lineas]);
+
+  // La linea guardada no carga la foto, solo el codigo y la descripcion:
+  // se saca del catalogo que ya viene en memoria para no pedir nada mas.
+  const fotoPorModelo = useMemo(
+    () => new Map(modelos.map((m) => [m.id, m.foto ?? null])),
+    [modelos]
+  );
 
   const sugerencias = useMemo(() => {
     const texto = busqueda.trim();
@@ -182,9 +190,12 @@ export function PanelConteo({
                     <button
                       type="button"
                       onClick={() => elegir(m)}
-                      className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-[var(--color-vino-palido)]"
+                      className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-[var(--color-vino-palido)]"
                     >
-                      <span className="min-w-0">
+                      {/* Con 129 modelos parecidos, la foto es lo que evita
+                          contar una prenda y anotarla en otra. */}
+                      <FotoModelo foto={m.foto ?? null} descripcion={m.descripcion} tamano="mini" />
+                      <span className="min-w-0 flex-1">
                         <span className="codigo block text-sm">{m.codigo}</span>
                         <span className="block truncate text-xs text-[var(--color-humo)]">
                           {m.descripcion}
@@ -204,15 +215,26 @@ export function PanelConteo({
           </>
         ) : (
           <form onSubmit={anotar} className="space-y-3">
-            <div>
-              <p className="codigo text-xl">{elegido.codigo}</p>
-              <p className="text-sm text-[var(--color-humo)]">{elegido.descripcion}</p>
-              {elegido.ubicacion_codigo && (
-                <p className="mt-1 flex items-center gap-1 text-sm text-[var(--color-humo)]">
-                  <IconoPin tamano={14} />
-                  {elegido.ubicacion_codigo}
-                </p>
-              )}
+            {/* Aqui la foto va en grande: es el momento de comparar contra
+                la prenda que se trae en la mano, antes de teclear. */}
+            <div className="flex items-start gap-3">
+              <div className="h-32 w-24 shrink-0">
+                <FotoModelo
+                  foto={elegido.foto ?? null}
+                  descripcion={elegido.descripcion}
+                  tamano="grande"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="codigo text-xl">{elegido.codigo}</p>
+                <p className="text-sm text-[var(--color-humo)]">{elegido.descripcion}</p>
+                {elegido.ubicacion_codigo && (
+                  <p className="mt-1 flex items-center gap-1 text-sm text-[var(--color-humo)]">
+                    <IconoPin tamano={14} />
+                    {elegido.ubicacion_codigo}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div>
@@ -298,6 +320,11 @@ export function PanelConteo({
               const dif = l.contado - l.esperado;
               return (
                 <li key={l.id} className="flex items-center gap-3 px-4 py-3">
+                  <FotoModelo
+                    foto={fotoPorModelo.get(l.modelo_id) ?? null}
+                    descripcion={l.modelo_descripcion}
+                    tamano="mini"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="codigo text-sm">{l.modelo_codigo}</p>
                     <p className="truncate text-xs text-[var(--color-humo)]">

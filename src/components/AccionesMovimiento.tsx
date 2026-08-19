@@ -21,6 +21,9 @@ import type { TipoMovimiento } from "@/lib/tipos";
  * lo dicen en voz alta: "salieron a tienda... veinte".
  */
 
+/** Valor centinela del desplegable: no es el nombre de nadie. */
+const OTRA = "__otra__";
+
 type Opcion = {
   tipo: TipoMovimiento;
   texto: string;
@@ -83,21 +86,33 @@ export function AccionesMovimiento({
   existencia,
   enTienda,
   enTianguis,
+  personal = [],
+  usaTianguis = false,
 }: {
   modeloId: number;
   existencia: number;
   enTienda: number;
   enTianguis: number;
+  /** Quien firma. Si llega vacia se escribe el nombre a mano, como antes. */
+  personal?: { id: number; nombre: string; puesto: string }[];
+  /** Con el tianguis apagado sus dos botones no se ofrecen. */
+  usaTianguis?: boolean;
 }) {
   const router = useRouter();
   const [abierta, setAbierta] = useState<Opcion | null>(null);
   const [cantidad, setCantidad] = useState("");
   const [persona, setPersona] = useState("");
+  // Alguien que no esta en la lista: la bodega tambien recibe ayuda de fuera.
+  const [otraPersona, setOtraPersona] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
   const [enviando, iniciar] = useTransition();
 
   // No tiene caso ofrecer "regreso de tienda" si no hay nada alla.
   const visibles = OPCIONES.filter((o) => {
+    const esTianguis = o.tipo === "salida_tianguis" || o.tipo === "retorno_tianguis";
+    // El tipo de movimiento se queda vivo para lo ya registrado; aqui solo
+    // se deja de ofrecer mientras el cliente no use el tianguis.
+    if (esTianguis && !usaTianguis) return false;
     if (o.tipo === "retorno_tienda") return enTienda > 0;
     if (o.tipo === "retorno_tianguis") return enTianguis > 0;
     if (o.tipo === "salida_tienda" || o.tipo === "salida_tianguis") return existencia > 0;
@@ -146,6 +161,7 @@ export function AccionesMovimiento({
         setAbierta(null);
         setCantidad("");
         setPersona("");
+        setOtraPersona(false);
         router.refresh();
       } else {
         setMensaje({ tipo: "error", texto: r.error });
@@ -199,14 +215,51 @@ export function AccionesMovimiento({
               <label htmlFor="persona-mov" className="etiqueta">
                 ¿Quien? (opcional)
               </label>
-              <input
-                id="persona-mov"
-                value={persona}
-                onChange={(e) => setPersona(e.target.value)}
-                placeholder="Nombre de quien lo movio"
-                autoComplete="off"
-                className="campo !py-3"
-              />
+              {/* Se guarda el nombre como texto, igual que siempre: la lista
+                  solo evita teclearlo de pie frente al rack. Sin personal
+                  dado de alta, el desplegable estorbaria: se escribe y ya. */}
+              {personal.length === 0 ? (
+                <input
+                  id="persona-mov"
+                  value={persona}
+                  onChange={(e) => setPersona(e.target.value)}
+                  placeholder="Nombre de quien lo movio"
+                  autoComplete="off"
+                  className="campo !py-3"
+                />
+              ) : (
+                <>
+                  <select
+                    id="persona-mov"
+                    value={otraPersona ? OTRA : persona}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setOtraPersona(v === OTRA);
+                      setPersona(v === OTRA ? "" : v);
+                    }}
+                    className="campo !py-3"
+                  >
+                    <option value="">Sin especificar</option>
+                    {personal.map((p) => (
+                      <option key={p.id} value={p.nombre}>
+                        {p.puesto ? `${p.nombre} · ${p.puesto}` : p.nombre}
+                      </option>
+                    ))}
+                    <option value={OTRA}>Otra persona...</option>
+                  </select>
+                  {otraPersona && (
+                    <input
+                      value={persona}
+                      onChange={(e) => setPersona(e.target.value)}
+                      placeholder="Nombre de quien lo movio"
+                      aria-label="Nombre de quien lo movio"
+                      autoComplete="off"
+                      autoFocus
+                      className="campo mt-2 !py-3"
+                    />
+                  )}
+                </>
+              )}
             </div>
           </div>
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { movimientosRecientes } from "@/lib/consultas";
+import { usaTianguis } from "@/lib/ajustes";
 import { Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
 import { IconoHistorial } from "@/components/iconos";
 import { NOMBRE_MOVIMIENTO, TIPOS_MOVIMIENTO, type TipoMovimiento } from "@/lib/tipos";
@@ -21,6 +22,13 @@ const TONO_POR_TIPO: Record<TipoMovimiento, "ok" | "vino" | "neutro"> = {
 export default async function PaginaMovimientos({ searchParams }: { searchParams: Params }) {
   const sp = await searchParams;
   const filtro = typeof sp.tipo === "string" ? sp.tipo : "";
+  const conTianguis = usaTianguis();
+
+  // Solo se dejan de ofrecer como filtro: lo que ya paso por el tianguis
+  // sigue apareciendo en la bitacora, con su nombre de siempre.
+  const tipos = TIPOS_MOVIMIENTO.filter(
+    (t) => conTianguis || (t !== "salida_tianguis" && t !== "retorno_tianguis")
+  );
 
   const todos = movimientosRecientes(400);
   const movimientos = filtro ? todos.filter((m) => m.tipo === filtro) : todos;
@@ -40,7 +48,7 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
         descripcion="Todo lo que ha entrado y salido de la bodega."
       />
 
-      {/* Los ocho filtros apilados empujaban el primer movimiento fuera de la
+      {/* Los filtros apilados empujaban el primer movimiento fuera de la
           primera pantalla: en el telefono se recorren de lado, en una sola tira. */}
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-x-visible sm:px-0 sm:pb-0">
         <Link
@@ -53,7 +61,7 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
         >
           Todo
         </Link>
-        {TIPOS_MOVIMIENTO.map((t) => (
+        {tipos.map((t) => (
           <Link
             key={t}
             href={`/movimientos?tipo=${t}`}

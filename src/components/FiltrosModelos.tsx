@@ -27,9 +27,17 @@ export function FiltrosModelos({
     router.replace(`/modelos?${p.toString()}`);
   }
 
-  const hayFiltros = ["existencia", "ubicacion", "prefijo", "sinubicacion", "orden"].some((c) =>
-    parametros.get(c)
-  );
+  // "vista" no entra: es como se ve la lista, no un filtro. Si entrara,
+  // el boton aparecería solo por haber cambiado a cuadricula.
+  const hayFiltros = [
+    "existencia",
+    "ubicacion",
+    "prefijo",
+    "sinubicacion",
+    "orden",
+    "categoria",
+    "destacado",
+  ].some((c) => parametros.get(c));
 
   // shrink-0: dentro de la tira ningun select debe encogerse, o un nombre
   // de linea largo aplasta a los demas.
@@ -117,8 +125,15 @@ export function FiltrosModelos({
         <button
           type="button"
           onClick={() => {
-            const q = parametros.get("q");
-            router.replace(q ? `/modelos?q=${encodeURIComponent(q)}` : "/modelos");
+            // Se conservan la busqueda y la vista: quitar filtros no
+            // deberia devolver a lista a quien estaba en la cuadricula.
+            const queda = new URLSearchParams();
+            for (const clave of ["q", "vista"]) {
+              const v = parametros.get(clave);
+              if (v) queda.set(clave, v);
+            }
+            const cadena = queda.toString();
+            router.replace(cadena ? `/modelos?${cadena}` : "/modelos");
           }}
           className="shrink-0 rounded-sm px-3 py-3 text-sm font-semibold text-[var(--color-vino)] hover:bg-[var(--color-crema)] sm:py-2"
         >
