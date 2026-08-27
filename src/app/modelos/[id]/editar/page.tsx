@@ -3,10 +3,12 @@ import { listarCatalogo, listarUbicaciones, obtenerModelo } from "@/lib/consulta
 import { FormularioModelo } from "@/components/FormularioModelo";
 import { ArchivarModelo } from "@/components/ArchivarModelo";
 import { TituloPagina } from "@/components/ui";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditarModelo({ params }: { params: Promise<{ id: string }> }) {
+  await exigirEntrada();
   const { id } = await params;
   const modelo = obtenerModelo(parseInt(id, 10));
 

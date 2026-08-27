@@ -36,6 +36,31 @@ db.pragma("foreign_keys = ON");
 db.exec(ESQUEMA);
 
 if (limpiar) {
+  // La caja de la tienda trabaja sobre esta misma base y guarda sus
+  // ventas aqui. Borrar los modelos dejaria esos tickets apuntando a
+  // nada: se perderia la historia de lo vendido, que no se recupera.
+  const hayCaja = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='caja_ventas'")
+    .get();
+
+  if (hayCaja) {
+    const ventas = db.prepare("SELECT COUNT(*) AS n FROM caja_ventas").get().n;
+    if (ventas > 0 && !process.argv.includes("--de-veras")) {
+      console.error(
+        [
+          `ALTO: esta base ya tiene ${ventas} ventas hechas en la caja de la tienda.`,
+          "Borrar los modelos dejaria esos tickets sin a que apuntar.",
+          "",
+          "Si de verdad quieres empezar de cero, primero baja un respaldo",
+          "(Ajustes > Descargar respaldo completo) y despues corre:",
+          "  npm run datos -- --limpiar --de-veras",
+        ].join("\n")
+      );
+      db.close();
+      process.exit(1);
+    }
+  }
+
   db.exec(`
     DELETE FROM conteo_lineas;
     DELETE FROM conteos;
@@ -53,10 +78,24 @@ const cargados = sembrarCatalogo(db);
 
 if (cargados === 0 && !limpiar) {
   const n = db.prepare("SELECT COUNT(*) AS n FROM modelos").get().n;
-  console.log(
-    `Ya hay ${n} modelos en la base. No se toco nada.\n` +
-      "Si quieres empezar de cero: npm run datos -- --limpiar"
-  );
+
+  // Sin el archivo del catalogo no hay nada que sembrar. Es lo normal en
+  // una copia recien bajada del repositorio: ese archivo trae la ficha de
+  // confeccion de cada prenda y se entrega aparte.
+  if (n === 0) {
+    console.log(
+      "No encontre el catalogo del cliente en src/datos/catalogo.json,\n" +
+        "asi que la base quedo vacia. Es lo esperado en una copia recien\n" +
+        "bajada del repositorio: ese archivo se entrega aparte.\n\n" +
+        'Para generarlo del PDF:  npm run catalogo -- "ruta/del/catalogo.pdf"\n' +
+        "O captura los modelos desde el sistema, o importalos de Excel."
+    );
+  } else {
+    console.log(
+      `Ya hay ${n} modelos en la base. No se toco nada.\n` +
+        "Si quieres empezar de cero: npm run datos -- --limpiar"
+    );
+  }
   db.close();
   process.exit(0);
 }

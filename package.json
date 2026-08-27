@@ -12,7 +12,8 @@
     "logo": "node scripts/preparar-logo.mjs",
     "catalogo": "node scripts/preparar-catalogo.mjs",
     "catalogo:importar": "node scripts/importar-catalogo.mjs",
-    "datos": "node scripts/datos.mjs"
+    "datos": "node scripts/datos.mjs",
+    "paquete": "node scripts/paquete.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",

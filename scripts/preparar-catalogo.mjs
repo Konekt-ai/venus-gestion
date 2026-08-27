@@ -428,36 +428,11 @@ for (const [idx, numPag] of paginas.entries()) {
   });
 }
 
-// Se guarda como modulo TypeScript y no como .json porque asi lo puede
-// importar igual el build de Next y los scripts sueltos de Node, sin
-// alias ni atributos de importacion que solo entiende uno de los dos.
-const cabecera = [
-  "/**",
-  " * Catalogo del cliente.",
-  " *",
-  " * Generado por scripts/preparar-catalogo.mjs a partir de:",
-  " *   " + path.basename(rutaPdf),
-  " *",
-  " * NO se edita a mano: se vuelve a generar con  npm run catalogo.",
-  " */",
-  "",
-  "export type FilaCatalogo = {",
-  "  codigo: string;",
-  "  descripcion: string;",
-  "  categoria: string;",
-  "  tela: string;",
-  "  tallas: string;",
-  "  colores: string;",
-  "  foto: string;",
-  "  notas: string;",
-  "  destacado: number;",
-  "};",
-  "",
-  "export const ORIGEN = " + JSON.stringify(path.basename(rutaPdf)) + ";",
-  "",
-  "export const CATALOGO: FilaCatalogo[] = ",
-].join("\n");
-
+// Se guarda como .json y no como modulo de TypeScript porque este
+// archivo trae la ficha de confeccion de cada prenda (avios,
+// indicaciones, proveedor): es informacion del negocio y queda fuera del
+// repositorio. Siendo un dato suelto en disco, el sistema arranca igual
+// aunque no este, en vez de no compilar.
 const limpios = modelos.map((m) => ({
   codigo: m.codigo,
   descripcion: m.descripcion,
@@ -471,8 +446,17 @@ const limpios = modelos.map((m) => ({
 }));
 
 fs.writeFileSync(
-  path.join(carpetaDatos, "catalogo.ts"),
-  cabecera + JSON.stringify(limpios, null, 2) + ";\n"
+  path.join(carpetaDatos, "catalogo.json"),
+  JSON.stringify(
+    {
+      origen: path.basename(rutaPdf),
+      generado: "scripts/preparar-catalogo.mjs (npm run catalogo)",
+      modelos: limpios,
+    },
+    null,
+    2
+  ) + "
+"
 );
 
 const porCategoria = {};

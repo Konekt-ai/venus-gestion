@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { getDb } from "@/lib/db";
+import { puedeEntrar } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,12 @@ export const dynamic = "force-dynamic";
  * reciente. VACUUM INTO genera un archivo consistente y compactado.
  */
 export async function GET() {
+  if (!(await puedeEntrar())) {
+    return new Response("Entra al sistema con la contrasena para descargar esto.", {
+      status: 401,
+    });
+  }
+
   const db = getDb();
   const fecha = new Date().toISOString().slice(0, 10);
 

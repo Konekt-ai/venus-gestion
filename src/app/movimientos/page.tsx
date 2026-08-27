@@ -3,13 +3,20 @@ import { movimientosRecientes } from "@/lib/consultas";
 import { usaTianguis } from "@/lib/ajustes";
 import { Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
 import { IconoHistorial } from "@/components/iconos";
-import { NOMBRE_MOVIMIENTO, TIPOS_MOVIMIENTO, type TipoMovimiento } from "@/lib/tipos";
+import {
+  NOMBRE_MOVIMIENTO,
+  TIPOS_DE_LA_CAJA,
+  TIPOS_MOVIMIENTO,
+  type TipoEnHistorial,
+
+} from "@/lib/tipos";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ [k: string]: string | string[] | undefined }>;
 
-const TONO_POR_TIPO: Record<TipoMovimiento, "ok" | "vino" | "neutro"> = {
+const TONO_POR_TIPO: Record<TipoEnHistorial, "ok" | "vino" | "neutro"> = {
   entrada: "ok",
   retorno_tienda: "ok",
   retorno_tianguis: "ok",
@@ -17,20 +24,30 @@ const TONO_POR_TIPO: Record<TipoMovimiento, "ok" | "vino" | "neutro"> = {
   salida_tianguis: "vino",
   ajuste: "neutro",
   conteo: "neutro",
+  // Lo que viene de la caja de la tienda.
+  venta: "vino",
+  cancelacion: "ok",
 };
 
 export default async function PaginaMovimientos({ searchParams }: { searchParams: Params }) {
+  await exigirEntrada();
   const sp = await searchParams;
   const filtro = typeof sp.tipo === "string" ? sp.tipo : "";
   const conTianguis = usaTianguis();
 
   // Solo se dejan de ofrecer como filtro: lo que ya paso por el tianguis
   // sigue apareciendo en la bitacora, con su nombre de siempre.
-  const tipos = TIPOS_MOVIMIENTO.filter(
+  const propios = TIPOS_MOVIMIENTO.filter(
     (t) => conTianguis || (t !== "salida_tianguis" && t !== "retorno_tianguis")
   );
 
   const todos = movimientosRecientes(400);
+
+  // Las ventas las escribe la caja de la tienda en esta misma base. El
+  // filtro solo aparece cuando ya hay alguna: mientras la caja no este
+  // puesta, no tiene caso ofrecer un boton que no encuentra nada.
+  const deLaCaja = TIPOS_DE_LA_CAJA.filter((t) => todos.some((m) => m.tipo === t));
+  const tipos: TipoEnHistorial[] = [...propios, ...deLaCaja];
   const movimientos = filtro ? todos.filter((m) => m.tipo === filtro) : todos;
 
   // Se agrupan por dia para que se lea como una bitacora.

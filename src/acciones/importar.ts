@@ -12,6 +12,7 @@ import {
 } from "@/lib/codigos";
 import { aplicarMovimiento } from "@/lib/inventario";
 import type { Resultado } from "@/lib/tipos";
+import { exigirAcceso } from "@/lib/acceso";
 
 /**
  * Importacion masiva desde una hoja de calculo.
@@ -63,6 +64,7 @@ export async function importarCSV(
   contenido: string,
   soloRevisar: boolean
 ): Promise<Resultado<ResultadoImportacion>> {
+  await exigirAcceso();
   const filas = leerCSV(contenido);
 
   if (filas.length < 2) {

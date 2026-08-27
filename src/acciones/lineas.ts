@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { normalizarCodigo } from "@/lib/codigos";
 import type { Resultado } from "@/lib/tipos";
+import { exigirAcceso } from "@/lib/acceso";
 
 /**
  * Nombres de las lineas.
@@ -13,6 +14,7 @@ import type { Resultado } from "@/lib/tipos";
  * pantalla no aparezcan solo dos letras sueltas.
  */
 export async function guardarLinea(prefijo: string, nombre: string): Promise<Resultado> {
+  await exigirAcceso();
   const clave = normalizarCodigo(prefijo);
   const texto = nombre.trim();
 

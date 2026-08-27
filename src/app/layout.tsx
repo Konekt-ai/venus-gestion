@@ -3,6 +3,7 @@ import "./globals.css";
 import { BarraLateral, BarraMovil, EncabezadoMovil } from "@/components/Navegacion";
 import { AvisoDemo } from "@/components/AvisoDemo";
 import { rutaLogo } from "@/lib/logo";
+import { puedeEntrar } from "@/lib/acceso";
 
 export const metadata: Metadata = {
   title: "Venus Bodega",
@@ -33,16 +34,25 @@ export const viewport: Viewport = {
   themeColor: "#eee5d4",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // El archivo del logo se busca aqui, en el servidor, y se reparte a la
   // barra y al encabezado, que corren en el navegador y no pueden leer disco.
   const logo = rutaLogo();
+
+  // Quien no ha escrito la contrasena solo puede estar viendo /entrar,
+  // porque las demas paginas lo mandan alla antes de armar nada. Aqui
+  // solo se decide si va con el sistema alrededor o sin nada.
+  const paso = await puedeEntrar();
 
   return (
     <html lang="es-MX">
       {/* min-h-dvh y no min-h-screen: 100vh incluye el alto de la barra
           de direcciones del celular y deja contenido cortado abajo. */}
       <body className="min-h-dvh">
+        {!paso ? (
+          children
+        ) : (
+        <>
         <div className="flex min-h-dvh">
           <BarraLateral logo={logo} />
           <div className="flex min-w-0 flex-1 flex-col">
@@ -56,6 +66,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
         <BarraMovil />
+        </>
+        )}
       </body>
     </html>
   );

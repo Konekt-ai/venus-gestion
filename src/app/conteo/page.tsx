@@ -9,10 +9,12 @@ import { IniciarConteo } from "@/components/IniciarConteo";
 import { BotonEnlace, Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
 import { IconoPrenda, IconoUbicacion } from "@/components/iconos";
 import type { ModeloElegible } from "@/components/ArmadorEnvio";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
-export default function PaginaConteo() {
+export default async function PaginaConteo() {
+  await exigirEntrada();
   const abierto = conteoAbierto();
   const historial = listarConteos(10).filter((c) => c.estado === "cerrado");
 

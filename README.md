@@ -9,21 +9,39 @@ celular conectado al mismo WiFi.
 
 ---
 
+## Instalación (una sola vez)
+
+1. Instalar **Node.js LTS** desde <https://nodejs.org> (el instalador normal,
+   siguiente–siguiente–terminar).
+2. Copiar la carpeta del sistema a la computadora de la bodega.
+3. Doble clic en **`INSTALAR.bat`** y esperar a que diga `LISTO`. Tarda unos
+   minutos y necesita internet solo esa vez.
+4. La primera vez que arranque, Windows pregunta si permite que Node.js use
+   la red: hay que decir que **sí**, marcando *Redes privadas*. Sin eso los
+   celulares no entran.
+
+`INSTALAR.bat` revisa la versión de Node, prueba que la base de datos
+funcione en esa computadora y prepara el sistema. Si algo falta, lo dice en
+español y no deja el sistema a medias.
+
+---
+
 ## Cómo encenderlo
 
 Doble clic en **`INICIAR.bat`**.
 
-La primera vez tarda unos minutos preparándose; después abre solo. Mientras
-esa ventana negra esté abierta, el sistema está encendido. Para apagarlo,
-se cierra la ventana.
+Se abre una ventana negra y, unos segundos después, el navegador con el
+sistema. Mientras esa ventana esté abierta, el sistema está encendido; para
+apagarlo se cierra la ventana.
 
 En la computadora de la bodega: <http://localhost:3000>
 
-Desde un celular en el mismo WiFi: la dirección que aparece en la ventana
-al arrancar, o en **Ajustes → Entrar desde el celular**.
+Desde un celular en el mismo WiFi: la dirección que aparece en la ventana al
+arrancar, o en **Ajustes → Entrar desde el celular**.
 
-> Requiere Node.js instalado (<https://nodejs.org>, versión LTS). Si falta,
-> `INICIAR.bat` lo avisa con las instrucciones.
+> Si `INICIAR.bat` avisa que falta algo, es que no se corrió `INSTALAR.bat`
+> antes. Si avisa que el sistema *ya parece estar encendido*, es que quedó
+> otra ventana abierta: se usa esa.
 
 ---
 
@@ -135,6 +153,11 @@ Los 14 que el cliente marca como **mas vendidos** salen con estrella y se
 pueden filtrar aparte. El catalogo tambien trae la ficha tecnica de cada
 prenda (tela, indicaciones de confeccion y avios), que aparece en su pantalla.
 
+Vive en `src/datos/catalogo.json`, **fuera del repositorio**: esa ficha es
+informacion del negocio. El sistema lo lee del disco al arrancar, asi que una
+copia sin ese archivo compila y corre igual, solo que empieza con el catalogo
+vacio.
+
 **Los modelos entran sin existencias, y eso es lo correcto**: el catalogo dice
 que se vende, no cuanto hay. Las cantidades salen del primer conteo fisico.
 
@@ -160,20 +183,59 @@ cliente:
 | --- | --- |
 | `public/catalogo/` | Las 129 fotos de las prendas |
 | `public/logo.png` | El logo de la tienda |
+| `src/datos/catalogo.json` | Los modelos con su ficha de confección (avíos, indicaciones, proveedor) |
 | `docs/` | Documentos internos del proyecto |
 | `data/venus.db` | El inventario |
 | El PDF del catálogo | El original que mandó el cliente |
 
 **Al instalar en otra computadora hay que copiarlas a mano** (por USB o por
 correo), después de clonar el repositorio. El sistema arranca igual sin ellas
-—los modelos aparecen con una percha en vez de la foto, y el nombre se escribe
-con letras en lugar del logo— pero se ve a medias.
+—empieza con el catálogo vacío, los modelos aparecen con una percha en vez de
+la foto, y el nombre se escribe con letras en lugar del logo— pero se ve a
+medias.
 
 Si se perdieran las fotos, se vuelven a sacar del PDF:
 
 ```bash
 npm run catalogo -- "MODELOS MAS VENDIDOS + MODELOS VARIADOS.pdf"
 ```
+
+---
+
+## Codigos de barras
+
+En **Modelos → Imprimir etiquetas con código de barras** salen las etiquetas
+para colgar en la prenda: la marca, el código, el código de barras, la
+descripción y la ubicación. Se puede elegir una línea (`VD`, `VN`…), pedir
+varias iguales por modelo y dejar fuera lo que está en cero. Salen 24 por
+hoja carta.
+
+El lector de códigos se conecta por USB y funciona como un teclado: al leerlo
+escribe el código y da Enter. No hay que configurar nada — basta poner el
+cursor en el buscador y apuntarle a la etiqueta, y el modelo aparece. Lee
+igual del papel que de la pantalla, así que la ficha de cada modelo muestra
+su código de barras para probar el lector sin imprimir nada.
+
+Se usa **Code 128**, que es el estándar que leen todos los lectores de
+comercio. Está dibujado dentro del sistema, sin librerías externas, y las
+pruebas comprueban que lo dibujado se puede volver a leer tal cual.
+
+---
+
+## Contraseña para entrar
+
+Viene **apagada**: el sistema abre directo, para que el día de la instalación
+nada se trabe. Se prende en *Ajustes → Contraseña para entrar*.
+
+Es una sola contraseña para todo el negocio (quién hizo cada movimiento se
+lleva aparte, con la lista de *Personal*). Cada teléfono la escribe una vez y
+la recuerda tres meses. Cambiarla saca a todos los teléfonos, que es lo que
+se quiere cuando alguien ya no debería entrar.
+
+Se guarda revuelta con `scrypt` y su propia sal, nunca tal cual. Si se
+pierde, no hay forma de recuperarla: se pone otra desde la computadora de la
+bodega. Y no es solo una pantalla encima — sin contraseña, las páginas ni
+siquiera se arman y las descargas de respaldo contestan que no.
 
 ---
 

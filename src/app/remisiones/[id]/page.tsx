@@ -3,6 +3,7 @@ import { lineasDeRemision, obtenerRemision } from "@/lib/consultas";
 import { BotonImprimir } from "@/components/BotonImprimir";
 import { EnlaceVolver } from "@/components/ui";
 import { creditoCompleto } from "@/lib/marca";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
  * para las dos firmas.
  */
 export default async function HojaRemision({ params }: { params: Promise<{ id: string }> }) {
+  await exigirEntrada();
   const { id } = await params;
   const remision = obtenerRemision(parseInt(id, 10));
 

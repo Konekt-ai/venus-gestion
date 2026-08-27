@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { normalizarCodigo, normalizarTexto, partirCodigo, validarCodigo } from "@/lib/codigos";
 import { aplicarMovimiento, ErrorInventario } from "@/lib/inventario";
 import type { Resultado } from "@/lib/tipos";
+import { exigirAcceso } from "@/lib/acceso";
 
 function texto(v: FormDataEntryValue | null): string {
   return typeof v === "string" ? v.trim() : "";
@@ -24,6 +25,7 @@ function refrescar() {
  * Si viene 'id' edita; si no, da de alta.
  */
 export async function guardarModelo(_previo: unknown, form: FormData): Promise<Resultado<number>> {
+  await exigirAcceso();
   const db = getDb();
 
   const id = entero(form.get("id"), 0);
@@ -125,6 +127,7 @@ export async function cambiarUbicacion(
   modeloId: number,
   ubicacionId: number | null
 ): Promise<Resultado> {
+  await exigirAcceso();
   const db = getDb();
   db.prepare(
     "UPDATE modelos SET ubicacion_id = ?, actualizado_en = datetime('now','localtime') WHERE id = ?"
@@ -138,6 +141,7 @@ export async function cambiarUbicacion(
  * conservar su historial de movimientos.
  */
 export async function archivarModelo(modeloId: number): Promise<Resultado> {
+  await exigirAcceso();
   const db = getDb();
   db.prepare(
     "UPDATE modelos SET activo = 0, actualizado_en = datetime('now','localtime') WHERE id = ?"
@@ -147,6 +151,7 @@ export async function archivarModelo(modeloId: number): Promise<Resultado> {
 }
 
 export async function restaurarModelo(modeloId: number): Promise<Resultado> {
+  await exigirAcceso();
   const db = getDb();
   db.prepare(
     "UPDATE modelos SET activo = 1, actualizado_en = datetime('now','localtime') WHERE id = ?"
@@ -157,6 +162,7 @@ export async function restaurarModelo(modeloId: number): Promise<Resultado> {
 
 /** Agrega un valor nuevo a un catalogo (tela, color, talla, categoria). */
 export async function agregarACatalogo(tipo: string, valor: string): Promise<Resultado> {
+  await exigirAcceso();
   const limpio = normalizarTexto(valor);
   if (!limpio) return { ok: false, error: "Escribe un valor." };
 

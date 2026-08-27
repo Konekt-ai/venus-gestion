@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getDb, MODO_DEMO } from "@/lib/db";
 import { sembrarCatalogo, sembrarDemostracion } from "@/lib/siembra";
 import type { Resultado } from "@/lib/tipos";
+import { exigirAcceso } from "@/lib/acceso";
 
 /**
  * Deja la demostracion como recien abierta.
@@ -13,6 +14,7 @@ import type { Resultado } from "@/lib/tipos";
  * borraria el inventario de verdad, asi que ni siquiera se ofrece.
  */
 export async function reiniciarDemo(): Promise<Resultado> {
+  await exigirAcceso();
   if (!MODO_DEMO) {
     return { ok: false, error: "Esto solo se puede hacer en la demostracion." };
   }

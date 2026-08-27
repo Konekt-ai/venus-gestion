@@ -1,11 +1,12 @@
 import type Database from "better-sqlite3";
+import fs from "node:fs";
+import path from "node:path";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "./codigos";
-import { CATALOGO, type FilaCatalogo } from "../datos/catalogo";
 
 /**
  * Puesta en marcha del sistema.
  *
- * El catalogo real del cliente (sus 129 modelos, con foto) vive en
+ * El catalogo real del cliente (sus modelos, con foto) vive en
  * src/datos/catalogo.json, sacado de su PDF. De ahi salen dos cosas:
  *
  *   sembrarCatalogo()     deja los modelos listos, con existencia en CERO.
@@ -18,7 +19,45 @@ import { CATALOGO, type FilaCatalogo } from "../datos/catalogo";
  *                         vea viva. NUNCA se usa en la bodega.
  */
 
-const MODELOS: FilaCatalogo[] = CATALOGO;
+export type FilaCatalogo = {
+  codigo: string;
+  descripcion: string;
+  categoria: string;
+  tela: string;
+  tallas: string;
+  colores: string;
+  foto: string;
+  notas: string;
+  destacado: number;
+};
+
+const RUTA_CATALOGO = path.join(process.cwd(), "src", "datos", "catalogo.json");
+
+/**
+ * Los modelos del cliente, leidos del disco al arrancar.
+ *
+ * No viene como import: ese archivo trae la ficha de confeccion de cada
+ * prenda (avios, indicaciones, proveedor), que es informacion del
+ * negocio y no tiene por que viajar en el repositorio. Leyendolo asi, el
+ * sistema arranca igual aunque el archivo no este: simplemente empieza
+ * con el catalogo vacio y se captura a mano o se importa de Excel.
+ */
+function leerCatalogo(): FilaCatalogo[] {
+  try {
+    const crudo = JSON.parse(fs.readFileSync(RUTA_CATALOGO, "utf8"));
+    const filas = Array.isArray(crudo) ? crudo : crudo.modelos;
+    return Array.isArray(filas) ? (filas as FilaCatalogo[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+let cache: FilaCatalogo[] | null = null;
+
+function modelos(): FilaCatalogo[] {
+  if (!cache) cache = leerCatalogo();
+  return cache;
+}
 
 /** Que significan las letras con las que empiezan los codigos. */
 const NOMBRES_LINEA: Record<string, string> = {
@@ -35,7 +74,9 @@ const NOMBRES_LINEA: Record<string, string> = {
 };
 
 /** Cuantos modelos trae el catalogo, sin tocar la base. */
-export const TOTAL_CATALOGO = MODELOS.length;
+export function totalCatalogo(): number {
+  return modelos().length;
+}
 
 /**
  * Carga el catalogo en una base vacia.
@@ -45,6 +86,7 @@ export const TOTAL_CATALOGO = MODELOS.length;
 export function sembrarCatalogo(db: Database.Database): number {
   const yaHay = db.prepare("SELECT COUNT(*) AS n FROM modelos").get() as { n: number };
   if (yaHay.n > 0) return 0;
+  if (modelos().length === 0) return 0;
 
   const insertarModelo = db.prepare(
     `INSERT INTO modelos
@@ -66,7 +108,7 @@ export function sembrarCatalogo(db: Database.Database): number {
   const cargar = db.transaction(() => {
     const prefijos = new Set<string>();
 
-    for (const m of MODELOS) {
+    for (const m of modelos()) {
       const { prefijo, numero } = partirCodigo(m.codigo);
       const categoria = normalizarTexto(m.categoria || "");
       const tela = normalizarTexto(m.tela || "");
@@ -97,7 +139,7 @@ export function sembrarCatalogo(db: Database.Database): number {
   });
 
   cargar();
-  return MODELOS.length;
+  return modelos().length;
 }
 
 /**

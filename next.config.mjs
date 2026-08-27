@@ -8,7 +8,12 @@ const nextConfig = {
   // nombrarlo a mano para que viaje dentro de la funcion al desplegar en
   // Vercel. Sin esto el sitio compila pero truena al abrirlo.
   outputFileTracingIncludes: {
-    "/*": ["./node_modules/better-sqlite3/build/Release/better_sqlite3.node"],
+    "/*": [
+      "./node_modules/better-sqlite3/build/Release/better_sqlite3.node",
+      // El catalogo se lee del disco al arrancar, no con un import: hay
+      // que nombrarlo para que viaje al desplegar la demostracion.
+      "./src/datos/catalogo.json",
+    ],
   },
 
   // Quita el distintivo flotante que Next pone en la esquina al usar

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { aplicarMovimiento, ErrorInventario } from "@/lib/inventario";
 import type { Resultado } from "@/lib/tipos";
+import { exigirAcceso } from "@/lib/acceso";
 
 function refrescar() {
   revalidatePath("/", "layout");
@@ -18,6 +19,7 @@ function refrescar() {
  * diferencia. Asi se puede contar en varios ratos sin romper nada.
  */
 export async function iniciarConteo(nombre: string, nota = ""): Promise<Resultado<number>> {
+  await exigirAcceso();
   const db = getDb();
 
   const abierto = db.prepare("SELECT id FROM conteos WHERE estado = 'abierto'").get() as
@@ -47,6 +49,7 @@ export async function anotarConteo(
   modeloId: number,
   contado: number
 ): Promise<Resultado<{ esperado: number; diferencia: number }>> {
+  await exigirAcceso();
   const db = getDb();
 
   if (!Number.isInteger(contado) || contado < 0) {
@@ -83,6 +86,7 @@ export async function anotarConteo(
 }
 
 export async function borrarLineaConteo(conteoId: number, modeloId: number): Promise<Resultado> {
+  await exigirAcceso();
   const db = getDb();
   db.prepare("DELETE FROM conteo_lineas WHERE conteo_id = ? AND modelo_id = ?").run(
     conteoId,
@@ -100,6 +104,7 @@ export async function borrarLineaConteo(conteoId: number, modeloId: number): Pro
 export async function cerrarConteo(
   conteoId: number
 ): Promise<Resultado<{ ajustados: number; sinCambio: number }>> {
+  await exigirAcceso();
   const db = getDb();
 
   const conteo = db.prepare("SELECT estado FROM conteos WHERE id = ?").get(conteoId) as
@@ -162,6 +167,7 @@ export async function cerrarConteo(
 
 /** Cancela un conteo sin aplicar ninguna diferencia. */
 export async function cancelarConteo(conteoId: number): Promise<Resultado> {
+  await exigirAcceso();
   const db = getDb();
   db.prepare("DELETE FROM conteos WHERE id = ? AND estado = 'abierto'").run(conteoId);
   refrescar();

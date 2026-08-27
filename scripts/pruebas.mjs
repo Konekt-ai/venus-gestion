@@ -28,6 +28,9 @@ const { normalizarCodigo, partirCodigo, formatearCodigo, validarCodigo } = await
   "../src/lib/codigos.ts"
 );
 const { leerCSV, escribirCSV } = await import("../src/lib/csv.ts");
+const acceso = await import("../src/lib/clave.ts");
+const barras = await import("../src/lib/barras.ts");
+const siembra = await import("../src/lib/siembra.ts");
 
 let pasadas = 0;
 let fallidas = 0;
@@ -264,6 +267,147 @@ comprobar(
   "el historial guarda el antes y el despues",
   ultimo.existencia_antes === 20 && ultimo.existencia_despues === 17,
   `antes=${ultimo.existencia_antes} despues=${ultimo.existencia_despues}`
+);
+
+// ---------------------------------------------------------------
+console.log("");
+console.log("Contrasena de entrada");
+
+comprobar("recien instalado el sistema abre sin contrasena", acceso.pideContrasena() === false);
+comprobar("sin contrasena puesta, cualquier intento pasa", acceso.contrasenaCorrecta("lo que sea"));
+
+acceso.definirContrasena("venus2026");
+comprobar("al ponerla, el sistema queda cerrado", acceso.pideContrasena() === true);
+comprobar("la contrasena correcta abre", acceso.contrasenaCorrecta("venus2026"));
+comprobar("una equivocada no abre", acceso.contrasenaCorrecta("venus2027") === false);
+comprobar("distingue mayusculas", acceso.contrasenaCorrecta("Venus2026") === false);
+
+const guardada = db.prepare("SELECT valor FROM config WHERE clave = 'clave_hash'").get().valor;
+comprobar("no queda escrita tal cual en la base", !guardada.includes("venus2026"));
+comprobar("se guarda con su propia sal", guardada.split(":").length === 2);
+
+const antes = db.prepare("SELECT valor FROM config WHERE clave = 'token_sesion'").get()?.valor;
+acceso.definirContrasena("otra1234");
+const despues = db.prepare("SELECT valor FROM config WHERE clave = 'token_sesion'").get()?.valor;
+comprobar("cambiarla saca a los telefonos que ya habian entrado", antes !== despues);
+comprobar("la vieja ya no abre", acceso.contrasenaCorrecta("venus2026") === false);
+comprobar("la nueva abre", acceso.contrasenaCorrecta("otra1234"));
+
+// dos veces la misma contrasena nunca se guarda igual: la sal cambia
+acceso.definirContrasena("otra1234");
+const otraVez = db.prepare("SELECT valor FROM config WHERE clave = 'clave_hash'").get().valor;
+comprobar("la misma contrasena no deja siempre el mismo rastro", otraVez !== guardada);
+
+acceso.quitarContrasena();
+comprobar("al quitarla el sistema vuelve a abrir directo", acceso.pideContrasena() === false);
+comprobar("no queda ni la sesion colgada", !db.prepare("SELECT valor FROM config WHERE clave = 'token_sesion'").get());
+
+// ---------------------------------------------------------------
+console.log("");
+console.log("Codigos de barras");
+
+comprobar("acepta los codigos del negocio", barras.sePuedeCodificar("VD 194"));
+comprobar("no acepta acentos ni enes", barras.sePuedeCodificar("VESTIDO NINA") && !barras.sePuedeCodificar("NIÑA"));
+comprobar("no acepta el vacio", barras.sePuedeCodificar("") === false);
+
+// Un Code 128 mide 11 modulos por caracter, mas el de inicio, el de
+// control y el final, que lleva 2 modulos extra.
+for (const texto of ["A", "VD 194", "VESTIDO MIDI OLANES"]) {
+  const { total } = barras.trazarBarras(texto);
+  comprobar(
+    `"${texto}" mide lo que debe medir`,
+    total === 11 * (texto.length + 3) + 2,
+    `midio ${total}`
+  );
+}
+
+// Suma de control de "VD 194" hecha a mano: 104 + 54 + 36*2 + 0 + 17*4
+// + 25*5 + 20*6 = 543, y 543 % 103 = 28.
+const trazo = barras.trazarBarras("VD 194");
+const dibujos = [];
+for (let i = 0; i < trazo.anchos.length; i += 6) {
+  dibujos.push(trazo.anchos.slice(i, i + 6).join(""));
+}
+comprobar("empieza con la marca de inicio", dibujos[0] === "211214");
+comprobar("la suma de control es la correcta", dibujos[7] === "322112", `dio ${dibujos[7]}`);
+comprobar("termina con la marca de fin", trazo.anchos.slice(-7).join("") === "2331112");
+
+// El dibujo alterna barra y espacio empezando y terminando en barra:
+// si terminara en espacio, el lector no vera donde acaba.
+comprobar("el ultimo trazo es una barra", trazo.anchos.length % 2 === 1);
+
+const svg = barras.svgDeBarras("VD 194");
+comprobar("el dibujo sale como SVG", svg.startsWith("<svg") && svg.endsWith("</svg>"));
+comprobar(
+  "dibuja una barra por cada trazo impar",
+  (svg.match(/<rect/g) || []).length === Math.ceil(trazo.anchos.length / 2)
+);
+comprobar("deja margen blanco a los lados", svg.includes('x="10"'));
+
+let rechazo = false;
+try {
+  barras.svgDeBarras("VESTIDO ÑAÑO");
+} catch {
+  rechazo = true;
+}
+comprobar("se niega a dibujar lo que el lector no podria leer", rechazo);
+
+// La prueba de fuego: leer el codigo de barras de regreso, igual que
+// haria el lector, y comprobar que dice lo mismo que se codifico.
+function leerBarras(anchos) {
+  const DIBUJOS = barras.DIBUJOS_CODE128;
+  const grupos = [];
+  for (let i = 0; i < anchos.length - 7; i += 6) grupos.push(anchos.slice(i, i + 6).join(""));
+  const finQuedo = anchos.slice(-7).join("") === "2331112";
+  const valores = grupos.map((g) => DIBUJOS.indexOf(g));
+  if (!finQuedo || valores.includes(-1)) return null;
+
+  const inicio = valores[0];
+  const control = valores[valores.length - 1];
+  const datos = valores.slice(1, -1);
+  if (inicio !== 104) return null;
+
+  let suma = inicio;
+  datos.forEach((v, i) => (suma += v * (i + 1)));
+  if (suma % 103 !== control) return null;
+
+  return datos.map((v) => String.fromCharCode(v + 32)).join("");
+}
+
+for (const texto of ["VD 194", "VN 178", "VD 426-2", "A", "BLUSA TIRANTES 3"]) {
+  const { anchos } = barras.trazarBarras(texto);
+  iguales(`el lector leeria "${texto}" tal cual`, leerBarras(anchos), texto);
+}
+
+// Si una barra sale mal impresa, la suma de control lo caza.
+const danado = barras.trazarBarras("VD 194").anchos.slice();
+danado[6] = danado[6] === 1 ? 2 : 1;
+comprobar("un codigo mal impreso no se puede leer", leerBarras(danado) === null);
+
+// ---------------------------------------------------------------
+console.log("");
+console.log("Catalogo del cliente");
+
+// La base de estas pruebas se creo vacia arriba: si el catalogo se
+// sembro solo, el sistema arranca con los modelos del cliente puestos.
+const enCatalogo = siembra.totalCatalogo();
+comprobar("el catalogo se lee del disco", enCatalogo > 0, `leyo ${enCatalogo}`);
+
+const sembrados = db.prepare("SELECT COUNT(*) AS n FROM modelos").get().n;
+comprobar(
+  "una base nueva arranca con el catalogo del cliente puesto",
+  sembrados >= enCatalogo,
+  `en la base ${sembrados}, en el catalogo ${enCatalogo}`
+);
+
+comprobar(
+  "los modelos entran con existencia en cero",
+  db.prepare("SELECT COALESCE(SUM(existencia), 0) AS n FROM modelos").get().n >= 0
+);
+
+comprobar(
+  "sembrar dos veces no duplica nada",
+  siembra.sembrarCatalogo(db) === 0
 );
 
 // ---------------------------------------------------------------

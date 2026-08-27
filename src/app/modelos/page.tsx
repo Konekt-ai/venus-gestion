@@ -20,7 +20,14 @@ import {
   TituloPagina,
   Vacio,
 } from "@/components/ui";
-import { IconoBuscar, IconoEstrella, IconoMas, IconoPrenda } from "@/components/iconos";
+import {
+  IconoBuscar,
+  IconoEstrella,
+  IconoEtiqueta,
+  IconoMas,
+  IconoPrenda,
+} from "@/components/iconos";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +68,7 @@ const CHIP_APAGADO =
 const CHIP_PRENDIDO = "border-transparent bg-[var(--color-vino)] text-white";
 
 export default async function PaginaModelos({ searchParams }: { searchParams: Params }) {
+  await exigirEntrada();
   const sp = await searchParams;
 
   const q = uno(sp.q);
@@ -434,7 +442,14 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
       {/* Discreto a proposito: solo se busca cuando se dio de baja algo
           por error, pero sin esta puerta no habria como recuperarlo. */}
       {!archivados && (
-        <p className="no-imprimir pt-2 text-center">
+        <p className="no-imprimir flex flex-wrap items-center justify-center gap-x-5 pt-2 text-center">
+          <Link
+            href="/modelos/etiquetas"
+            className="inline-flex min-h-11 items-center gap-1.5 px-2 text-sm font-semibold text-[var(--color-humo)] hover:text-[var(--color-tinta)] hover:underline"
+          >
+            <IconoEtiqueta tamano={15} />
+            Imprimir etiquetas con codigo de barras
+          </Link>
           <Link
             href="/modelos?archivados=1"
             className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-[var(--color-humo)] hover:text-[var(--color-tinta)] hover:underline"

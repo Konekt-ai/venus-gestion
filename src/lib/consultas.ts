@@ -29,7 +29,7 @@ const CAMPOS_MODELO = `
  * no existen. Vaciarlo aqui, de una vez, hace que todas las pantallas
  * dibujen la percha en vez de una imagen rota.
  */
-function conFotosReales<T extends { foto: string }>(filas: T[]): T[] {
+export function conFotosReales<T extends { foto: string }>(filas: T[]): T[] {
   return filas.map((f) => (hayFoto(f.foto) ? f : { ...f, foto: "" }));
 }
 

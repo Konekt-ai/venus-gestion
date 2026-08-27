@@ -1,0 +1,3 @@
+# Los .bat tienen que llevar saltos de linea de Windows (CRLF).
+# Con saltos de Unix, cmd.exe puede romperse al leer los bloques.
+*.bat text eol=crlf

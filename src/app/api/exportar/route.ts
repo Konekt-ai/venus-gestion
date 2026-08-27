@@ -3,6 +3,7 @@ import { movimientosRecientes, todosLosModelos } from "@/lib/consultas";
 import { getDb } from "@/lib/db";
 import { escribirCSV } from "@/lib/csv";
 import { NOMBRE_MOVIMIENTO, type TipoMovimiento } from "@/lib/tipos";
+import { puedeEntrar } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,12 @@ export const dynamic = "force-dynamic";
  * ?tipo=movimientos el historial completo
  */
 export async function GET(peticion: Request) {
+  if (!(await puedeEntrar())) {
+    return new Response("Entra al sistema con la contrasena para descargar esto.", {
+      status: 401,
+    });
+  }
+
   const url = new URL(peticion.url);
   const tipo = url.searchParams.get("tipo") ?? "inventario";
   const fecha = new Date().toISOString().slice(0, 10);

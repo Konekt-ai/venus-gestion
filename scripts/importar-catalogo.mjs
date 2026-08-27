@@ -27,7 +27,7 @@ const { ESQUEMA } = await import("../src/lib/esquema.ts");
 const { normalizarCodigo, partirCodigo, normalizarTexto } = await import("../src/lib/codigos.ts");
 
 const raiz = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const rutaCatalogo = path.join(raiz, "src", "datos", "catalogo.ts");
+const rutaCatalogo = path.join(raiz, "src", "datos", "catalogo.json");
 const rutaDb = process.env.VENUS_DB ?? path.join(raiz, "data", "venus.db");
 
 if (!fs.existsSync(rutaCatalogo)) {
@@ -38,7 +38,7 @@ if (!fs.existsSync(rutaCatalogo)) {
   process.exit(1);
 }
 
-const { CATALOGO: modelos, ORIGEN: origen } = await import("../src/datos/catalogo.ts");
+const { modelos, origen } = JSON.parse(fs.readFileSync(rutaCatalogo, "utf8"));
 
 fs.mkdirSync(path.dirname(rutaDb), { recursive: true });
 const db = new Database(rutaDb);

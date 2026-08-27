@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { SVGProps } from "react";
 import {
   IconoAjustes,
+  IconoCaja,
   IconoConteo,
   IconoEntrada,
   IconoPersona,
@@ -37,6 +38,7 @@ const ENLACES: Enlace[] = [
   { href: "/salidas", texto: "Salidas", Icono: IconoSalida },
   { href: "/entradas", texto: "Entradas", Icono: IconoEntrada },
   { href: "/conteo", texto: "Conteo", Icono: IconoConteo },
+  { href: "/ventas", texto: "Ventas", Icono: IconoCaja },
   { href: "/movimientos", texto: "Historial", Icono: IconoHistorial },
   // No hay icono de persona en la familia; la etiqueta hace de gafete,
   // que es lo mas cercano a "quien trabaja aqui".

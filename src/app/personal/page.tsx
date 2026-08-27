@@ -1,10 +1,12 @@
 import { listarPersonal } from "@/lib/consultas";
 import { GestorPersonal } from "@/components/GestorPersonal";
 import { Tarjeta, TituloPagina } from "@/components/ui";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
-export default function PaginaPersonal() {
+export default async function PaginaPersonal() {
+  await exigirEntrada();
   // Con las bajas incluidas: el gestor las separa y las deja reactivar.
   const personal = listarPersonal(false);
 

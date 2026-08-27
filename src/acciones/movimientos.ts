@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { aplicarMovimiento, ErrorInventario, siguienteFolio } from "@/lib/inventario";
 import type { Destino, Resultado, TipoMovimiento } from "@/lib/tipos";
+import { exigirAcceso } from "@/lib/acceso";
 
 function refrescar() {
   revalidatePath("/", "layout");
@@ -17,6 +18,7 @@ export async function registrarMovimiento(datos: {
   persona?: string;
   nota?: string;
 }): Promise<Resultado<{ antes: number; despues: number }>> {
+  await exigirAcceso();
   const db = getDb();
   try {
     const r = db.transaction(() => aplicarMovimiento(db, datos))();
@@ -44,6 +46,7 @@ export async function registrarRemision(datos: {
   nota?: string;
   lineas: LineaEnvio[];
 }): Promise<Resultado<{ remisionId: number; folio: string }>> {
+  await exigirAcceso();
   const db = getDb();
 
   const lineas = datos.lineas.filter((l) => l.cantidad > 0);
@@ -117,6 +120,7 @@ export async function registrarEntrada(datos: {
   nota?: string;
   lineas: LineaEnvio[];
 }): Promise<Resultado<{ modelos: number; piezas: number }>> {
+  await exigirAcceso();
   const db = getDb();
   const lineas = datos.lineas.filter((l) => l.cantidad > 0);
 

@@ -3,10 +3,12 @@ import { listarUbicaciones, resumen } from "@/lib/consultas";
 import { GestorUbicaciones } from "@/components/GestorUbicaciones";
 import { BotonEnlace, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
 import { IconoImprimir, IconoUbicacion } from "@/components/iconos";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
-export default function PaginaUbicaciones() {
+export default async function PaginaUbicaciones() {
+  await exigirEntrada();
   const ubicaciones = listarUbicaciones();
   const datos = resumen();
 

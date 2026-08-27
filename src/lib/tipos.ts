@@ -61,8 +61,21 @@ export const TIPOS_MOVIMIENTO = [
 
 export type TipoMovimiento = (typeof TIPOS_MOVIMIENTO)[number];
 
+/**
+ * Movimientos que NO nacen aqui: los escribe la caja de la tienda, que
+ * trabaja sobre esta misma base. Van aparte de TIPOS_MOVIMIENTO porque
+ * desde bodega no se pueden crear a mano —una venta se hace cobrando—,
+ * pero si se ven en el historial y se pueden filtrar.
+ */
+export const TIPOS_DE_LA_CAJA = ["venta", "cancelacion"] as const;
+
+export type TipoDeCaja = (typeof TIPOS_DE_LA_CAJA)[number];
+
+/** Todos los que pueden aparecer en el historial. */
+export type TipoEnHistorial = TipoMovimiento | TipoDeCaja;
+
 /** Como se le llama a cada movimiento en pantalla. */
-export const NOMBRE_MOVIMIENTO: Record<TipoMovimiento, string> = {
+export const NOMBRE_MOVIMIENTO: Record<TipoEnHistorial, string> = {
   entrada: "Entro a bodega",
   salida_tienda: "Salio a tienda",
   salida_tianguis: "Salio a tianguis",
@@ -70,12 +83,16 @@ export const NOMBRE_MOVIMIENTO: Record<TipoMovimiento, string> = {
   retorno_tianguis: "Regreso de tianguis",
   ajuste: "Ajuste manual",
   conteo: "Cuadre por conteo",
+  venta: "Se vendio en la tienda",
+  cancelacion: "Venta cancelada",
 };
 
 export type Movimiento = {
   id: number;
   modelo_id: number;
-  tipo: TipoMovimiento;
+  // Lo que hay guardado, que incluye lo que escribe la caja. Para CREAR
+  // un movimiento desde aqui se usa TipoMovimiento, que es mas corto.
+  tipo: TipoEnHistorial;
   cantidad: number;
   existencia_antes: number;
   existencia_despues: number;

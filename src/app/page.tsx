@@ -12,6 +12,7 @@ import {
   IconoSalida,
 } from "@/components/iconos";
 import { NOMBRE_MOVIMIENTO } from "@/lib/tipos";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,8 @@ function accesos(conTianguis: boolean) {
   ];
 }
 
-export default function Inicio() {
+export default async function Inicio() {
+  await exigirEntrada();
   const datos = resumen();
   const conTianguis = usaTianguis();
   const porSurtir = modelosPorSurtir(6);

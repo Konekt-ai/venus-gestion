@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   listarPersonal,
@@ -8,6 +9,7 @@ import {
 import { usaTianguis } from "@/lib/ajustes";
 import { AccionesMovimiento } from "@/components/AccionesMovimiento";
 import { FotoModelo } from "@/components/FotoModelo";
+import { CodigoBarras } from "@/components/CodigoBarras";
 import {
   Aviso,
   BotonEnlace,
@@ -19,6 +21,7 @@ import {
 } from "@/components/ui";
 import { IconoEditar, IconoEstrella } from "@/components/iconos";
 import { NOMBRE_MOVIMIENTO } from "@/lib/tipos";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +35,7 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 }
 
 export default async function FichaModelo({ params }: { params: Promise<{ id: string }> }) {
+  await exigirEntrada();
   const { id } = await params;
   const modelo = obtenerModelo(parseInt(id, 10));
 
@@ -95,15 +99,27 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          <div className="no-imprimir flex w-full gap-2 sm:w-auto">
-            <BotonEnlace
-              href={`/modelos/${modelo.id}/editar`}
-              variante="secundario"
-              className="w-full !py-3 sm:w-auto sm:!py-2.5"
+          <div className="flex w-full flex-col items-end gap-2 sm:w-auto">
+            <div className="no-imprimir flex w-full gap-2 sm:w-auto">
+              <BotonEnlace
+                href={`/modelos/${modelo.id}/editar`}
+                variante="secundario"
+                className="w-full !py-3 sm:w-auto sm:!py-2.5"
+              >
+                <IconoEditar tamano={16} />
+                Editar
+              </BotonEnlace>
+            </div>
+
+            {/* El lector de codigos lee igual de la pantalla que del papel:
+                sirve para probar el lector sin tener que imprimir nada. */}
+            <Link
+              href={`/modelos/etiquetas?prefijo=${encodeURIComponent(modelo.prefijo)}`}
+              title="Imprimir etiquetas de esta linea"
+              className="no-imprimir hidden rounded-sm border border-[var(--color-linea)] bg-white px-3 py-2 transition-colors hover:border-[var(--color-oro)] sm:block"
             >
-              <IconoEditar tamano={16} />
-              Editar
-            </BotonEnlace>
+              <CodigoBarras texto={modelo.codigo} alto={34} className="w-40" />
+            </Link>
           </div>
         </div>
       </div>

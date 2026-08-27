@@ -298,3 +298,28 @@ export function IconoVacio(p: Props) {
     </Base>
   );
 }
+
+/** Candado: la contrasena de entrada al sistema. */
+export function IconoCandado(p: Props) {
+  return (
+    <Base {...p}>
+      <rect x="4.75" y="10.25" width="14.5" height="9.5" rx="1.5" />
+      <path d="M8.25 10.25V7.5a3.75 3.75 0 0 1 7.5 0v2.75" />
+      <path d="M12 14v2" />
+    </Base>
+  );
+}
+
+/** Codigo de barras: las etiquetas que lee el lector. */
+export function IconoCodigoBarras(p: Props) {
+  return (
+    <Base {...p}>
+      <path d="M4 6.5v11" />
+      <path d="M7 6.5v11" />
+      <path d="M10 6.5v7" />
+      <path d="M13.5 6.5v11" />
+      <path d="M17 6.5v7" />
+      <path d="M20 6.5v11" />
+    </Base>
+  );
+}

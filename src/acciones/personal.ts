@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { guardarAjuste } from "@/lib/ajustes";
 import type { Resultado } from "@/lib/tipos";
+import { exigirAcceso } from "@/lib/acceso";
 
 /**
  * Personal del negocio.
@@ -22,6 +23,7 @@ export async function guardarPersona(
   _previo: unknown,
   form: FormData
 ): Promise<Resultado<number>> {
+  await exigirAcceso();
   const db = getDb();
 
   const id = parseInt(String(form.get("id") ?? "0"), 10) || 0;
@@ -60,6 +62,7 @@ export async function guardarPersona(
  * conservan su nombre y el historial sigue teniendo sentido.
  */
 export async function cambiarEstadoPersona(id: number, activo: boolean): Promise<Resultado> {
+  await exigirAcceso();
   const db = getDb();
   db.prepare("UPDATE personal SET activo = ? WHERE id = ?").run(activo ? 1 : 0, id);
   refrescar();
@@ -68,6 +71,7 @@ export async function cambiarEstadoPersona(id: number, activo: boolean): Promise
 
 /** Prende o apaga el manejo de tianguis en todo el sistema. */
 export async function cambiarUsoTianguis(usar: boolean): Promise<Resultado> {
+  await exigirAcceso();
   guardarAjuste("usa_tianguis", usar ? "1" : "0");
   refrescar();
   return {

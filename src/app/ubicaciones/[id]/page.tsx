@@ -5,10 +5,12 @@ import { AccionesUbicacion } from "@/components/AccionesUbicacion";
 import { BotonEnlace, EnlaceVolver, Existencia, Tarjeta, Vacio } from "@/components/ui";
 import { FotoModelo } from "@/components/FotoModelo";
 import { IconoCaja, IconoEtiqueta } from "@/components/iconos";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
 export default async function DetalleUbicacion({ params }: { params: Promise<{ id: string }> }) {
+  await exigirEntrada();
   const { id } = await params;
   const ubicacionId = parseInt(id, 10);
   const ubicacion = obtenerUbicacion(ubicacionId);

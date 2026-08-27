@@ -3,6 +3,7 @@ import { listarUbicaciones } from "@/lib/consultas";
 import { BotonImprimir } from "@/components/BotonImprimir";
 import { EnlaceVolver, Vacio } from "@/components/ui";
 import { IconoEtiqueta } from "@/components/iconos";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ type Params = Promise<{ [k: string]: string | string[] | undefined }>;
  * en algo util fisicamente.
  */
 export default async function Etiquetas({ searchParams }: { searchParams: Params }) {
+  await exigirEntrada();
   const sp = await searchParams;
   const zonaFiltro = typeof sp.zona === "string" ? sp.zona : "";
 

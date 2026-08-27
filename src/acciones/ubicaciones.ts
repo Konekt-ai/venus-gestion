@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { normalizarCodigo, normalizarTexto } from "@/lib/codigos";
 import type { Resultado } from "@/lib/tipos";
+import { exigirAcceso } from "@/lib/acceso";
 
 function refrescar() {
   revalidatePath("/", "layout");
@@ -21,6 +22,7 @@ export async function guardarUbicacion(
   _previo: unknown,
   form: FormData
 ): Promise<Resultado<number>> {
+  await exigirAcceso();
   const db = getDb();
 
   const id = parseInt(String(form.get("id") ?? "0"), 10) || 0;
@@ -75,6 +77,7 @@ export async function generarUbicaciones(datos: {
   nivelDesde: number;
   nivelHasta: number;
 }): Promise<Resultado<{ creadas: number; repetidas: number }>> {
+  await exigirAcceso();
   const db = getDb();
   const zona = normalizarTexto(datos.zona);
 
@@ -126,6 +129,7 @@ export async function generarUbicaciones(datos: {
  * quedan como "sin ubicacion" para reasignarlos.
  */
 export async function eliminarUbicacion(id: number): Promise<Resultado> {
+  await exigirAcceso();
   const db = getDb();
 
   const enUso = db
@@ -151,6 +155,7 @@ export async function moverUbicacionCompleta(
   origenId: number,
   destinoId: number | null
 ): Promise<Resultado> {
+  await exigirAcceso();
   const db = getDb();
   const info = db
     .prepare(

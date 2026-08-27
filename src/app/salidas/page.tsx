@@ -5,6 +5,7 @@ import { ArmadorEnvio, type ModeloElegible } from "@/components/ArmadorEnvio";
 import { Insignia, Tarjeta, TituloPagina } from "@/components/ui";
 import { IconoRegresar, IconoTianguis, IconoTienda } from "@/components/iconos";
 import type { Destino } from "@/lib/tipos";
+import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,7 @@ function interpretar(clave: string): { clase: "envio" | "retorno"; destino: Dest
 }
 
 export default async function PaginaSalidas({ searchParams }: { searchParams: Params }) {
+  await exigirEntrada();
   const sp = await searchParams;
   const conTianguis = usaTianguis();
   const pestanas = PESTANAS.filter((p) => conTianguis || !p.esTianguis);
