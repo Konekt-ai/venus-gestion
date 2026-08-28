@@ -47,18 +47,56 @@ if !NODEMAYOR! LSS 20 (
 echo.
 
 REM --- Material del cliente -------------------------------------
-REM Las fotos y el logo no viajan con el codigo: se copian aparte.
-if not exist "public\catalogo" (
-  echo   [aviso] No encontre la carpeta  public\catalogo
-  echo.
-  echo   El sistema va a funcionar, pero los modelos apareceran
-  echo   sin foto. Si tienes esa carpeta, copiala junto a este
-  echo   archivo y vuelve a correr la instalacion.
-  echo.
-  echo   Presiona una tecla para seguir de todos modos...
-  pause >nul
-  echo.
+REM Las fotos, el logo y el catalogo NO viajan en GitHub: son del
+REM cliente. Entonces un  git clone  baja el sistema vacio. Ese
+REM material se trae aparte, en la carpeta MATERIAL-VENUS que arma
+REM  npm run material , y aqui se busca sola en los lugares donde
+REM razonablemente puede estar: adentro, al lado, o en la USB.
+echo   Paso 1 de 4: buscando el material del cliente...
+
+set "MATERIAL="
+if exist "MATERIAL-VENUS\src\datos\catalogo.json" set "MATERIAL=MATERIAL-VENUS"
+if not defined MATERIAL if exist "..\MATERIAL-VENUS\src\datos\catalogo.json" set "MATERIAL=..\MATERIAL-VENUS"
+
+REM En la USB: se prueba letra por letra, de la D a la K.
+if not defined MATERIAL for %%U in (D E F G H I J K) do (
+  if not defined MATERIAL if exist "%%U:\MATERIAL-VENUS\src\datos\catalogo.json" set "MATERIAL=%%U:\MATERIAL-VENUS"
 )
+
+if defined MATERIAL goto :copiarmaterial
+goto :revisarmaterial
+
+:copiarmaterial
+echo   Lo encontre en  !MATERIAL!
+REM /E subcarpetas, /I destino es carpeta, /Y sin preguntar, /Q callado.
+xcopy "!MATERIAL!\public" "public\" /E /I /Y /Q >nul 2>nul
+xcopy "!MATERIAL!\src\datos" "src\datos\" /E /I /Y /Q >nul 2>nul
+echo   Fotos, logo y catalogo copiados.
+echo.
+goto :dependencias
+
+:revisarmaterial
+if exist "src\datos\catalogo.json" (
+  echo   Ya estaba en su lugar.
+  echo.
+  goto :dependencias
+)
+
+echo.
+echo   [aviso] No encontre el material del cliente.
+echo.
+echo   El sistema va a instalarse bien, pero va a arrancar SIN
+echo   los modelos y SIN las fotos, porque eso no viaja en
+echo   GitHub a proposito: es material del negocio.
+echo.
+echo   Para arreglarlo: copia la carpeta  MATERIAL-VENUS  de la
+echo   USB junto a esta carpeta, y vuelve a correr este archivo.
+echo.
+echo   Presiona una tecla para seguir de todos modos...
+pause >nul
+echo.
+
+:dependencias
 
 REM --- Lo que necesita el sistema -------------------------------
 REM Si la carpeta ya trae node_modules (paquete armado con
@@ -76,11 +114,11 @@ REM parentesis dentro de parentesis y termina corriendo las dos ramas.
 if "!TRAELISTO!"=="1" goto :yavienelisto
 
 if exist "node_modules" (
-  echo   Paso 1 de 3: lo que venia en la carpeta no sirve en esta
+  echo   Paso 2 de 4: lo que venia en la carpeta no sirve en esta
   echo   computadora. Bajando la version correcta...
 )
 if not exist "node_modules" (
-  echo   Paso 1 de 3: descargando lo que necesita el sistema...
+  echo   Paso 2 de 4: descargando lo que necesita el sistema...
 )
 echo   (esto necesita internet y es lo que mas tarda)
 echo.
@@ -90,7 +128,7 @@ echo.
 goto :probarbase
 
 :yavienelisto
-echo   Paso 1 de 3: la carpeta ya trae todo lo que necesita.
+echo   Paso 2 de 4: la carpeta ya trae todo lo que necesita.
 echo   No hace falta internet.
 echo.
 goto :probarbase
@@ -112,7 +150,7 @@ REM --- Prueba del motor de la base de datos ---------------------
 REM Es lo unico que se compila para esta computadora en particular.
 REM Si algo falla, casi siempre falla aqui, asi que se revisa ahora
 REM y no cuando el cliente lo este usando.
-echo   Paso 2 de 3: probando la base de datos...
+echo   Paso 3 de 4: probando la base de datos...
 node -e "new (require('better-sqlite3'))(':memory:').prepare('select 1 as x').get()" >nul 2>nul
 if errorlevel 1 (
   echo.
@@ -131,7 +169,7 @@ echo   La base de datos responde bien.
 echo.
 
 REM --- Compilacion ----------------------------------------------
-echo   Paso 3 de 3: preparando el sistema...
+echo   Paso 4 de 4: preparando el sistema...
 echo.
 call npm run build
 if errorlevel 1 (

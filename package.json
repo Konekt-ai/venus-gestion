@@ -13,7 +13,8 @@
     "catalogo": "node scripts/preparar-catalogo.mjs",
     "catalogo:importar": "node scripts/importar-catalogo.mjs",
     "datos": "node scripts/datos.mjs",
-    "paquete": "node scripts/paquete.mjs"
+    "paquete": "node scripts/paquete.mjs",
+    "material": "node scripts/material.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",
@@ -32,6 +33,6 @@
     "typescript": "^5.9.2"
   },
   "engines": {
-    "node": "24.x"
+    "node": ">=20"
   }
 }
