@@ -51,20 +51,36 @@ echo   Base encontrada en: !RUTADB!
 REM La fecha se saca con PowerShell y no con %date%, que cambia de
 REM formato segun como este configurado Windows y termina haciendo
 REM nombres de archivo con diagonales adentro.
-for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmm"') do set "CUANDO=%%a"
+REM Con segundos, no solo minutos: dos intentos seguidos caian en el
+REM mismo nombre, VACUUM se negaba a escribir encima y el respaldo
+REM terminaba saliendo por el camino malo.
+for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmmss"') do set "CUANDO=%%a"
 
-REM VACUUM INTO y no copiar el archivo: con el modo WAL, copiarlo a
-REM mano puede dejar fuera lo ultimo que se escribio.
+REM VACUUM INTO y no copiar el archivo: con el modo WAL la base vive
+REM en dos partes, y copiar solo el .db deja fuera lo ultimo escrito.
 set "ORIGEN=!RUTADB:\=/!"
-node -e "const D=require('better-sqlite3');const d=new D(process.argv[1],{readonly:true});d.exec(`VACUUM INTO 'respaldos/venus-!CUANDO!.db'`);d.close();" "!ORIGEN!" 2>nul
-if errorlevel 1 (
-  echo   [aviso] No se pudo hacer el respaldo con VACUUM. Copio el archivo.
-  copy /y "!RUTADB!" "respaldos\venus-!CUANDO!.db" >nul 2>nul
+set "DESTINO=respaldos\venus-!CUANDO!.db"
+if exist "!DESTINO!" del /q "!DESTINO!" >nul 2>nul
+
+node -e "const D=require('better-sqlite3');const d=new D(process.argv[1],{readonly:true});d.exec(`VACUUM INTO '`+process.argv[2]+`'`);d.close();" "!ORIGEN!" "respaldos/venus-!CUANDO!.db" 2>nul
+
+if not exist "!DESTINO!" (
+  REM Copiar solo el .db daria un respaldo incompleto que PARECE
+  REM bueno: pesa menos y le falta lo ultimo que se escribio. Eso es
+  REM peor que no tener respaldo, porque nadie lo revisa hasta el dia
+  REM que hace falta. Se copian las tres partes juntas, que si sirven.
+  echo   [aviso] No se pudo compactar el respaldo. Copio la base entera.
+  copy /y "!RUTADB!" "!DESTINO!" >nul 2>nul
+  if exist "!RUTADB!-wal" copy /y "!RUTADB!-wal" "!DESTINO!-wal" >nul 2>nul
+  if exist "!RUTADB!-shm" copy /y "!RUTADB!-shm" "!DESTINO!-shm" >nul 2>nul
+  echo   Se copiaron las tres partes: sin el -wal el respaldo no sirve.
 )
-if exist "respaldos\venus-!CUANDO!.db" (
-  echo   Respaldo en:  respaldos\venus-!CUANDO!.db
+
+if exist "!DESTINO!" (
+  echo   Respaldo en:  !DESTINO!
 ) else (
-  echo   [alto] No se pudo respaldar. Revisa antes de seguir.
+  echo   [alto] No se pudo respaldar. NO se actualiza a ciegas.
+  echo   Revisa que la base este donde dice arriba y vuelve a intentar.
   pause
   exit /b 1
 )
