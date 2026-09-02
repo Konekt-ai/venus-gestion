@@ -6,6 +6,8 @@ import { normalizarCodigo, normalizarTexto, partirCodigo, validarCodigo } from "
 import { aplicarMovimiento, ErrorInventario } from "@/lib/inventario";
 import type { Resultado } from "@/lib/tipos";
 import { exigirAcceso } from "@/lib/acceso";
+import { aCentavos } from "@/lib/dinero";
+import { guardarPrecio, hayTablaPrecios } from "@/lib/precios";
 
 function texto(v: FormDataEntryValue | null): string {
   return typeof v === "string" ? v.trim() : "";
@@ -69,20 +71,71 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
     return { ok: false, error: `El codigo ${choque.codigo} ya esta registrado.` };
   }
 
+  // El precio vive en la tabla de la caja. Se distingue "no vino el
+  // campo" (la pantalla no lo dibujo porque no hay caja instalada, y
+  // entonces no se toca nada) de "vino vacio" (quitarle el precio).
+  const tocaPrecio = form.has("precio") && hayTablaPrecios();
+  let precioCentavos: number | null = null;
+
+  if (tocaPrecio) {
+    const escrito = texto(form.get("precio"));
+    if (escrito) {
+      precioCentavos = aCentavos(escrito);
+      if (precioCentavos === null) {
+        return { ok: false, error: `"${escrito}" no se entiende como precio. Escribelo asi: 650 o 650.50.` };
+      }
+    }
+  }
+
   try {
     if (id > 0) {
-      db.prepare(
-        `UPDATE modelos SET
-           codigo = @codigo, codigo_norm = @codigo_norm, prefijo = @prefijo, numero = @numero,
-           descripcion = @descripcion, categoria = @categoria, tallas = @tallas,
-           colores = @colores, tela = @tela, minimo = @minimo, ubicacion_id = @ubicacion_id,
-           notas = @notas, foto = @foto, destacado = @destacado,
-           actualizado_en = datetime('now','localtime')
-         WHERE id = @id`
-      ).run({ ...campos, id });
+      const antes = db
+        .prepare("SELECT codigo, codigo_norm FROM modelos WHERE id = ?")
+        .get(id) as { codigo: string; codigo_norm: string } | undefined;
+
+      const cambioElCodigo = Boolean(antes) && antes!.codigo_norm !== codigoNorm;
+
+      // Todo junto o nada: si el precio falla, el codigo no se queda
+      // cambiado a medias. La transaccion se deja corta a proposito,
+      // porque la caja escribe este mismo archivo.
+      db.transaction(() => {
+        db.prepare(
+          `UPDATE modelos SET
+             codigo = @codigo, codigo_norm = @codigo_norm, prefijo = @prefijo, numero = @numero,
+             descripcion = @descripcion, categoria = @categoria, tallas = @tallas,
+             colores = @colores, tela = @tela, minimo = @minimo, ubicacion_id = @ubicacion_id,
+             notas = @notas, foto = @foto, destacado = @destacado,
+             actualizado_en = datetime('now','localtime')
+           WHERE id = @id`
+        ).run({ ...campos, id });
+
+        if (cambioElCodigo) {
+          // Las etiquetas que ya estan pegadas en la ropa siguen
+          // diciendo el codigo viejo. Se guarda para que el buscador
+          // las siga resolviendo a esta prenda.
+          db.prepare(
+            `INSERT INTO codigos_anteriores (modelo_id, codigo, codigo_norm, codigo_nuevo)
+             VALUES (?, ?, ?, ?)`
+          ).run(id, antes!.codigo, antes!.codigo_norm, campos.codigo);
+
+          // Y si el codigo que se acaba de poner era el codigo viejo de
+          // alguien mas, ese renglon ya no vale: ahora apunta aqui.
+          db.prepare(
+            "DELETE FROM codigos_anteriores WHERE codigo_norm = ? AND modelo_id <> ?"
+          ).run(codigoNorm, id);
+        }
+
+        if (tocaPrecio) guardarPrecio(db, id, precioCentavos);
+      })();
 
       refrescar();
-      return { ok: true, datos: id, mensaje: `Se guardo ${campos.codigo}.` };
+      return {
+        ok: true,
+        datos: id,
+        mensaje: cambioElCodigo
+          ? `Se guardo ${campos.codigo}. Antes se llamaba ${antes!.codigo}: conviene reimprimir sus etiquetas.`
+          : `Se guardo ${campos.codigo}.`,
+      };
     }
 
     // Alta: la existencia inicial entra como movimiento de entrada,
@@ -101,6 +154,9 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
         .run(campos);
 
       const creadoId = Number(info.lastInsertRowid);
+
+      // Una prenda nueva tambien puede nacer con su precio puesto.
+      if (tocaPrecio) guardarPrecio(db, creadoId, precioCentavos);
 
       if (existenciaInicial > 0) {
         aplicarMovimiento(db, {

@@ -6,7 +6,7 @@ import type { SVGProps } from "react";
 import { registrarMovimiento } from "@/acciones/movimientos";
 import { Aviso, Boton } from "@/components/ui";
 import {
-  IconoEditar,
+  IconoAjustes,
   IconoEntrada,
   IconoRegresar,
   IconoTianguis,
@@ -73,8 +73,12 @@ const OPCIONES: Opcion[] = [
   },
   {
     tipo: "ajuste",
-    texto: "Corregir",
-    Icono: IconoEditar,
+    // Se llama "Correccion de piezas" y lleva el icono de ajustes, no
+    // el de lapiz: con el mismo lapiz que "Editar producto" la gente
+    // los confundia. Este cuadra EXISTENCIAS; el otro cambia los DATOS
+    // de la prenda. Son dos cosas distintas y ahora se ven distintas.
+    texto: "Correccion de piezas",
+    Icono: IconoAjustes,
     pregunta: "¿Con cuantas piezas debe quedar? Se registrara la correccion.",
     color:
       "border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] text-[var(--color-humo)] hover:border-[var(--color-oro)]",

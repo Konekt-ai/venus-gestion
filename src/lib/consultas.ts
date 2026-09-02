@@ -88,6 +88,13 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConUbicacion
 
     condiciones.push(`(
       m.codigo_norm = @exacto
+      -- Un codigo que la prenda tuvo antes tambien la encuentra: las
+      -- etiquetas ya pegadas siguen diciendo el codigo viejo, y sin
+      -- esto escanearlas no daria con nada.
+      OR EXISTS (
+        SELECT 1 FROM codigos_anteriores ca
+         WHERE ca.modelo_id = m.id AND ca.codigo_norm = @exacto
+      )
       OR m.codigo_norm LIKE @iniciaCodigo
       OR m.codigo_norm LIKE @likeCodigo
       OR (@numero IS NOT NULL AND m.numero = @numero)
@@ -142,6 +149,8 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConUbicacion
   const relevancia = q
     ? `CASE
          WHEN m.codigo_norm = @exacto THEN 0
+         WHEN EXISTS (SELECT 1 FROM codigos_anteriores ca
+                       WHERE ca.modelo_id = m.id AND ca.codigo_norm = @exacto) THEN 1
          WHEN @numero IS NOT NULL AND m.numero = @numero AND m.prefijo = @prefijo THEN 1
          WHEN m.codigo_norm LIKE @iniciaCodigo THEN 2
          WHEN @numero IS NOT NULL AND m.numero = @numero THEN 3
@@ -222,6 +231,8 @@ export function obtenerModelo(id: number): ModeloConUbicacion | null {
 
 export function obtenerModeloPorCodigo(codigo: string): ModeloConUbicacion | null {
   const db = getDb();
+  const norm = normalizarCodigo(codigo);
+
   const fila = db
     .prepare(
       `SELECT ${CAMPOS_MODELO}
@@ -229,8 +240,34 @@ export function obtenerModeloPorCodigo(codigo: string): ModeloConUbicacion | nul
        LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
        WHERE m.codigo_norm = ?`
     )
-    .get(normalizarCodigo(codigo)) as ModeloConUbicacion | undefined;
-  return fila ? conFotosReales([fila])[0] : null;
+    .get(norm) as ModeloConUbicacion | undefined;
+
+  if (fila) return conFotosReales([fila])[0] ?? null;
+
+  // Nadie vivo con ese codigo: puede ser una etiqueta vieja, de antes
+  // de que se corrigiera el codigo de la prenda.
+  const anteriores = db
+    .prepare(
+      `SELECT DISTINCT modelo_id FROM codigos_anteriores
+        WHERE codigo_norm = ? ORDER BY cambiado_en DESC`
+    )
+    .all(norm) as { modelo_id: number }[];
+
+  // Solo si apunta a UNA sola prenda. Un codigo que se reciclo entre
+  // dos modelos distintos no puede abrir el equivocado: mas vale no
+  // encontrar nada que mandar a alguien a la percha de al lado.
+  if (anteriores.length !== 1) return null;
+
+  const viejo = db
+    .prepare(
+      `SELECT ${CAMPOS_MODELO}
+       FROM modelos m
+       LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
+       WHERE m.id = ?`
+    )
+    .get(anteriores[0].modelo_id) as ModeloConUbicacion | undefined;
+
+  return viejo ? (conFotosReales([viejo])[0] ?? null) : null;
 }
 
 export function movimientosDeModelo(modeloId: number, limite = 50): MovimientoConModelo[] {

@@ -3,11 +3,13 @@ import { ArmadorEnvio, type ModeloElegible } from "@/components/ArmadorEnvio";
 import { BotonEnlace, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
 import { IconoMas, IconoPrenda } from "@/components/iconos";
 import { exigirEntrada } from "@/lib/acceso";
+import { leerAjustes } from "@/lib/ajustes";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaginaEntradas() {
   await exigirEntrada();
+  const ajustes = leerAjustes();
   const modelos: ModeloElegible[] = buscarModelos({ limite: 2000 }).map((m) => ({
     id: m.id,
     codigo: m.codigo,
@@ -41,7 +43,12 @@ export default async function PaginaEntradas() {
           }
         />
       ) : (
-        <ArmadorEnvio modelos={modelos} modo={{ clase: "entrada" }} />
+        <ArmadorEnvio
+        modelos={modelos}
+        modo={{ clase: "entrada" }}
+        hayImpresora={Boolean(ajustes.impresoraEtiquetas)}
+        topeEtiquetas={ajustes.etiquetaTope}
+      />
       )}
 
       <Tarjeta>

@@ -4,6 +4,7 @@ import { FormularioModelo } from "@/components/FormularioModelo";
 import { ArchivarModelo } from "@/components/ArchivarModelo";
 import { TituloPagina } from "@/components/ui";
 import { exigirEntrada } from "@/lib/acceso";
+import { hayTablaPrecios, precioDeModelo } from "@/lib/precios";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,8 @@ export default async function EditarModelo({ params }: { params: Promise<{ id: s
 
       <FormularioModelo
         modelo={modelo}
+        hayPrecios={hayTablaPrecios()}
+        precio={precioDeModelo(modelo.id)}
         ubicaciones={listarUbicaciones()}
         catalogos={{
           tallas: listarCatalogo("talla"),

@@ -2,6 +2,7 @@ import { listarCatalogo, listarUbicaciones } from "@/lib/consultas";
 import { FormularioModelo } from "@/components/FormularioModelo";
 import { TituloPagina } from "@/components/ui";
 import { exigirEntrada } from "@/lib/acceso";
+import { hayTablaPrecios } from "@/lib/precios";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function NuevoModelo({ searchParams }: { searchParams: Para
         descripcion="Registra una prenda para poder buscarla y saber donde esta."
       />
       <FormularioModelo
+        hayPrecios={hayTablaPrecios()}
         ubicaciones={listarUbicaciones()}
         codigoSugerido={codigoSugerido}
         catalogos={{

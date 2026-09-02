@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { guardarModelo } from "@/acciones/modelos";
+import { pesosSimple } from "@/lib/dinero";
 import { formatearCodigo } from "@/lib/codigos";
 import { FotoModelo } from "@/components/FotoModelo";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
@@ -22,11 +23,18 @@ export function FormularioModelo({
   ubicaciones,
   catalogos,
   codigoSugerido = "",
+  // El precio vive en la tabla de la caja. Si la caja no esta
+  // instalada, el campo ni se dibuja: un precio sin caja no le sirve
+  // a nadie y ademas bodega no debe crear esa tabla.
+  hayPrecios = false,
+  precio = null,
 }: {
   modelo?: ModeloConUbicacion;
   ubicaciones: UbicacionConTotales[];
   catalogos: { tallas: string[]; colores: string[]; telas: string[]; categorias: string[] };
   codigoSugerido?: string;
+  hayPrecios?: boolean;
+  precio?: number | null;
 }) {
   const router = useRouter();
   const [estado, accion, pendiente] = useActionState(guardarModelo, null);
@@ -259,6 +267,28 @@ export function FormularioModelo({
                 onFocus={(e) => e.currentTarget.select()}
                 className="campo sin-flechas !py-3.5 text-center !text-2xl !font-bold"
               />
+            </div>
+          )}
+
+          {hayPrecios && (
+            <div>
+              <label htmlFor="precio" className="etiqueta">
+                Precio de venta
+              </label>
+              <input
+                id="precio"
+                name="precio"
+                type="text"
+                inputMode="decimal"
+                defaultValue={precio === null ? "" : pesosSimple(precio)}
+                placeholder="650.00"
+                autoComplete="off"
+                className="campo"
+              />
+              <p className="mt-1 text-xs leading-relaxed text-[var(--color-humo)]">
+                Dejalo en blanco para quitarle el precio. La caja lo toma cuando se
+                recargue su pantalla de cobrar.
+              </p>
             </div>
           )}
 

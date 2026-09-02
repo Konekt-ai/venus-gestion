@@ -114,12 +114,32 @@ export async function registrarRemision(datos: {
   }
 }
 
+/**
+ * Lo que se acaba de registrar, renglon por renglon.
+ *
+ * Se devuelve con detalle para que la pantalla pueda ofrecer justo
+ * despues "imprimir 30 etiquetas de BD96", con la cantidad ya puesta:
+ * registrar produccion y etiquetarla son el mismo momento.
+ */
+export type EntradaRegistrada = {
+  modelos: number;
+  piezas: number;
+  lineas: {
+    modeloId: number;
+    codigo: string;
+    descripcion: string;
+    cantidad: number;
+    /** Con cuantas piezas quedo la prenda en bodega. */
+    despues: number;
+  }[];
+};
+
 /** Entrada de mercancia nueva a bodega, varios modelos de una vez. */
 export async function registrarEntrada(datos: {
   persona?: string;
   nota?: string;
   lineas: LineaEnvio[];
-}): Promise<Resultado<{ modelos: number; piezas: number }>> {
+}): Promise<Resultado<EntradaRegistrada>> {
   await exigirAcceso();
   const db = getDb();
   const lineas = datos.lineas.filter((l) => l.cantidad > 0);
@@ -128,24 +148,48 @@ export async function registrarEntrada(datos: {
     return { ok: false, error: "Agrega al menos un modelo con cantidad." };
   }
 
+  const datosDelModelo = db.prepare(
+    "SELECT codigo, descripcion FROM modelos WHERE id = ?"
+  );
+
   try {
-    db.transaction(() => {
+    // El detalle se arma DENTRO de la transaccion y se devuelve desde
+    // ella. Si se fuera juntando en una variable de afuera, una entrada
+    // que se revierte a la mitad dejaria en pantalla piezas que en
+    // realidad nunca entraron.
+    const detalle = db.transaction(() => {
+      const hechas: EntradaRegistrada["lineas"] = [];
+
       for (const linea of lineas) {
-        aplicarMovimiento(db, {
+        const r = aplicarMovimiento(db, {
           modeloId: linea.modeloId,
           tipo: "entrada",
           cantidad: linea.cantidad,
           persona: datos.persona,
           nota: datos.nota,
         });
+
+        const m = datosDelModelo.get(linea.modeloId) as
+          | { codigo: string; descripcion: string }
+          | undefined;
+
+        hechas.push({
+          modeloId: linea.modeloId,
+          codigo: m?.codigo ?? "",
+          descripcion: m?.descripcion ?? "",
+          cantidad: linea.cantidad,
+          despues: r.despues,
+        });
       }
+
+      return hechas;
     })();
 
     refrescar();
     const piezas = lineas.reduce((s, l) => s + l.cantidad, 0);
     return {
       ok: true,
-      datos: { modelos: lineas.length, piezas },
+      datos: { modelos: lineas.length, piezas, lineas: detalle },
       mensaje: `Entraron ${piezas} piezas de ${lineas.length} ${
         lineas.length === 1 ? "modelo" : "modelos"
       }.`,

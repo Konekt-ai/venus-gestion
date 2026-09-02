@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { registrarEntrada, registrarRemision } from "@/acciones/movimientos";
+import { registrarEntrada, registrarRemision, type EntradaRegistrada } from "@/acciones/movimientos";
+import { AcuseEntrada } from "@/components/AcuseEntrada";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "@/lib/codigos";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
 import { FotoModelo } from "@/components/FotoModelo";
@@ -43,9 +44,16 @@ type Modo =
 export function ArmadorEnvio({
   modelos,
   modo,
+  // Opcionales con valor por omision: /salidas usa este mismo
+  // componente en sus cuatro modos y no tiene por que enterarse de
+  // que existe una impresora de etiquetas.
+  hayImpresora = false,
+  topeEtiquetas = 60,
 }: {
   modelos: ModeloElegible[];
   modo: Modo;
+  hayImpresora?: boolean;
+  topeEtiquetas?: number;
 }) {
   const router = useRouter();
   const [renglones, setRenglones] = useState<Renglon[]>([]);
@@ -54,6 +62,8 @@ export function ArmadorEnvio({
   const [nota, setNota] = useState("");
   const [error, setError] = useState("");
   const [enviando, iniciar] = useTransition();
+  // Solo se usa en entradas: es el acuse con los botones de etiquetar.
+  const [acuse, setAcuse] = useState<EntradaRegistrada | null>(null);
 
   /** Cuantas piezas se pueden mover de este modelo en este modo. */
   function disponible(m: ModeloElegible): number {
@@ -144,10 +154,21 @@ export function ArmadorEnvio({
     iniciar(async () => {
       if (modo.clase === "entrada") {
         const r = await registrarEntrada({ persona, nota, lineas });
-        if (r.ok) {
-          router.push("/modelos?orden=reciente");
+        if (r.ok && r.datos) {
+          // Ya no se navega: registrar produccion y etiquetarla son el
+          // mismo momento, y cambiar de pantalla en medio los separa.
+          setAcuse(r.datos);
+          // Limpiar los renglones NO es cosmetico. Antes el estado se
+          // borraba al desmontarse el componente por la navegacion; si
+          // se queda montado con la captura puesta, se puede confirmar
+          // dos veces la MISMA entrada y duplicar piezas de verdad.
+          setRenglones([]);
+          setPersona("");
+          setNota("");
+          setBusqueda("");
+          setError("");
           router.refresh();
-        } else setError(r.error);
+        } else if (!r.ok) setError(r.error);
         return;
       }
 
@@ -174,6 +195,19 @@ export function ArmadorEnvio({
       : modo.clase === "envio"
         ? `Confirmar salida a ${modo.destino === "TIENDA" ? "tienda" : "tianguis"}`
         : `Confirmar regreso de ${modo.destino === "TIENDA" ? "tienda" : "tianguis"}`;
+
+  // Con el acuse en pantalla, la captura ni se dibuja: asi el boton de
+  // confirmar no existe y no hay forma de registrar lo mismo dos veces.
+  if (acuse) {
+    return (
+      <AcuseEntrada
+        entrada={acuse}
+        hayImpresora={hayImpresora}
+        tope={topeEtiquetas}
+        alRegistrarOtra={() => setAcuse(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">

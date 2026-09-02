@@ -32,6 +32,9 @@ const acceso = await import("../src/lib/clave.ts");
 const barras = await import("../src/lib/barras.ts");
 const siembra = await import("../src/lib/siembra.ts");
 const tspl = await import("../src/lib/tspl.ts");
+const consultas = await import("../src/lib/consultas.ts");
+const dinero = await import("../src/lib/dinero.ts");
+const precios = await import("../src/lib/precios.ts");
 
 let pasadas = 0;
 let fallidas = 0;
@@ -550,6 +553,109 @@ comprobar(
 // La descripcion se recorta a lo que de verdad cabe con su fuente, y
 // no mas: "FALDA CORTA CON FAJO" tiene que salir completa.
 comprobar("la descripcion del cliente cabe entera", etq.includes("FALDA CORTA CON FAJO"));
+
+// ---------------------------------------------------------------
+console.log("");
+console.log("Corregir el codigo de una prenda");
+
+// De los 129 modelos precargados hay algunos con el codigo mal escrito.
+// Corregirlos no puede dejar inservibles las etiquetas que ya estan
+// pegadas en la ropa: eso es lo que se prueba aqui.
+const paraRenombrar = db
+  .prepare("SELECT id, codigo, codigo_norm FROM modelos ORDER BY id LIMIT 1")
+  .get();
+
+comprobar("hay una prenda para la prueba", Boolean(paraRenombrar));
+
+const codigoViejo = paraRenombrar.codigo;
+const normViejo = paraRenombrar.codigo_norm;
+const NUEVO = "ZZ 999";
+const NUEVO_NORM = "ZZ999";
+
+db.transaction(() => {
+  db.prepare(
+    "UPDATE modelos SET codigo = ?, codigo_norm = ?, prefijo = ?, numero = ? WHERE id = ?"
+  ).run(NUEVO, NUEVO_NORM, "ZZ", 999, paraRenombrar.id);
+  db.prepare(
+    `INSERT INTO codigos_anteriores (modelo_id, codigo, codigo_norm, codigo_nuevo)
+     VALUES (?, ?, ?, ?)`
+  ).run(paraRenombrar.id, codigoViejo, normViejo, NUEVO);
+})();
+
+iguales(
+  "con el codigo nuevo se encuentra",
+  consultas.obtenerModeloPorCodigo(NUEVO_NORM)?.codigo,
+  NUEVO
+);
+
+// La de verdad importante: la etiqueta que trae la prenda colgada dice
+// el codigo viejo. Si al escanearla no apareciera nada, el inventario
+// quedaria bien y la bodega igual no serviria.
+iguales(
+  "escanear la etiqueta vieja sigue encontrando la prenda",
+  consultas.obtenerModeloPorCodigo(normViejo)?.codigo,
+  NUEVO
+);
+
+const porBuscador = consultas.buscarModelos({ q: normViejo, limite: 5 });
+comprobar(
+  "y el buscador general tambien la encuentra",
+  porBuscador.some((m) => m.codigo === NUEVO),
+  porBuscador.map((m) => m.codigo).join(", ") || "(nada)"
+);
+
+comprobar(
+  "el primero de la lista es esa prenda, no otra parecida",
+  porBuscador[0] && porBuscador[0].codigo === NUEVO,
+  porBuscador[0] ? porBuscador[0].codigo : "(lista vacia)"
+);
+
+// Un codigo que se reciclo entre dos prendas distintas no puede abrir
+// la equivocada: mas vale no encontrar nada que mandar a alguien a la
+// percha de al lado.
+const otra = db.prepare("SELECT id FROM modelos WHERE id <> ? LIMIT 1").get(paraRenombrar.id);
+db.prepare(
+  `INSERT INTO codigos_anteriores (modelo_id, codigo, codigo_norm, codigo_nuevo)
+   VALUES (?, ?, ?, ?)`
+).run(otra.id, codigoViejo, normViejo, "OTRO");
+
+comprobar(
+  "un codigo que dos prendas tuvieron no abre ninguna",
+  consultas.obtenerModeloPorCodigo(normViejo) === null
+);
+
+// Se deja todo como estaba para no ensuciar las pruebas de abajo.
+db.prepare("DELETE FROM codigos_anteriores WHERE codigo_norm = ?").run(normViejo);
+db.prepare(
+  "UPDATE modelos SET codigo = ?, codigo_norm = ?, prefijo = ?, numero = ? WHERE id = ?"
+).run(codigoViejo, normViejo, paraRenombrar.codigo.split(" ")[0], null, paraRenombrar.id);
+
+// ---------------------------------------------------------------
+console.log("");
+console.log("Precios");
+
+iguales('"650" son 65000 centavos', dinero.aCentavos("650"), 65000);
+iguales('"$1,300.50" se entiende', dinero.aCentavos("$1,300.50"), 130050);
+iguales("lo que no es numero se rechaza", dinero.aCentavos("como quinientos"), null);
+iguales("vacio tambien", dinero.aCentavos(""), null);
+iguales("un negativo se rechaza", dinero.aCentavos("-10"), null);
+iguales("65000 centavos se leen $650.00", dinero.pesos(65000), "$650.00");
+iguales("y en el campo de captura, 650.00", dinero.pesosSimple(65000), "650.00");
+
+// Bodega NUNCA crea la tabla de la caja: un precio sin caja no le sirve
+// a nadie, y dos definiciones distintas de la misma tabla no se
+// arreglan solas.
+const habiaTabla = Boolean(
+  db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='caja_precios'").get()
+);
+comprobar(
+  "sin caja instalada, bodega no inventa la tabla de precios",
+  habiaTabla || precios.hayTablaPrecios() === false
+);
+comprobar(
+  "y sin tabla, pedir un precio no truena: contesta que no hay",
+  habiaTabla || precios.precioDeModelo(paraRenombrar.id) === null
+);
 
 // ---------------------------------------------------------------
 db.close();
