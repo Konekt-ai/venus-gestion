@@ -182,6 +182,31 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConUbicacion
    MODELOS
    ============================================================ */
 
+/**
+ * Varios modelos de un jalon, por sus ids.
+ *
+ * La usa la impresion de etiquetas, que ya sabe a que prendas les va a
+ * imprimir. Se pide asi y no con buscarModelos para no barrer los dos
+ * mil modelos del catalogo cuando se van a etiquetar tres.
+ */
+export function modelosPorIds(ids: number[]): ModeloConUbicacion[] {
+  const limpios = [...new Set(ids)].filter((n) => Number.isInteger(n) && n > 0);
+  if (limpios.length === 0) return [];
+
+  const db = getDb();
+  const huecos = limpios.map(() => "?").join(",");
+  const filas = db
+    .prepare(
+      `SELECT ${CAMPOS_MODELO}
+         FROM modelos m
+         LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
+        WHERE m.id IN (${huecos})`
+    )
+    .all(...limpios) as ModeloConUbicacion[];
+
+  return conFotosReales(filas);
+}
+
 export function obtenerModelo(id: number): ModeloConUbicacion | null {
   const db = getDb();
   const fila = db

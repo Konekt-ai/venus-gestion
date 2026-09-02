@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { buscarModelos, nombresDeLineas, prefijosEnUso } from "@/lib/consultas";
+import { buscarModelos, modelosPorIds, nombresDeLineas, prefijosEnUso } from "@/lib/consultas";
 import { exigirEntrada } from "@/lib/acceso";
+import { leerAjustes } from "@/lib/ajustes";
 import { BotonImprimir } from "@/components/BotonImprimir";
 import { CodigoBarras } from "@/components/CodigoBarras";
+import { codigoParaBarras } from "@/lib/barras";
 import { EnlaceVolver, Vacio } from "@/components/ui";
 import { IconoEtiqueta } from "@/components/iconos";
 
@@ -30,17 +32,43 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
   const soloConExistencia = TEXTO(sp.con) === "1";
   const copias = Math.min(Math.max(Number(TEXTO(sp.copias)) || 1, 1), 12);
 
+  const ajustes = leerAjustes();
+
+  // ?ids=12x30,45x8 pide prendas concretas con su propia cantidad. Lo
+  // usa el boton de la ficha y el acuse de una entrada cuando no hay
+  // impresora de rollo configurada.
+  const pedido = TEXTO(sp.ids)
+    .split(",")
+    .map((par) => par.match(/^(\d+)x(\d+)$/))
+    .filter((m): m is RegExpMatchArray => m !== null)
+    .map((m) => ({ id: Number(m[1]), cantidad: Number(m[2]) }))
+    .filter((x) => x.id > 0 && x.cantidad > 0);
+
   const todos = buscarModelos({ limite: 2000 });
   const lineas = new Map(nombresDeLineas());
 
-  let modelos = prefijo ? todos.filter((m) => m.prefijo === prefijo) : todos;
-  if (soloConExistencia) modelos = modelos.filter((m) => m.existencia > 0);
+  let etiquetas: ({ llave: string } & (typeof todos)[number])[];
 
-  // Una etiqueta por prenda: si hay 12 piezas del mismo modelo se
-  // necesitan 12 etiquetas iguales, no una.
-  const etiquetas = modelos.flatMap((m) =>
-    Array.from({ length: copias }, (_, i) => ({ ...m, llave: `${m.id}-${i}` }))
-  );
+  if (pedido.length > 0) {
+    // Aqui el tope sube al de la configuracion: se pidieron prendas
+    // concretas, no "todo el catalogo por treinta".
+    const porId = new Map(modelosPorIds(pedido.map((x) => x.id)).map((m) => [m.id, m]));
+    etiquetas = pedido.flatMap(({ id, cantidad }) => {
+      const m = porId.get(id);
+      if (!m) return [];
+      const cuantas = Math.min(cantidad, ajustes.etiquetaTope);
+      return Array.from({ length: cuantas }, (_, i) => ({ ...m, llave: `${id}-${i}` }));
+    });
+  } else {
+    let modelos = prefijo ? todos.filter((m) => m.prefijo === prefijo) : todos;
+    if (soloConExistencia) modelos = modelos.filter((m) => m.existencia > 0);
+
+    // Una etiqueta por prenda: si hay 12 piezas del mismo modelo se
+    // necesitan 12 etiquetas iguales, no una.
+    etiquetas = modelos.flatMap((m) =>
+      Array.from({ length: copias }, (_, i) => ({ ...m, llave: `${m.id}-${i}` }))
+    );
+  }
 
   if (todos.length === 0) {
     return (
@@ -162,7 +190,11 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
               className="hoja flex h-[3.4cm] flex-col items-center justify-center border border-dashed border-slate-300 px-2 py-1.5 text-center"
             >
               <div className="marca text-[0.6rem] leading-none text-[#8a6d1f]">Venus</div>
-              <div className="codigo mt-1 text-base leading-none text-black">{m.codigo}</div>
+              {/* Sin espacio, igual que en la etiqueta de rollo y que en las
+                  que el negocio ya tiene pegadas. */}
+              <div className="codigo mt-1 text-base leading-none text-black">
+                {codigoParaBarras(m.codigo)}
+              </div>
               <CodigoBarras texto={m.codigo} alto={34} className="mt-1.5 w-full max-w-[4.5cm]" />
               <div className="mt-1 line-clamp-1 w-full text-[0.6rem] leading-tight text-slate-600">
                 {m.descripcion}

@@ -13,6 +13,9 @@ const nextConfig = {
       // El catalogo se lee del disco al arrancar, no con un import: hay
       // que nombrarlo para que viaje al desplegar la demostracion.
       "./src/datos/catalogo.json",
+      // El puente con la impresora de etiquetas: sin el, el sistema
+      // compila pero no encuentra como mandarle nada al rollo.
+      "./windows/impresora.ps1",
     ],
   },
 

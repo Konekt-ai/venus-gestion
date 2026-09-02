@@ -6,10 +6,11 @@ import {
   nombresDeLineas,
   obtenerModelo,
 } from "@/lib/consultas";
-import { usaTianguis } from "@/lib/ajustes";
+import { leerAjustes, usaTianguis } from "@/lib/ajustes";
 import { AccionesMovimiento } from "@/components/AccionesMovimiento";
 import { FotoModelo } from "@/components/FotoModelo";
 import { CodigoBarras } from "@/components/CodigoBarras";
+import { BotonEtiquetas } from "@/components/BotonEtiquetas";
 import {
   Aviso,
   BotonEnlace,
@@ -44,6 +45,8 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
   const historial = movimientosDeModelo(modelo.id, 40);
   const nombreLinea = modelo.prefijo ? nombresDeLineas().get(modelo.prefijo) : undefined;
   const conTianguis = usaTianguis();
+  const ajustes = leerAjustes();
+  const hayImpresora = Boolean(ajustes.impresoraEtiquetas);
   const personal = listarPersonal();
 
   // Las notas traen la ficha tecnica del PDF en renglones (Descripcion,
@@ -100,14 +103,23 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="flex w-full flex-col items-end gap-2 sm:w-auto">
-            <div className="no-imprimir flex w-full gap-2 sm:w-auto">
+            {/* En el celular los dos botones no caben lado a lado sin
+                partir el texto, asi que abajo van uno sobre otro. */}
+            <div className="no-imprimir flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <BotonEtiquetas
+                modeloId={modelo.id}
+                codigo={modelo.codigo}
+                cantidadInicial={modelo.existencia || 1}
+                hayImpresora={hayImpresora}
+                tope={ajustes.etiquetaTope}
+              />
               <BotonEnlace
                 href={`/modelos/${modelo.id}/editar`}
                 variante="secundario"
                 className="w-full !py-3 sm:w-auto sm:!py-2.5"
               >
                 <IconoEditar tamano={16} />
-                Editar
+                Editar producto
               </BotonEnlace>
             </div>
 

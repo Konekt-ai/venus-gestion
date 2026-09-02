@@ -31,3 +31,7 @@ Thumbs.db
 # (avios, indicaciones, proveedor). Es informacion del negocio y se
 # entrega aparte, con la instalacion. Se regenera con  npm run catalogo.
 src/datos/catalogo.json
+
+# Los archivos que se le mandan a la impresora de etiquetas.
+# Se borran solos al terminar, pero si uno queda no va al repo.
+data/*.prn
