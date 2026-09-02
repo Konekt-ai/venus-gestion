@@ -4,9 +4,7 @@ out/
 build/
 
 # Base de datos y respaldos: son datos del negocio, no van al repositorio
-data/*.db
-data/*.db-shm
-data/*.db-wal
+data/
 respaldos/
 
 # Material del cliente: su catalogo de prendas, las fotos y el logo.
@@ -32,6 +30,3 @@ Thumbs.db
 # entrega aparte, con la instalacion. Se regenera con  npm run catalogo.
 src/datos/catalogo.json
 
-# Los archivos que se le mandan a la impresora de etiquetas.
-# Se borran solos al terminar, pero si uno queda no va al repo.
-data/*.prn

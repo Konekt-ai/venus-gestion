@@ -94,6 +94,14 @@ REM --- 3. Bajar los cambios --------------------------------------
 echo   Paso 3 de 5: bajando la ultima version...
 echo.
 
+REM npm reescribe package-lock.json por su cuenta al instalar: cambia
+REM marcas internas segun su version. Ese archivo lo genera la
+REM herramienta, no lo escribe nadie a mano, asi que se descarta lo
+REM local antes de bajar. Sin esto, git se niega a actualizar porque ve
+REM un cambio sin guardar, y el despliegue se atora para siempre por un
+REM archivo que a nadie le importa.
+git checkout -- package-lock.json >nul 2>nul
+
 git pull --ff-only
 if errorlevel 1 (
   echo.
