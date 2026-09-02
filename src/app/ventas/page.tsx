@@ -76,7 +76,7 @@ export default async function VentasDeTienda({ searchParams }: { searchParams: P
         descripcion="Lo que la caja cobro. Bodega no lo escribe: solo lo lee."
       />
 
-      <div className="no-imprimir -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+      <div className="desliza-h no-imprimir -mx-4 flex gap-2 px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
         {PERIODOS.map((p) => (
           <Link
             key={p.valor}
@@ -190,7 +190,7 @@ export default async function VentasDeTienda({ searchParams }: { searchParams: P
               </p>
             </div>
 
-            <div className="-mx-4 overflow-x-auto sm:mx-0">
+            <div className="desliza-h -mx-4 sm:mx-0">
               <table className="w-full min-w-[34rem] text-sm">
                 <thead>
                   <tr className="border-b border-[var(--color-linea)] text-left">
@@ -248,7 +248,7 @@ export default async function VentasDeTienda({ searchParams }: { searchParams: P
                 </p>
               </div>
 
-              <div className="-mx-4 overflow-x-auto sm:mx-0">
+              <div className="desliza-h -mx-4 sm:mx-0">
                 <table className="w-full min-w-[30rem] text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-linea)] text-left">

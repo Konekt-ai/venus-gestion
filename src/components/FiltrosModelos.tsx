@@ -47,7 +47,7 @@ export function FiltrosModelos({
   return (
     // En celular los filtros son una tira que se desliza de lado: apilados
     // ocupaban tres renglones antes de ver el primer modelo.
-    <div className="no-imprimir -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:items-center sm:overflow-visible sm:px-0 sm:pb-0">
+    <div className="desliza-h no-imprimir -mx-4 flex gap-2 px-4 pb-1 sm:mx-0 sm:flex-wrap sm:items-center sm:overflow-visible sm:px-0 sm:pb-0">
       <select
         aria-label="Filtrar por existencia"
         value={parametros.get("existencia") ?? ""}

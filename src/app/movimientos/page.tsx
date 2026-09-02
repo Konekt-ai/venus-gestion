@@ -67,7 +67,7 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
 
       {/* Los filtros apilados empujaban el primer movimiento fuera de la
           primera pantalla: en el telefono se recorren de lado, en una sola tira. */}
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-x-visible sm:px-0 sm:pb-0">
+      <div className="desliza-h -mx-4 flex gap-2 px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-x-visible sm:px-0 sm:pb-0">
         <Link
           href="/movimientos"
           className={`shrink-0 rounded-sm border px-3 py-3 text-sm font-semibold whitespace-nowrap sm:py-1.5 ${

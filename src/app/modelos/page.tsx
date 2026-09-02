@@ -168,7 +168,7 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
           son dieciseis y con el dedo se elige mas rapido de una tira que
           abriendo una lista, ademas de que asi se ve de una cuantos hay
           de cada tipo. */}
-      <div className="no-imprimir -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+      <div className="desliza-h no-imprimir -mx-4 flex gap-2 px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
         <Link
           href={liga(sp, { destacado: soloDestacados ? "" : "1" })}
           aria-current={soloDestacados ? "true" : undefined}
