@@ -6,11 +6,13 @@
  * no hace falta nada especial en el sistema para usarlo, solo que las
  * etiquetas lleven un codigo que el lector entienda.
  *
- * Se usa Code 128, subconjunto B: acepta letras, numeros y espacios, que
- * es justo lo que traen los codigos del negocio ("VD 194", "VN 178").
- * Se dibuja a mano en vez de traer una libreria porque son treinta
- * lineas y asi el sistema no depende de nada mas para imprimir.
+ * Se usa Code 128, subconjunto B: acepta letras y numeros, que es lo que
+ * queda de un codigo del negocio despues de normalizarlo ("VD 194" se
+ * codifica como "VD194"; ver codigoParaBarras mas abajo). Se dibuja a
+ * mano en vez de traer una libreria porque son treinta lineas y asi el
+ * sistema no depende de nada mas para imprimir.
  */
+import { normalizarCodigo } from "./codigos";
 
 /**
  * Los 107 dibujos del Code 128.
@@ -41,6 +43,29 @@ export const DIBUJOS_CODE128 = DIBUJOS;
 
 const INICIO_B = 104;
 const FIN = 106;
+
+/**
+ * El texto que va DENTRO del codigo de barras de un modelo.
+ *
+ * No es el codigo tal como se escribe, es el codigo sin espacios ni
+ * guiones: "VD 194" se codifica como "VD194". Tres razones:
+ *
+ *   1. Las etiquetas que el negocio ya tiene impresas y pegadas dicen
+ *      "FD429", sin espacio. Si codificaramos el espacio, las etiquetas
+ *      nuevas dirian otra cosa que las viejas.
+ *   2. El buscador normaliza igual lo que teclea la gente y lo que
+ *      dispara el lector, asi que "VD194" encuentra a "VD 194". El
+ *      viaje de ida y vuelta cierra.
+ *   3. Cada caracter cuesta 11 modulos de ancho. Quitar el espacio
+ *      hace el simbolo casi 11% mas angosto, y en una etiqueta de
+ *      rollo chica eso es la diferencia entre que quepa o no.
+ *
+ * Ademas siempre sale imprimible: normalizar deja solo A-Z y 0-9, asi
+ * que un codigo con acento o con ene no se queda sin etiqueta.
+ */
+export function codigoParaBarras(codigo: string): string {
+  return normalizarCodigo(codigo);
+}
 
 /** true si el texto se puede imprimir como codigo de barras. */
 export function sePuedeCodificar(texto: string): boolean {

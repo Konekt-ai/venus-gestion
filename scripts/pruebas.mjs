@@ -384,6 +384,50 @@ const danado = barras.trazarBarras("VD 194").anchos.slice();
 danado[6] = danado[6] === 1 ? 2 : 1;
 comprobar("un codigo mal impreso no se puede leer", leerBarras(danado) === null);
 
+// Lo que va DENTRO del codigo de barras es el codigo normalizado, no el
+// codigo tal como se escribe. Las etiquetas que el negocio ya tiene
+// pegadas dicen "FD429" sin espacio: si imprimieramos "FD 429", las
+// nuevas no empatarian con las viejas.
+iguales('"VD 194" se codifica como "VD194"', barras.codigoParaBarras("VD 194"), "VD194");
+iguales('"FD 429" se codifica como "FD429"', barras.codigoParaBarras("FD 429"), "FD429");
+iguales("un codigo que ya viene junto no cambia", barras.codigoParaBarras("BD96"), "BD96");
+iguales("el guion tambien se va", barras.codigoParaBarras("VD 426-2"), "VD4262");
+
+// La prueba del arreglo: escrito con espacio o sin el, el simbolo
+// impreso tiene que ser exactamente el mismo dibujo.
+iguales(
+  "con espacio y sin espacio dan el mismo dibujo",
+  barras.trazarBarras(barras.codigoParaBarras("FD 429")).anchos.join(""),
+  barras.trazarBarras(barras.codigoParaBarras("FD429")).anchos.join("")
+);
+
+comprobar(
+  "quitar el espacio deja el simbolo mas angosto",
+  barras.trazarBarras("FD429").total < barras.trazarBarras("FD 429").total,
+  "sin espacio " + barras.trazarBarras("FD429").total + ", con espacio " + barras.trazarBarras("FD 429").total
+);
+
+// El viaje completo: lo que se imprime, lo que dispara el lector y lo
+// que el buscador usa para encontrar. Si esto cierra, escanear una
+// etiqueta encuentra su prenda.
+for (const guardado of ["VD 194", "FD 429", "BD96", "084"]) {
+  const impreso = barras.codigoParaBarras(guardado);
+  const leido = leerBarras(barras.trazarBarras(impreso).anchos);
+  comprobar(
+    'escanear la etiqueta de "' + guardado + '" encuentra su modelo',
+    leido === impreso && normalizarCodigo(leido) === normalizarCodigo(guardado),
+    "el lector leyo " + JSON.stringify(leido)
+  );
+}
+
+// Un codigo con ene o con acento antes se quedaba sin etiqueta, porque
+// Code 128 no lo sabe dibujar. Normalizado si sale.
+comprobar(
+  "un codigo con ene igual se puede etiquetar",
+  barras.sePuedeCodificar(barras.codigoParaBarras("PANO 12"))
+);
+
+
 // ---------------------------------------------------------------
 console.log("");
 console.log("Catalogo del cliente");
