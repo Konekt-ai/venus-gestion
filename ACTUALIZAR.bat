@@ -24,10 +24,29 @@ echo   Paso 1 de 5: guardando un respaldo por si acaso...
 
 if not exist "respaldos" mkdir "respaldos" >nul 2>nul
 
-if not exist "data\venus.db" (
-  echo   Todavia no hay base de datos. Nada que respaldar.
+REM La base NO siempre esta en data\venus.db: cuando la caja de la
+REM tienda esta instalada, las dos comparten un solo archivo y la
+REM ruta buena viene en .env.local. Buscarla solo aqui hacia que el
+REM respaldo se saltara en silencio, que es la peor forma de fallar:
+REM la red de seguridad no estaba y nadie se enteraba.
+set "RUTADB=data\venus.db"
+if exist ".env.local" (
+  for /f "usebackq eol=# tokens=1,* delims==" %%a in (".env.local") do (
+    if /i "%%a"=="VENUS_DB" set "RUTADB=%%b"
+  )
+)
+REM En .env.local va con diagonales normales; aqui se ocupan las de Windows.
+set "RUTADB=!RUTADB:/=\!"
+
+if not exist "!RUTADB!" (
+  echo   [aviso] No encontre la base en:
+  echo      !RUTADB!
+  echo   Se actualiza igual, pero SIN respaldo previo.
+  echo.
   goto :detener
 )
+
+echo   Base encontrada en: !RUTADB!
 
 REM La fecha se saca con PowerShell y no con %date%, que cambia de
 REM formato segun como este configurado Windows y termina haciendo
@@ -36,12 +55,19 @@ for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-Date -Format yyyy-
 
 REM VACUUM INTO y no copiar el archivo: con el modo WAL, copiarlo a
 REM mano puede dejar fuera lo ultimo que se escribio.
-node -e "const D=require('better-sqlite3');const d=new D('data/venus.db',{readonly:true});d.exec(`VACUUM INTO 'respaldos/venus-!CUANDO!.db'`);d.close();" 2>nul
+set "ORIGEN=!RUTADB:\=/!"
+node -e "const D=require('better-sqlite3');const d=new D(process.argv[1],{readonly:true});d.exec(`VACUUM INTO 'respaldos/venus-!CUANDO!.db'`);d.close();" "!ORIGEN!" 2>nul
 if errorlevel 1 (
   echo   [aviso] No se pudo hacer el respaldo con VACUUM. Copio el archivo.
-  copy /y "data\venus.db" "respaldos\venus-!CUANDO!.db" >nul 2>nul
+  copy /y "!RUTADB!" "respaldos\venus-!CUANDO!.db" >nul 2>nul
 )
-echo   Respaldo en:  respaldos\venus-!CUANDO!.db
+if exist "respaldos\venus-!CUANDO!.db" (
+  echo   Respaldo en:  respaldos\venus-!CUANDO!.db
+) else (
+  echo   [alto] No se pudo respaldar. Revisa antes de seguir.
+  pause
+  exit /b 1
+)
 echo.
 
 :detener
