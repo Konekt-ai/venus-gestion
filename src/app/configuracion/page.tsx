@@ -17,6 +17,7 @@ import {
   IconoDescargar,
   IconoDocumento,
   IconoEntrada,
+  IconoCaja,
   IconoCodigoBarras,
   IconoEtiqueta,
   IconoHistorial,
@@ -28,6 +29,7 @@ export const dynamic = "force-dynamic";
 const ENLACES_EXTRA = [
   { href: "/entradas", texto: "Entradas de mercancia", Icono: IconoEntrada },
   { href: "/personal", texto: "Personal", Icono: IconoPersona },
+  { href: "/ventas", texto: "Ventas de la tienda", Icono: IconoCaja },
   { href: "/movimientos", texto: "Historial completo", Icono: IconoHistorial },
   { href: "/ubicaciones/etiquetas", texto: "Etiquetas de racks", Icono: IconoEtiqueta },
   { href: "/modelos/etiquetas", texto: "Etiquetas de prendas", Icono: IconoCodigoBarras },

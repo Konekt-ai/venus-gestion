@@ -325,13 +325,32 @@ export function ArmadorEnvio({
 
           {/* Pegado arriba de la barra de accesos: con varios renglones
               capturados, el total dejaba de verse justo cuando mas importa. */}
-          <div className="pegado-arriba-barra flex items-center justify-between border-t border-[var(--color-linea)] bg-[var(--color-crema)] px-4 py-3 md:!static">
-            <span className="text-sm font-semibold">
-              {renglones.length} {renglones.length === 1 ? "modelo" : "modelos"}
-            </span>
-            <span className="text-lg font-bold">
-              {totalPiezas} {totalPiezas === 1 ? "pieza" : "piezas"}
-            </span>
+          <div className="pegado-arriba-barra flex flex-col gap-2 border-t border-[var(--color-linea)] bg-[var(--color-crema)] px-4 py-3 md:!static">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold">
+                {renglones.length} {renglones.length === 1 ? "modelo" : "modelos"}
+              </span>
+              <span className="text-lg font-bold">
+                {totalPiezas} {totalPiezas === 1 ? "pieza" : "piezas"}
+              </span>
+            </div>
+
+            {/* El error va JUNTO al boton, no en otra tarjeta: con
+                varios renglones capturados, un aviso lejos del boton
+                queda fuera de pantalla y parece que no hizo nada. */}
+            {error && <Aviso tipo="error">{error}</Aviso>}
+
+            {/* El boton vive AQUI y no hasta abajo: en el celular, con
+                varios renglones capturados, quedaba fuera de pantalla
+                despues de la tarjeta de quien recibe y la nota, y habia
+                que bajar a buscarlo en cada captura. */}
+            <Boton
+              onClick={confirmar}
+              disabled={enviando || renglones.length === 0}
+              className="w-full !py-3.5 !text-base"
+            >
+              {enviando ? "Guardando..." : textoBoton}
+            </Boton>
           </div>
         </Tarjeta>
       )}
@@ -366,18 +385,9 @@ export function ArmadorEnvio({
           </div>
         </div>
 
-        {/* El error va JUNTO al boton, no hasta arriba: con varios
-            renglones capturados, un aviso al inicio de la pagina queda
-            fuera de pantalla y parece que el boton no hizo nada. */}
-        {error && <Aviso tipo="error">{error}</Aviso>}
-
-        <Boton
-          onClick={confirmar}
-          disabled={enviando || renglones.length === 0}
-          className="w-full !py-3.5 !text-base sm:w-auto"
-        >
-          {enviando ? "Guardando..." : textoBoton}
-        </Boton>
+        {/* Sin renglones capturados no hay barra pegajosa donde
+            ponerlo, asi que el aviso cae aqui. */}
+        {error && renglones.length === 0 && <Aviso tipo="error">{error}</Aviso>}
       </Tarjeta>
     </div>
   );

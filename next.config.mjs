@@ -22,6 +22,22 @@ const nextConfig = {
   // Quita el distintivo flotante que Next pone en la esquina al usar
   // "npm run dev". No tiene nada que ver con el sistema y solo confunde
   // a quien lo esta usando en la bodega.
+  // Next rechaza una accion del servidor si el origen no cuadra con
+  // el host. Entrando derecho por IP:puerto cuadran solos y esto no
+  // hace falta; el dia que lo pongan detras de un dominio o un tunel,
+  // sin esto TODO lo que se guarda deja de funcionar de golpe y las
+  // paginas se siguen viendo bien. Es el fallo mas caro de encontrar
+  // por telefono, asi que se deja puesto de antemano.
+  experimental: {
+    serverActions: {
+      allowedOrigins: [
+        "localhost:3000",
+        "100.92.129.13:3000",
+        "*.ts.net",
+      ],
+    },
+  },
+
   devIndicators: false,
 };
 
