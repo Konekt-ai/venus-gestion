@@ -31,6 +31,7 @@ const { leerCSV, escribirCSV } = await import("../src/lib/csv.ts");
 const acceso = await import("../src/lib/clave.ts");
 const barras = await import("../src/lib/barras.ts");
 const siembra = await import("../src/lib/siembra.ts");
+const tspl = await import("../src/lib/tspl.ts");
 
 let pasadas = 0;
 let fallidas = 0;
@@ -453,6 +454,102 @@ comprobar(
   "sembrar dos veces no duplica nada",
   siembra.sembrarCatalogo(db) === 0
 );
+
+// ---------------------------------------------------------------
+console.log("");
+console.log("Etiquetas de la impresora de rollo");
+
+const PLANTILLA = {
+  anchoMm: 50, altoMm: 25, separacionMm: 2, altoBarrasMm: 14,
+  densidad: 8, velocidad: 4, giro: 90, desplazaXMm: 0, desplazaYMm: 0,
+};
+
+const etq = tspl.armarEtiqueta({ codigo: "FD 429", descripcion: "FALDA CORTA CON FAJO" }, 30, PLANTILLA);
+const renglones = etq.split("\r\n").filter(Boolean);
+
+iguales("50 mm son 400 puntos", tspl.puntos(50), 400);
+
+// El espacio antes de "mm" no es cosmetico: sin el, la impresora
+// ignora la medida y usa la que traiga guardada de antes.
+comprobar("SIZE lleva el espacio antes de mm", renglones[0] === "SIZE 50 mm,25 mm", renglones[0]);
+comprobar("GAP lleva el espacio antes de mm", renglones[1] === "GAP 2 mm,0", renglones[1]);
+
+// CLS limpia el area de dibujo, asi que tiene que saber ya de que
+// tamano es: si fuera antes de SIZE, la etiqueta saldria recortada.
+comprobar(
+  "CLS va despues de SIZE",
+  renglones.indexOf("CLS") > renglones.findIndex((l) => l.startsWith("SIZE")),
+  renglones.join(" | ")
+);
+
+// Las copias se piden una sola vez. N bloques repetidos harian que el
+// rollo se recalibre entre etiqueta y etiqueta, y salen torcidas.
+iguales("las 30 copias se piden con un solo PRINT", renglones.filter((l) => l.startsWith("PRINT")).length, 1);
+comprobar("y ese PRINT pide las 30", renglones.some((l) => l === "PRINT 1,30"));
+
+// Code 128 solo admite barra angosta y ancha iguales. Con 2,4 (que es
+// de Code 39) el simbolo sale mal y el lector no lo agarra: el sintoma
+// aparece semanas despues, con todo el rollo ya impreso.
+const barcode = renglones.find((l) => l.startsWith("BARCODE"));
+comprobar("el codigo de barras va con angosto y ancho iguales", barcode.includes(",2,2,"), barcode);
+comprobar("y codifica el codigo sin espacio", barcode.includes('"FD429"'), barcode);
+
+// Girado 90, TODOS los objetos giran. DIRECTION no sirve para esto:
+// voltea el origen 180 grados, que es otra cosa.
+comprobar(
+  "con giro 90 todos los objetos llevan 90",
+  renglones.filter((l) => l.startsWith("TEXT") || l.startsWith("BARCODE")).every((l) => l.includes(",90,")),
+  renglones.filter((l) => l.startsWith("TEXT")).join(" | ")
+);
+comprobar("y DIRECTION se queda en 1", renglones.some((l) => l === "DIRECTION 1"));
+
+const derecha = tspl.armarEtiqueta({ codigo: "BD96", descripcion: "BLUSA" }, 1, { ...PLANTILLA, giro: 0 });
+comprobar(
+  "sin giro ningun objeto lleva 90",
+  !derecha.split("\r\n").filter((l) => l.startsWith("TEXT") || l.startsWith("BARCODE")).some((l) => l.includes(",90,"))
+);
+
+// Una descripcion con comillas o con saltos no puede cerrar el
+// argumento y colar comandos propios.
+const sucia = tspl.armarEtiqueta(
+  { codigo: "VD 194", descripcion: 'VESTIDO 24"\r\nPRINT 1,999' },
+  1,
+  PLANTILLA
+);
+iguales("un texto con comillas no cuela comandos", sucia.split("\r\n").filter((l) => l.startsWith("PRINT")).length, 1);
+comprobar("y ese PRINT sigue siendo el bueno", sucia.includes("PRINT 1,1"));
+
+// latin1 y no utf8: la impresora lee en CODEPAGE 1252, donde cada letra
+// es UN byte. Con utf8 la ene viajaria en dos y saldrian garabatos.
+iguales("la letra va en un solo byte", tspl.aBytes("n").length, 1);
+iguales("la ene minuscula es 0xF1 en latin1", tspl.aBytes("ñ")[0], 0xf1);
+iguales("la e con acento es 0xE9", tspl.aBytes("é")[0], 0xe9);
+
+// Lo que se imprime tiene que poder leerse de vuelta con el mismo
+// decodificador que ya prueba los codigos de la pantalla.
+const dentro = barcode.match(/"128",\d+,1,\d+,2,2,"([^"]+)"/)[1];
+iguales("lo que va en el simbolo es lo que el lector leeria", leerBarras(barras.trazarBarras(dentro).anchos), "FD429");
+
+// Varias prendas en un solo envio.
+const lote = tspl.armarLote(
+  [
+    { prenda: { codigo: "BD96", descripcion: "BLUSA" }, copias: 30 },
+    { prenda: { codigo: "VD 194", descripcion: "VESTIDO" }, copias: 5 },
+  ],
+  PLANTILLA
+);
+iguales("un lote de dos prendas lleva dos PRINT", lote.split("\r\n").filter((l) => l.startsWith("PRINT")).length, 2);
+comprobar("cada una con su cantidad", lote.includes("PRINT 1,30") && lote.includes("PRINT 1,5"));
+
+// Una densidad fuera de rango la rechaza la impresora entera.
+comprobar(
+  "una densidad absurda se recorta al maximo",
+  tspl.armarEtiqueta({ codigo: "A", descripcion: "" }, 1, { ...PLANTILLA, densidad: 99 }).includes("DENSITY 15")
+);
+
+// La descripcion se recorta a lo que de verdad cabe con su fuente, y
+// no mas: "FALDA CORTA CON FAJO" tiene que salir completa.
+comprobar("la descripcion del cliente cabe entera", etq.includes("FALDA CORTA CON FAJO"));
 
 // ---------------------------------------------------------------
 db.close();

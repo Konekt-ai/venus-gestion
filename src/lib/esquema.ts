@@ -187,4 +187,29 @@ CREATE TABLE IF NOT EXISTS config (
   clave  TEXT PRIMARY KEY,
   valor  TEXT NOT NULL
 );
+
+-- ------------------------------------------------------------
+-- Codigos que un modelo tuvo antes.
+--
+-- Cuando se corrige el codigo de una prenda, las etiquetas que ya
+-- estan pegadas en la ropa siguen diciendo el codigo viejo. Sin esto,
+-- esas etiquetas dejarian de encontrar su prenda al escanearlas: el
+-- inventario quedaria bien y la bodega igual no serviria.
+--
+-- Aqui se guarda el codigo que se dejo, para que el buscador lo siga
+-- resolviendo al mismo modelo mientras las etiquetas viejas circulen.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS codigos_anteriores (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  modelo_id     INTEGER NOT NULL REFERENCES modelos(id) ON DELETE CASCADE,
+  codigo        TEXT    NOT NULL,
+  codigo_norm   TEXT    NOT NULL,
+  codigo_nuevo  TEXT    NOT NULL,
+  cambiado_en   TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
+-- codigo_norm a proposito SIN UNIQUE: un codigo que se libera se puede
+-- volver a asignar a otra prenda, y con UNIQUE ese guardado reventaria.
+CREATE INDEX IF NOT EXISTS idx_cod_ant_norm   ON codigos_anteriores(codigo_norm);
+CREATE INDEX IF NOT EXISTS idx_cod_ant_modelo ON codigos_anteriores(modelo_id);
 `;
