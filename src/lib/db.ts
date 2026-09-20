@@ -75,6 +75,7 @@ function abrir(): Database.Database {
 
   db.exec(ESQUEMA);
   sembrarCatalogos(db);
+  asegurarTelas(db);
 
   // El catalogo del cliente se carga solo la primera vez, en la bodega y
   // en la demostracion por igual: un sistema vacio no le sirve a nadie.
@@ -136,6 +137,24 @@ function sembrarCatalogos(db: Database.Database) {
     for (const [tipo, valores] of Object.entries(datos)) {
       valores.forEach((valor, i) => insertar.run(tipo, valor, i));
     }
+  });
+  tx();
+}
+
+/**
+ * Telas que se manejan el proximo mes. Se aseguran en cada arranque (igual
+ * que el esquema): INSERT OR IGNORE no duplica ni pisa nada, y asi las
+ * instalaciones que ya tienen catalogo tambien las reciben.
+ * Van en mayusculas y sin acento, como las guarda normalizarTexto().
+ */
+const TELAS_NUEVAS = ["VINIPIEL DELGADO", "VINIPIEL BASICO", "VINIPIEL AFELPADO"];
+
+function asegurarTelas(db: Database.Database) {
+  const insertar = db.prepare(
+    "INSERT OR IGNORE INTO catalogos (tipo, valor, orden) VALUES ('tela', ?, ?)"
+  );
+  const tx = db.transaction(() => {
+    TELAS_NUEVAS.forEach((valor, i) => insertar.run(valor, 10 + i));
   });
   tx();
 }
