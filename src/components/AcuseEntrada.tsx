@@ -5,6 +5,10 @@ import { BotonEtiquetas } from "@/components/BotonEtiquetas";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
 import type { EntradaRegistrada } from "@/acciones/movimientos";
 
+export type EstadoImpresion =
+  | { tipo: "imprimiendo" }
+  | { tipo: "ok" | "error"; texto: string };
+
 /**
  * Lo que se ve justo despues de registrar produccion nueva.
  *
@@ -18,11 +22,13 @@ export function AcuseEntrada({
   entrada,
   hayImpresora,
   tope,
+  impresion = null,
   alRegistrarOtra,
 }: {
   entrada: EntradaRegistrada;
   hayImpresora: boolean;
   tope: number;
+  impresion?: EstadoImpresion | null;
   alRegistrarOtra: () => void;
 }) {
   const todas = entrada.lineas
@@ -37,6 +43,13 @@ export function AcuseEntrada({
           : `Entraron ${entrada.piezas} piezas`}
         {entrada.lineas.length > 1 && ` de ${entrada.lineas.length} modelos`}.
       </Aviso>
+      
+      {impresion &&
+          (impresion.tipo === "imprimiendo" ? (
+            <Aviso tipo="ok">Mandando las etiquetas a la impresora...</Aviso>
+          ) : (
+            <Aviso tipo={impresion.tipo}>{impresion.texto}</Aviso>
+          ))}
 
       <Tarjeta className="space-y-3">
         <div>

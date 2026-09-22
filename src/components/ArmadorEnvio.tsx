@@ -3,12 +3,16 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { registrarEntrada, registrarRemision, type EntradaRegistrada } from "@/acciones/movimientos";
-import { AcuseEntrada } from "@/components/AcuseEntrada";
+import { AcuseEntrada, type EstadoImpresion } from "@/components/AcuseEntrada";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "@/lib/codigos";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
 import { FotoModelo } from "@/components/FotoModelo";
 import { IconoCerrar } from "@/components/iconos";
+import { imprimirEtiquetas } from "@/acciones/etiquetas";
 import type { Destino } from "@/lib/tipos";
+
+/** Arriba de este total no se imprime solo: que alguien decida cuantas. */
+const AUTO_TOPE_TOTAL = 100;
 
 /** Version ligera del modelo: lo justo para buscar y mostrar en la lista. */
 export type ModeloElegible = {
@@ -64,6 +68,7 @@ export function ArmadorEnvio({
   const [enviando, iniciar] = useTransition();
   // Solo se usa en entradas: es el acuse con los botones de etiquetar.
   const [acuse, setAcuse] = useState<EntradaRegistrada | null>(null);
+  const [impresion, setImpresion] = useState<EstadoImpresion | null>(null);
 
   /** Cuantas piezas se pueden mover de este modelo en este modo. */
   function disponible(m: ModeloElegible): number {
@@ -129,6 +134,41 @@ export function ArmadorEnvio({
     (r) => modo.clase !== "entrada" && r.cantidad > disponible(r.modelo)
   );
 
+    async function imprimirSolas(entrada: EntradaRegistrada) {
+      if (!hayImpresora) return;
+
+      const total = entrada.lineas.reduce((s, l) => s + l.cantidad, 0);
+      // Si un renglon pasa del tope, imprimirEtiquetas lo recorta en silencio
+      // y saldrian menos etiquetas que piezas: mejor no imprimir y avisarlo.
+      const pasaDelTope = entrada.lineas.some((l) => l.cantidad > topeEtiquetas);
+      if (total > AUTO_TOPE_TOTAL || pasaDelTope) {
+        setImpresion({
+          tipo: "error",
+          texto: `Entraron ${total} piezas y son demasiadas para imprimir solas. Usa el botón de cada prenda para elegir cuántas.`,
+        });
+        return;
+      }
+
+      setImpresion({ tipo: "imprimiendo" });
+      try {
+        const r = await imprimirEtiquetas(
+          entrada.lineas.map((l) => ({ modeloId: l.modeloId, cantidad: l.cantidad }))
+        );
+        if (!r.ok) {
+          setImpresion({ tipo: "error", texto: `La entrada se guardó, pero ${r.error}` });
+        } else if (r.datos?.aviso) {
+          setImpresion({ tipo: "error", texto: r.datos.aviso });
+        } else {
+          setImpresion({ tipo: "ok", texto: r.mensaje ?? "Se mandaron las etiquetas." });
+        }
+      } catch {
+        setImpresion({
+          tipo: "error",
+          texto: "La entrada se guardó, pero no se pudieron mandar las etiquetas. Usa el botón para reintentar.",
+        });
+      }
+  }
+
   function confirmar() {
     setError("");
 
@@ -168,6 +208,7 @@ export function ArmadorEnvio({
           setBusqueda("");
           setError("");
           router.refresh();
+          await imprimirSolas(r.datos);
         } else if (!r.ok) setError(r.error);
         return;
       }
@@ -204,7 +245,11 @@ export function ArmadorEnvio({
         entrada={acuse}
         hayImpresora={hayImpresora}
         tope={topeEtiquetas}
-        alRegistrarOtra={() => setAcuse(null)}
+        impresion={impresion}
+        alRegistrarOtra={() => {
+          setAcuse(null);
+          setImpresion(null);
+        }}
       />
     );
   }
