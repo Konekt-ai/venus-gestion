@@ -75,9 +75,17 @@ function conCantidad(pedido: Pedido, id: number, cantidad: number): Pedido {
 export default async function EtiquetasModelos({ searchParams }: { searchParams: Params }) {
   await exigirEntrada();
   const sp = await searchParams;
-  const prefijo = TEXTO(sp.prefijo);
+
+  // Grupo completo: "todos" o el prefijo de una linea. Vacio es ninguno:
+  // al entrar no se arma nada hasta que alguien elige que imprimir, en
+  // vez de soltar el catalogo entero de golpe. ?prefijo= es como se
+  // llamaba antes; se sigue aceptando por si alguien lo tiene guardado.
+  const grupo = TEXTO(sp.grupo) || TEXTO(sp.prefijo);
+  const prefijo = grupo === "todos" ? "" : grupo;
   const soloConExistencia = TEXTO(sp.con) === "1";
-  const copias = Math.min(Math.max(Number(TEXTO(sp.copias)) || 1, 1), 12);
+  // Sin elegir cuantas, sale una de cada modelo.
+  const copiasElegidas = TEXTO(sp.copias);
+  const copias = Math.min(Math.max(Number(copiasElegidas) || 1, 1), 12);
 
   const ajustes = leerAjustes();
   const rollo = TEXTO(sp.formato) !== "hoja";
@@ -89,14 +97,30 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
   // codigos de esta misma pagina.
   const pedido = leerPedido(TEXTO(sp.ids));
 
-  /** La direccion de esta pagina con esas prendas elegidas. */
-  function enlacePedido(p: Pedido) {
-    const q = new URLSearchParams();
-    if (p.length > 0) q.set("ids", escribirPedido(p));
-    if (TEXTO(sp.formato)) q.set("formato", TEXTO(sp.formato));
-    const s = q.toString();
+  /**
+   * Lo que va en la direccion de esta pagina, con algunos cambios.
+   *
+   * Todo viaja junto: elegir un grupo no borra las prendas especificas
+   * ni al reves, y cambiar el papel no pierde ninguna de las dos.
+   */
+  function parametros(cambios: Record<string, string>): [string, string][] {
+    const todo: Record<string, string> = {
+      ids: escribirPedido(pedido),
+      grupo,
+      con: soloConExistencia ? "1" : "",
+      copias: copiasElegidas,
+      formato: TEXTO(sp.formato),
+      ...cambios,
+    };
+    return Object.entries(todo).filter(([, v]) => v !== "");
+  }
+
+  function enlace(cambios: Record<string, string> = {}) {
+    const s = new URLSearchParams(parametros(cambios)).toString();
     return s ? `/modelos/etiquetas?${s}` : "/modelos/etiquetas";
   }
+
+  const enlacePedido = (p: Pedido) => enlace({ ids: escribirPedido(p) });
 
   // ?agregar=VD194&cant=3 llega del buscador de codigos. Se suma a lo
   // que ya estaba elegido y se redirige a la direccion limpia, para que
@@ -131,22 +155,27 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
   });
   const hayPedido = elegidas.length > 0;
 
-  let etiquetas: ({ llave: string } & (typeof todos)[number])[];
+  type ConLlave = { llave: string } & (typeof todos)[number];
 
-  if (hayPedido) {
-    etiquetas = elegidas.flatMap(({ modelo, cantidad }) =>
-      Array.from({ length: cantidad }, (_, i) => ({ ...modelo, llave: `${modelo.id}-${i}` }))
-    );
-  } else {
+  const deLasElegidas: ConLlave[] = elegidas.flatMap(({ modelo, cantidad }) =>
+    Array.from({ length: cantidad }, (_, i) => ({ ...modelo, llave: `${modelo.id}-${i}` }))
+  );
+
+  let delGrupo: ConLlave[] = [];
+  if (grupo) {
     let modelos = prefijo ? todos.filter((m) => m.prefijo === prefijo) : todos;
     if (soloConExistencia) modelos = modelos.filter((m) => m.existencia > 0);
+    // Las que ya se eligieron a mano no se repiten: ya llevan su cantidad.
+    modelos = modelos.filter((m) => !porId.has(m.id));
 
     // Una etiqueta por prenda: si hay 12 piezas del mismo modelo se
     // necesitan 12 etiquetas iguales, no una.
-    etiquetas = modelos.flatMap((m) =>
-      Array.from({ length: copias }, (_, i) => ({ ...m, llave: `${m.id}-${i}` }))
+    delGrupo = modelos.flatMap((m) =>
+      Array.from({ length: copias }, (_, i) => ({ ...m, llave: `${m.id}-g${i}` }))
     );
   }
+
+  const etiquetas = [...deLasElegidas, ...delGrupo];
 
   if (todos.length === 0) {
     return (
@@ -158,22 +187,9 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
     );
   }
 
-  function enlace(cambios: Record<string, string>) {
-    const base: Record<string, string> = {
-      formato: TEXTO(sp.formato),
-      prefijo,
-      con: soloConExistencia ? "1" : "",
-      copias: String(copias),
-      ...cambios,
-    };
-    const p = new URLSearchParams();
-    for (const [k, v] of Object.entries(base)) {
-      // Una copia de cada uno es lo normal: no ensucia la direccion.
-      if (v && !(k === "copias" && v === "1")) p.set(k, v);
-    }
-    const s = p.toString();
-    return s ? `/modelos/etiquetas?${s}` : "/modelos/etiquetas";
-  }
+  /** Picarle a un filtro lo prende; picarle otra vez lo apaga. */
+  const alternar = (clave: string, valor: string, activo: boolean) =>
+    enlace({ [clave]: activo ? "" : valor });
 
   const cuadrito =
     "inline-flex h-9 w-9 items-center justify-center rounded-sm border border-[var(--color-linea-fuerte)] bg-[var(--color-marfil)] text-lg font-semibold hover:border-[var(--color-oro)]";
@@ -209,13 +225,10 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
             {/* Un formulario normal, sin codigo en el navegador: al dar
                 Enter (o al leer una etiqueta con el lector) la pagina
                 vuelve con la prenda agregada. */}
-            <form action="/modelos/etiquetas" method="get" className="flex flex-wrap gap-2">
-              {pedido.length > 0 && (
-                <input type="hidden" name="ids" value={escribirPedido(pedido)} />
-              )}
-              {TEXTO(sp.formato) && (
-                <input type="hidden" name="formato" value={TEXTO(sp.formato)} />
-              )}
+            <form action="/modelos/etiquetas" method="get" className="flex flex-wrap items-center gap-2">
+              {parametros({}).map(([k, v]) => (
+                <input key={k} type="hidden" name={k} value={v} />
+              ))}
               <input
                 name="agregar"
                 required
@@ -228,17 +241,19 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
                 aria-label="Codigo del modelo"
                 className="campo min-w-0 flex-1 sm:max-w-xs"
               />
-              <input
-                name="cant"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={ajustes.etiquetaTope}
-                defaultValue={1}
-                aria-label="Cuantas etiquetas"
-                title="Cuantas etiquetas"
-                className="campo sin-flechas w-20 text-center"
-              />
+              <label className="flex items-center gap-2 text-sm font-semibold text-[var(--color-humo)]">
+                Cuantas etiquetas
+                {/* !w-16: .campo trae width 100% y le gana a w-16 sin el "!". */}
+                <input
+                  name="cant"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={ajustes.etiquetaTope}
+                  defaultValue={1}
+                  className="campo sin-flechas !w-16 text-center"
+                />
+              </label>
               <Boton type="submit">Agregar</Boton>
             </form>
 
@@ -298,7 +313,7 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
                     href={enlacePedido([])}
                     className="text-sm font-semibold text-[var(--color-humo)] underline underline-offset-2 hover:text-[var(--color-tinta)]"
                   >
-                    Quitar todas y ver por grupos
+                    Quitar todas
                   </Link>
                 </div>
               </div>
@@ -306,16 +321,25 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
           </div>
 
           <div>
-            <p className="etiqueta">{hayPedido ? "O un grupo completo" : "Que modelos"}</p>
+            <p className="etiqueta">Grupo completo (opcional)</p>
             <div className="flex flex-wrap gap-2">
-              <Link href={enlace({ prefijo: "" })} className={pastilla(!hayPedido && !prefijo)}>
+              <Link
+                href={
+                  grupo === "todos"
+                    ? enlace({ grupo: "", con: "", copias: "" })
+                    : enlace({ grupo: "todos" })
+                }
+                className={pastilla(grupo === "todos")}
+              >
                 Todos ({todos.length})
               </Link>
               {prefijosEnUso().map(({ prefijo: p, total }) => (
                 <Link
                   key={p}
-                  href={enlace({ prefijo: p })}
-                  className={pastilla(!hayPedido && prefijo === p)}
+                  href={
+                    grupo === p ? enlace({ grupo: "", con: "", copias: "" }) : enlace({ grupo: p })
+                  }
+                  className={pastilla(grupo === p)}
                   title={lineas.get(p) ?? undefined}
                 >
                   {lineas.get(p) ?? p} ({total})
@@ -324,67 +348,86 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
             </div>
           </div>
 
-          <div>
-            <p className="etiqueta">Cuantas de cada modelo</p>
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 4, 6, 12].map((n) => (
-                <Link key={n} href={enlace({ copias: String(n) })} className={pastilla(!hayPedido && copias === n)}>
-                  {n === 1 ? "Una" : `${n} iguales`}
+          {/* Cuantas y existencia solo tienen sentido con un grupo elegido:
+              sin el estorban y parece que hacen algo. */}
+          {grupo && (
+            <>
+              <div>
+                <p className="etiqueta">Cuantas de cada modelo del grupo</p>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 4, 6, 12].map((n) => (
+                    <Link
+                      key={n}
+                      href={alternar("copias", String(n), copiasElegidas === String(n))}
+                      className={pastilla(copiasElegidas === String(n))}
+                    >
+                      {n === 1 ? "Una" : `${n} iguales`}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={alternar("con", "1", soloConExistencia)}
+                  className={pastilla(soloConExistencia)}
+                >
+                  Solo los que tienen existencia
                 </Link>
-              ))}
-            </div>
-          </div>
+              </div>
+            </>
+          )}
 
           <div>
             <p className="etiqueta">En que papel</p>
             <div className="flex flex-wrap gap-2">
-              <Link href={enlace({ formato: "rollo", ids: TEXTO(sp.ids) })} className={pastilla(rollo)}>
+              <Link href={enlace({ formato: "" })} className={pastilla(rollo)}>
                 Rollo de {anchoMm} x {altoMm} mm
               </Link>
-              <Link href={enlace({ formato: "hoja", ids: TEXTO(sp.ids) })} className={pastilla(!rollo)}>
+              <Link href={enlace({ formato: "hoja" })} className={pastilla(!rollo)}>
                 Hoja carta
               </Link>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={enlace({ con: soloConExistencia ? "" : "1" })}
-              className={pastilla(!hayPedido && soloConExistencia)}
-            >
-              Solo los que tienen existencia
-            </Link>
-          </div>
-
-          {rollo ? (
-            <p className="border-l-2 border-[var(--color-linea-fuerte)] bg-[var(--color-crema)] px-3 py-2 text-xs leading-relaxed text-[var(--color-humo)]">
-              Van {etiquetas.length.toLocaleString("es-MX")}{" "}
-              {etiquetas.length === 1 ? "etiqueta" : "etiquetas"} del rollo de {anchoMm} x{" "}
-              {altoMm} mm, una por pagina. Al imprimir elige la impresora de etiquetas, deja la
-              escala en <b>Predeterminada</b> y los margenes en <b>Predeterminados</b>. Si salen
-              chicas o corridas, el papel de la impresora en Windows no mide {anchoMm} x{" "}
-              {altoMm} mm.
-            </p>
-          ) : (
-            <p className="border-l-2 border-[var(--color-linea-fuerte)] bg-[var(--color-crema)] px-3 py-2 text-xs leading-relaxed text-[var(--color-humo)]">
-              Van {etiquetas.length.toLocaleString("es-MX")}{" "}
-              {etiquetas.length === 1 ? "etiqueta" : "etiquetas"}, o sea{" "}
-              {Math.ceil(etiquetas.length / 24).toLocaleString("es-MX")}{" "}
-              {Math.ceil(etiquetas.length / 24) === 1 ? "hoja" : "hojas"}. Al imprimir, en las
-              opciones de la impresora quita los margenes y los encabezados para que salgan
-              derechas.
-            </p>
-          )}
+          {etiquetas.length > 0 &&
+            (rollo ? (
+              <p className="border-l-2 border-[var(--color-linea-fuerte)] bg-[var(--color-crema)] px-3 py-2 text-xs leading-relaxed text-[var(--color-humo)]">
+                Van {etiquetas.length.toLocaleString("es-MX")}{" "}
+                {etiquetas.length === 1 ? "etiqueta" : "etiquetas"} del rollo de {anchoMm} x{" "}
+                {altoMm} mm, una por pagina. Al imprimir elige la impresora de etiquetas, deja la
+                escala en <b>Predeterminada</b> y los margenes en <b>Predeterminados</b>. Si salen
+                chicas o corridas, el papel de la impresora en Windows no mide {anchoMm} x{" "}
+                {altoMm} mm.
+              </p>
+            ) : (
+              <p className="border-l-2 border-[var(--color-linea-fuerte)] bg-[var(--color-crema)] px-3 py-2 text-xs leading-relaxed text-[var(--color-humo)]">
+                Van {etiquetas.length.toLocaleString("es-MX")}{" "}
+                {etiquetas.length === 1 ? "etiqueta" : "etiquetas"}, o sea{" "}
+                {Math.ceil(etiquetas.length / 24).toLocaleString("es-MX")}{" "}
+                {Math.ceil(etiquetas.length / 24) === 1 ? "hoja" : "hojas"}. Al imprimir, en las
+                opciones de la impresora quita los margenes y los encabezados para que salgan
+                derechas.
+              </p>
+            ))}
         </div>
       </div>
 
       {etiquetas.length === 0 ? (
         <div className="no-imprimir">
-          <Vacio
-            icono={<IconoEtiqueta tamano={24} />}
-            titulo="Ningun modelo con ese filtro"
-            descripcion="Prueba con otra linea o quita el filtro de existencia."
-          />
+          {hayPedido || grupo ? (
+            <Vacio
+              icono={<IconoEtiqueta tamano={24} />}
+              titulo="Ningun modelo con ese filtro"
+              descripcion="Prueba con otra linea o quita el filtro de existencia."
+            />
+          ) : (
+            <Vacio
+              icono={<IconoEtiqueta tamano={24} />}
+              titulo="Elige que etiquetas imprimir"
+              descripcion="Escribe o escanea el codigo de una prenda arriba, o elige un grupo completo."
+            />
+          )}
         </div>
       ) : rollo ? (
         <>
