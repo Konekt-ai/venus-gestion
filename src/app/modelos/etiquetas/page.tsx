@@ -1,11 +1,18 @@
 import Link from "next/link";
-import { buscarModelos, modelosPorIds, nombresDeLineas, prefijosEnUso } from "@/lib/consultas";
+import { redirect } from "next/navigation";
+import {
+  buscarModelos,
+  modelosPorIds,
+  nombresDeLineas,
+  obtenerModeloPorCodigo,
+  prefijosEnUso,
+} from "@/lib/consultas";
 import { exigirEntrada } from "@/lib/acceso";
 import { leerAjustes } from "@/lib/ajustes";
 import { BotonImprimir } from "@/components/BotonImprimir";
 import { CodigoBarras } from "@/components/CodigoBarras";
 import { codigoParaBarras } from "@/lib/barras";
-import { EnlaceVolver, Vacio } from "@/components/ui";
+import { Aviso, Boton, EnlaceVolver, Vacio } from "@/components/ui";
 import { IconoEtiqueta } from "@/components/iconos";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +20,39 @@ export const dynamic = "force-dynamic";
 type Params = Promise<{ [k: string]: string | string[] | undefined }>;
 
 const TEXTO = (p: unknown) => (typeof p === "string" ? p : "");
+
+/** Prendas elegidas a mano, cada una con cuantas etiquetas lleva. */
+type Pedido = { id: number; cantidad: number }[];
+
+/**
+ * Lee ?ids=12x30,45x8.
+ *
+ * Si un modelo viene dos veces (se escaneo dos veces la misma etiqueta)
+ * se junta en un solo renglon sumando las cantidades.
+ */
+function leerPedido(texto: string): Pedido {
+  const juntos = new Map<number, number>();
+  for (const par of texto.split(",")) {
+    const m = par.match(/^(\d+)x(\d+)$/);
+    if (!m) continue;
+    const id = Number(m[1]);
+    const cantidad = Number(m[2]);
+    if (id > 0 && cantidad > 0) juntos.set(id, (juntos.get(id) ?? 0) + cantidad);
+  }
+  return [...juntos].map(([id, cantidad]) => ({ id, cantidad }));
+}
+
+function escribirPedido(pedido: Pedido): string {
+  return pedido.map((x) => `${x.id}x${x.cantidad}`).join(",");
+}
+
+/** El mismo pedido con otra cantidad para un modelo. Con 0 se quita. */
+function conCantidad(pedido: Pedido, id: number, cantidad: number): Pedido {
+  const lugar = pedido.findIndex((x) => x.id === id);
+  if (lugar === -1) return cantidad > 0 ? [...pedido, { id, cantidad }] : pedido;
+  // Se respeta el lugar que ya tenia en la lista.
+  return pedido.flatMap((x, i) => (i !== lugar ? [x] : cantidad > 0 ? [{ id, cantidad }] : []));
+}
 
 /**
  * Etiquetas con codigo de barras para las prendas.
@@ -24,12 +64,13 @@ const TEXTO = (p: unknown) => (typeof p === "string" ? p : "");
  *
  * Hay dos formas de sacarlas:
  *
- *   - Rollo: una etiqueta por pagina, del tamano exacto del rollo que
- *     esta en Ajustes. Es la de omision cuando hay impresora de
- *     etiquetas elegida, porque si se le manda la hoja carta el
- *     navegador la encoge o la agranda para que quepa en el rollo y
- *     las etiquetas salen chiquitas, gigantes o partidas a la mitad.
+ *   - Rollo: una etiqueta por pagina, del tamano exacto del rollo. Es
+ *     la de omision porque es la que usa la tienda: imprimen desde el
+ *     navegador a la TSC. Si se le manda la hoja carta, el navegador la
+ *     encoge o la agranda para que quepa en el rollo y las etiquetas
+ *     salen chiquitas, gigantes o partidas a la mitad.
  *   - Hoja carta: 24 por hoja, para recortar, en una impresora normal.
+ *     Solo con ?formato=hoja o con su boton.
  */
 export default async function EtiquetasModelos({ searchParams }: { searchParams: Params }) {
   await exigirEntrada();
@@ -39,42 +80,63 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
   const copias = Math.min(Math.max(Number(TEXTO(sp.copias)) || 1, 1), 12);
 
   const ajustes = leerAjustes();
-  const hayImpresora = Boolean(ajustes.impresoraEtiquetas);
-  const formato: "rollo" | "hoja" =
-    TEXTO(sp.formato) === "hoja" || TEXTO(sp.formato) === "rollo"
-      ? (TEXTO(sp.formato) as "rollo" | "hoja")
-      : hayImpresora
-        ? "rollo"
-        : "hoja";
-  const rollo = formato === "rollo";
+  const rollo = TEXTO(sp.formato) !== "hoja";
   const anchoMm = ajustes.etiquetaAnchoMm;
   const altoMm = ajustes.etiquetaAltoMm;
 
   // ?ids=12x30,45x8 pide prendas concretas con su propia cantidad. Lo
-  // usa el boton de la ficha y el acuse de una entrada cuando no hay
-  // impresora de rollo configurada.
-  const pedido = TEXTO(sp.ids)
-    .split(",")
-    .map((par) => par.match(/^(\d+)x(\d+)$/))
-    .filter((m): m is RegExpMatchArray => m !== null)
-    .map((m) => ({ id: Number(m[1]), cantidad: Number(m[2]) }))
-    .filter((x) => x.id > 0 && x.cantidad > 0);
+  // usan la ficha del modelo, el acuse de una entrada y el buscador de
+  // codigos de esta misma pagina.
+  const pedido = leerPedido(TEXTO(sp.ids));
+
+  /** La direccion de esta pagina con esas prendas elegidas. */
+  function enlacePedido(p: Pedido) {
+    const q = new URLSearchParams();
+    if (p.length > 0) q.set("ids", escribirPedido(p));
+    if (TEXTO(sp.formato)) q.set("formato", TEXTO(sp.formato));
+    const s = q.toString();
+    return s ? `/modelos/etiquetas?${s}` : "/modelos/etiquetas";
+  }
+
+  // ?agregar=VD194&cant=3 llega del buscador de codigos. Se suma a lo
+  // que ya estaba elegido y se redirige a la direccion limpia, para que
+  // recargar la pagina no lo vuelva a sumar. Funciona igual tecleando
+  // el codigo que disparandolo con el lector, que escribe y da Enter.
+  const agregar = TEXTO(sp.agregar).trim();
+  let sinEncontrar = "";
+  if (agregar) {
+    const m = obtenerModeloPorCodigo(agregar);
+    if (m) {
+      const cant = Math.min(
+        Math.max(Math.floor(Number(TEXTO(sp.cant))) || 1, 1),
+        ajustes.etiquetaTope
+      );
+      const yaTenia = pedido.find((x) => x.id === m.id)?.cantidad ?? 0;
+      redirect(
+        enlacePedido(conCantidad(pedido, m.id, Math.min(yaTenia + cant, ajustes.etiquetaTope)))
+      );
+    }
+    sinEncontrar = agregar;
+  }
 
   const todos = buscarModelos({ limite: 2000 });
   const lineas = new Map(nombresDeLineas());
 
+  // Aqui el tope sube al de la configuracion: se pidieron prendas
+  // concretas, no "todo el catalogo por treinta".
+  const porId = new Map(modelosPorIds(pedido.map((x) => x.id)).map((m) => [m.id, m] as const));
+  const elegidas = pedido.flatMap(({ id, cantidad }) => {
+    const modelo = porId.get(id);
+    return modelo ? [{ modelo, cantidad: Math.min(cantidad, ajustes.etiquetaTope) }] : [];
+  });
+  const hayPedido = elegidas.length > 0;
+
   let etiquetas: ({ llave: string } & (typeof todos)[number])[];
 
-  if (pedido.length > 0) {
-    // Aqui el tope sube al de la configuracion: se pidieron prendas
-    // concretas, no "todo el catalogo por treinta".
-    const porId = new Map(modelosPorIds(pedido.map((x) => x.id)).map((m) => [m.id, m]));
-    etiquetas = pedido.flatMap(({ id, cantidad }) => {
-      const m = porId.get(id);
-      if (!m) return [];
-      const cuantas = Math.min(cantidad, ajustes.etiquetaTope);
-      return Array.from({ length: cuantas }, (_, i) => ({ ...m, llave: `${id}-${i}` }));
-    });
+  if (hayPedido) {
+    etiquetas = elegidas.flatMap(({ modelo, cantidad }) =>
+      Array.from({ length: cantidad }, (_, i) => ({ ...modelo, llave: `${modelo.id}-${i}` }))
+    );
   } else {
     let modelos = prefijo ? todos.filter((m) => m.prefijo === prefijo) : todos;
     if (soloConExistencia) modelos = modelos.filter((m) => m.existencia > 0);
@@ -113,6 +175,9 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
     return s ? `/modelos/etiquetas?${s}` : "/modelos/etiquetas";
   }
 
+  const cuadrito =
+    "inline-flex h-9 w-9 items-center justify-center rounded-sm border border-[var(--color-linea-fuerte)] bg-[var(--color-marfil)] text-lg font-semibold hover:border-[var(--color-oro)]";
+
   const pastilla = (activa: boolean) =>
     `rounded-sm border px-3 py-3 text-sm font-semibold transition-colors sm:py-1.5 ${
       activa
@@ -139,17 +204,118 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
         </div>
 
         <div className="mt-4 space-y-3">
+          <div className="space-y-2">
+            <p className="etiqueta">Prendas especificas</p>
+            {/* Un formulario normal, sin codigo en el navegador: al dar
+                Enter (o al leer una etiqueta con el lector) la pagina
+                vuelve con la prenda agregada. */}
+            <form action="/modelos/etiquetas" method="get" className="flex flex-wrap gap-2">
+              {pedido.length > 0 && (
+                <input type="hidden" name="ids" value={escribirPedido(pedido)} />
+              )}
+              {TEXTO(sp.formato) && (
+                <input type="hidden" name="formato" value={TEXTO(sp.formato)} />
+              )}
+              <input
+                name="agregar"
+                required
+                autoComplete="off"
+                // Despues de agregar una, el cursor se queda listo para la
+                // siguiente: se pueden escanear varias seguidas.
+                autoFocus={hayPedido}
+                defaultValue={sinEncontrar}
+                placeholder="Codigo, ej. VD 194, o escanealo"
+                aria-label="Codigo del modelo"
+                className="campo min-w-0 flex-1 sm:max-w-xs"
+              />
+              <input
+                name="cant"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={ajustes.etiquetaTope}
+                defaultValue={1}
+                aria-label="Cuantas etiquetas"
+                title="Cuantas etiquetas"
+                className="campo sin-flechas w-20 text-center"
+              />
+              <Boton type="submit">Agregar</Boton>
+            </form>
+
+            {sinEncontrar && (
+              <Aviso tipo="error">No hay ningun modelo con el codigo {sinEncontrar}.</Aviso>
+            )}
+
+            {hayPedido && (
+              <div className="rounded-sm border border-[var(--color-linea-fuerte)] bg-[var(--color-papel)]">
+                <ul className="divide-y divide-[var(--color-linea)]">
+                  {elegidas.map(({ modelo, cantidad }) => (
+                    <li key={modelo.id} className="flex items-center gap-3 px-3 py-2">
+                      <span className="codigo shrink-0">{modelo.codigo}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm text-[var(--color-humo)]">
+                        {modelo.descripcion}
+                      </span>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {cantidad > 1 ? (
+                          <Link
+                            href={enlacePedido(conCantidad(pedido, modelo.id, cantidad - 1))}
+                            aria-label="Una menos"
+                            className={cuadrito}
+                          >
+                            -
+                          </Link>
+                        ) : (
+                          <span className={`${cuadrito} opacity-30`} aria-hidden>
+                            -
+                          </span>
+                        )}
+                        <span className="w-8 text-center font-semibold">{cantidad}</span>
+                        {cantidad < ajustes.etiquetaTope ? (
+                          <Link
+                            href={enlacePedido(conCantidad(pedido, modelo.id, cantidad + 1))}
+                            aria-label="Una mas"
+                            className={cuadrito}
+                          >
+                            +
+                          </Link>
+                        ) : (
+                          <span className={`${cuadrito} opacity-30`} aria-hidden>
+                            +
+                          </span>
+                        )}
+                      </div>
+                      <Link
+                        href={enlacePedido(conCantidad(pedido, modelo.id, 0))}
+                        className="shrink-0 text-sm font-semibold text-[var(--color-humo)] underline underline-offset-2 hover:text-[var(--color-tinta)]"
+                      >
+                        Quitar
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <div className="border-t border-[var(--color-linea)] px-3 py-2">
+                  <Link
+                    href={enlacePedido([])}
+                    className="text-sm font-semibold text-[var(--color-humo)] underline underline-offset-2 hover:text-[var(--color-tinta)]"
+                  >
+                    Quitar todas y ver por grupos
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div>
-            <p className="etiqueta">Que modelos</p>
+            <p className="etiqueta">{hayPedido ? "O un grupo completo" : "Que modelos"}</p>
             <div className="flex flex-wrap gap-2">
-              <Link href={enlace({ prefijo: "" })} className={pastilla(!prefijo)}>
+              <Link href={enlace({ prefijo: "" })} className={pastilla(!hayPedido && !prefijo)}>
                 Todos ({todos.length})
               </Link>
               {prefijosEnUso().map(({ prefijo: p, total }) => (
                 <Link
                   key={p}
                   href={enlace({ prefijo: p })}
-                  className={pastilla(prefijo === p)}
+                  className={pastilla(!hayPedido && prefijo === p)}
                   title={lineas.get(p) ?? undefined}
                 >
                   {lineas.get(p) ?? p} ({total})
@@ -162,7 +328,7 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
             <p className="etiqueta">Cuantas de cada modelo</p>
             <div className="flex flex-wrap gap-2">
               {[1, 2, 4, 6, 12].map((n) => (
-                <Link key={n} href={enlace({ copias: String(n) })} className={pastilla(copias === n)}>
+                <Link key={n} href={enlace({ copias: String(n) })} className={pastilla(!hayPedido && copias === n)}>
                   {n === 1 ? "Una" : `${n} iguales`}
                 </Link>
               ))}
@@ -184,7 +350,7 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
           <div className="flex flex-wrap gap-2">
             <Link
               href={enlace({ con: soloConExistencia ? "" : "1" })}
-              className={pastilla(soloConExistencia)}
+              className={pastilla(!hayPedido && soloConExistencia)}
             >
               Solo los que tienen existencia
             </Link>
@@ -196,8 +362,8 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
               {etiquetas.length === 1 ? "etiqueta" : "etiquetas"} del rollo de {anchoMm} x{" "}
               {altoMm} mm, una por pagina. Al imprimir elige la impresora de etiquetas, deja la
               escala en <b>Predeterminada</b> y los margenes en <b>Predeterminados</b>. Si salen
-              chicas o corridas, el rollo de la impresora en Windows no mide lo mismo que el de
-              Ajustes.
+              chicas o corridas, el papel de la impresora en Windows no mide {anchoMm} x{" "}
+              {altoMm} mm.
             </p>
           ) : (
             <p className="border-l-2 border-[var(--color-linea-fuerte)] bg-[var(--color-crema)] px-3 py-2 text-xs leading-relaxed text-[var(--color-humo)]">
@@ -278,7 +444,7 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
  * Una etiqueta del rollo, medida en milimetros.
  *
  * Todo lo de adentro se calcula como fraccion del alto de la etiqueta:
- * asi, si el rollo cambia de medida en Ajustes, el contenido se
+ * asi, si el rollo cambia de medida, el contenido se
  * reacomoda solo y sigue cabiendo sin encimarse.
  */
 function EtiquetaRollo({

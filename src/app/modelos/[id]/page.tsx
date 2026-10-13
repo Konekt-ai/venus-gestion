@@ -124,10 +124,12 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
             </div>
 
             {/* El lector de codigos lee igual de la pantalla que del papel:
-                sirve para probar el lector sin tener que imprimir nada. */}
+                sirve para probar el lector sin tener que imprimir nada.
+                Al picarle abre la impresion con esta prenda ya elegida y
+                una sola etiqueta; ahi mismo se sube la cantidad. */}
             <Link
-              href={`/modelos/etiquetas?prefijo=${encodeURIComponent(modelo.prefijo)}`}
-              title="Imprimir etiquetas de esta linea"
+              href={`/modelos/etiquetas?ids=${modelo.id}x1`}
+              title="Imprimir la etiqueta de esta prenda"
               className="no-imprimir hidden rounded-sm border border-[var(--color-linea)] bg-white px-3 py-2 transition-colors hover:border-[var(--color-oro)] sm:block"
             >
               <CodigoBarras texto={modelo.codigo} alto={34} className="w-40" />

@@ -44,7 +44,8 @@ export function BotonEtiquetas({
 
   /**
    * Sin impresora configurada el sistema no se queda inutil: manda a la
-   * hoja carta de siempre, con esta prenda y su cantidad ya puestas.
+   * pagina de etiquetas (en rollo, para imprimir desde el navegador), con
+   * esta prenda y su cantidad ya puestas.
    */
   if (!hayImpresora) {
     return (
@@ -54,7 +55,7 @@ export function BotonEtiquetas({
         className={compacto ? "" : "w-full !py-3 sm:w-auto sm:!py-2.5"}
       >
         <IconoEtiqueta tamano={16} />
-        Etiquetas en hoja
+        Imprimir etiquetas
       </BotonEnlace>
     );
   }

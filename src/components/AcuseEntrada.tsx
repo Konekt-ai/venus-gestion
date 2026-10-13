@@ -102,7 +102,7 @@ export function AcuseEntrada({
             href={`/modelos/etiquetas?ids=${todas}`}
             className="inline-flex min-h-11 items-center text-sm font-semibold text-[var(--color-humo)] underline underline-offset-2 hover:text-[var(--color-tinta)]"
           >
-            Imprimir todas en hoja
+            Imprimir todas las etiquetas
           </Link>
         )}
       </Tarjeta>
