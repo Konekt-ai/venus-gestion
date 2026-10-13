@@ -11,6 +11,10 @@ import { codigoParaBarras, sePuedeCodificar, svgDeBarras } from "@/lib/barras";
  * no en cada pantalla a proposito, porque si cada quien lo hiciera por
  * su cuenta, tarde o temprano una pantalla imprimiria etiquetas con el
  * espacio y esas no empatarian con las que ya estan pegadas.
+ *
+ * El alto puede ir en pixeles (un numero) o en cualquier medida de CSS,
+ * como "10mm" para la etiqueta de rollo. El dibujo se estira a lo que
+ * mida la caja.
  */
 export function CodigoBarras({
   texto,
@@ -18,7 +22,7 @@ export function CodigoBarras({
   className = "",
 }: {
   texto: string;
-  alto?: number;
+  alto?: number | string;
   className?: string;
 }) {
   const codificado = codigoParaBarras(texto);
@@ -30,7 +34,9 @@ export function CodigoBarras({
       style={{ height: alto }}
       aria-label={`Codigo de barras de ${texto}`}
       // El SVG se arma en el servidor: no llega nada de codigo al navegador.
-      dangerouslySetInnerHTML={{ __html: svgDeBarras(codificado, alto) }}
+      dangerouslySetInnerHTML={{
+        __html: svgDeBarras(codificado, typeof alto === "number" ? alto : 40),
+      }}
     />
   );
 }

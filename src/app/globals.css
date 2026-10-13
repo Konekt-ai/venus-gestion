@@ -281,4 +281,15 @@ input[type="number"].sin-flechas {
   .salto-pagina {
     break-after: page;
   }
+
+  /* Una etiqueta de rollo por pagina. La ultima no lleva salto: si lo
+     llevara, la impresora avanzaria una etiqueta en blanco al final. */
+  .etiqueta-rollo {
+    border: none !important;
+    break-inside: avoid;
+    break-after: page;
+  }
+  .etiqueta-rollo:last-child {
+    break-after: auto;
+  }
 }

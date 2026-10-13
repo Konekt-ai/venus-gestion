@@ -131,8 +131,13 @@ export function svgDeBarras(texto: string, alto = 40): string {
     x += w;
   });
 
+  // width y height al 100% para que llene la caja que lo contiene. Sin
+  // ellos el navegador saca el alto de la proporcion del viewBox: en una
+  // caja ancha el dibujo crece hacia abajo, se sale de su lugar y se
+  // encima con el texto de debajo.
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${ancho} ${alto}" ` +
+    `width="100%" height="100%" ` +
     `preserveAspectRatio="none" shape-rendering="crispEdges" fill="#000">` +
     barras.join("") +
     `</svg>`
