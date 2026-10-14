@@ -12,7 +12,7 @@ import { leerAjustes } from "@/lib/ajustes";
 import { BotonImprimir } from "@/components/BotonImprimir";
 import { CodigoBarras } from "@/components/CodigoBarras";
 import { codigoParaBarras } from "@/lib/barras";
-import { pesos } from "@/lib/dinero";
+import { pesos, pesosCortos } from "@/lib/dinero";
 import { hayTablaPrecios, preciosDeModelos } from "@/lib/precios";
 import { Aviso, Boton, EnlaceVolver, Vacio } from "@/components/ui";
 import { IconoEtiqueta } from "@/components/iconos";
@@ -533,17 +533,24 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
               key={m.llave}
               className="hoja flex h-[3.4cm] flex-col items-center justify-center border border-dashed border-slate-300 px-2 py-1.5 text-center"
             >
-              <div className="marca text-[0.6rem] leading-none text-[#8a6d1f]">Venus</div>
-              {/* Sin espacio, igual que en la etiqueta de rollo y que en las
-                  que el negocio ya tiene pegadas. */}
-              <div
-                className={`codigo mt-1 flex w-full max-w-[4.5cm] items-baseline text-base leading-none text-black ${
-                  m.precio ? "justify-between" : "justify-center"
-                }`}
-              >
-                <span>{codigoParaBarras(m.codigo)}</span>
-                {m.precio ? <span>{pesos(m.precio)}</span> : null}
-              </div>
+              {/* Sin espacio en el codigo, igual que en la etiqueta de rollo
+                  y que en las que el negocio ya tiene pegadas. */}
+              {m.precio ? (
+                <div className="flex w-full max-w-[4.5cm] items-center justify-between pl-0.5 pr-3 text-black">
+                  <div className="flex flex-col items-start gap-0.5">
+                    <span className="marca text-[0.6rem] leading-none text-[#8a6d1f]">Venus</span>
+                    <span className="codigo text-base leading-none">{codigoParaBarras(m.codigo)}</span>
+                  </div>
+                  <span className="codigo text-2xl leading-none">{pesosCortos(m.precio)}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="marca text-[0.6rem] leading-none text-[#8a6d1f]">Venus</div>
+                  <div className="codigo mt-1 text-base leading-none text-black">
+                    {codigoParaBarras(m.codigo)}
+                  </div>
+                </>
+              )}
               <CodigoBarras texto={m.codigo} alto={34} className="mt-1.5 w-full max-w-[4.5cm]" />
               <div className="mt-1 line-clamp-1 w-full text-[0.6rem] leading-tight text-slate-600">
                 {m.descripcion}
@@ -592,26 +599,45 @@ function EtiquetaRollo({
     >
       {/* Negro y no dorado: la termica no tiene grises, un color claro
           sale tramado y borroso. */}
-      <div className="marca leading-none text-black" style={{ fontSize: mm(altoMm * 0.08) }}>
-        Venus
-      </div>
-      {/* El codigo a la izquierda es para la bodega; el precio a la
-          derecha, para la clienta. Mismo tamano y en negritas los dos:
-          es lo mas grande de la etiqueta. Sin precio, el codigo se queda
-          centrado como siempre. */}
-      <div
-        className={`codigo flex w-full items-baseline leading-none text-black ${
-          modelo.precio ? "justify-between" : "justify-center"
-        }`}
-        style={{
-          fontSize: mm(altoMm * 0.13),
-          marginTop: mm(altoMm * 0.025),
-          paddingInline: mm(anchoMm * 0.02),
-        }}
-      >
-        <span>{codigoParaBarras(modelo.codigo)}</span>
-        {modelo.precio ? <span>{pesos(modelo.precio)}</span> : null}
-      </div>
+      {modelo.precio ? (
+        // El precio es lo que mira la clienta: va lo mas grande de la
+        // etiqueta, a la altura de "Venus" y el codigo, y despegado de la
+        // orilla. A la izquierda, chicos, lo que usa la bodega. Ocupa el
+        // mismo alto que antes "Venus" mas el codigo, asi que el codigo de
+        // barras no se achica.
+        <div
+          className="flex w-full items-center justify-between leading-none text-black"
+          style={{
+            paddingLeft: mm(anchoMm * 0.02),
+            paddingRight: mm(anchoMm * 0.08),
+            marginBottom: mm(altoMm * 0.025),
+          }}
+        >
+          <div className="flex flex-col items-start" style={{ gap: mm(altoMm * 0.02) }}>
+            <span className="marca" style={{ fontSize: mm(altoMm * 0.08) }}>
+              Venus
+            </span>
+            <span className="codigo" style={{ fontSize: mm(altoMm * 0.13) }}>
+              {codigoParaBarras(modelo.codigo)}
+            </span>
+          </div>
+          <span className="codigo" style={{ fontSize: mm(altoMm * 0.21) }}>
+            {pesosCortos(modelo.precio)}
+          </span>
+        </div>
+      ) : (
+        <>
+          <div className="marca leading-none text-black" style={{ fontSize: mm(altoMm * 0.08) }}>
+            Venus
+          </div>
+          <div
+            className="codigo leading-none text-black"
+            style={{ fontSize: mm(altoMm * 0.13), marginTop: mm(altoMm * 0.025) }}
+          >
+            {codigoParaBarras(modelo.codigo)}
+          </div>
+        </>
+      )}
       {/* Ancho casi completo: entre mas ancha cada barra, mas facil la
           agarra el lector a 203 puntos por pulgada. */}
       <CodigoBarras

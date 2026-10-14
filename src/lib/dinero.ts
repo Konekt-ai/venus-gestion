@@ -19,6 +19,16 @@ export function pesos(centavos: number): string {
   return `${signo}$${enteros.toLocaleString("es-MX")}.${String(decimales).padStart(2, "0")}`;
 }
 
+/**
+ * 65000 -> "$650", 65050 -> "$650.50". Para la etiqueta de la prenda:
+ * sin los ".00" el precio se lee de un vistazo y cabe mas grande.
+ */
+export function pesosCortos(centavos: number): string {
+  const abs = Math.abs(Math.round(centavos));
+  if (abs % 100 !== 0) return pesos(centavos);
+  return `${centavos < 0 ? "-" : ""}$${(abs / 100).toLocaleString("es-MX")}`;
+}
+
 /** 65000 -> "650.00", para los campos de captura, sin el signo. */
 export function pesosSimple(centavos: number): string {
   const abs = Math.abs(Math.round(centavos));

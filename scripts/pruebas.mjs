@@ -641,6 +641,9 @@ iguales("vacio tambien", dinero.aCentavos(""), null);
 iguales("un negativo se rechaza", dinero.aCentavos("-10"), null);
 iguales("65000 centavos se leen $650.00", dinero.pesos(65000), "$650.00");
 iguales("y en el campo de captura, 650.00", dinero.pesosSimple(65000), "650.00");
+iguales("en la etiqueta, sin los .00: $650", dinero.pesosCortos(65000), "$650");
+iguales("pero si hay centavos se ven: $650.50", dinero.pesosCortos(65050), "$650.50");
+iguales("y los miles llevan coma: $1,300", dinero.pesosCortos(130000), "$1,300");
 
 // Bodega NUNCA crea la tabla de la caja: un precio sin caja no le sirve
 // a nadie, y dos definiciones distintas de la misma tabla no se
