@@ -2,6 +2,7 @@ import "server-only";
 import { getDb } from "./db";
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "./codigos";
 import { hayFoto } from "./fotos";
+import { hayTablaPrecios } from "./precios";
 import type {
   Persona,
   Conteo,
@@ -56,8 +57,20 @@ export type FiltrosBusqueda = {
   existencia?: string;
   /** 'codigo' | 'existencia' | 'reciente' | 'ubicacion' */
   orden?: string;
+  /** Solo los que no tienen precio de venta, o lo tienen en cero. */
+  sinPrecio?: boolean;
+  /** Solo los que cuestan exactamente esto, en centavos. */
+  precioCentavos?: number | null;
   limite?: number;
 };
+
+/**
+ * Un modelo de la lista con su precio de venta, en centavos.
+ *
+ * null es "no tiene precio". Tambien es lo que sale para todos cuando la
+ * caja no esta instalada, porque entonces no hay de donde leer precios.
+ */
+export type ModeloConPrecio = ModeloConUbicacion & { precio: number | null };
 
 /**
  * Busca modelos de forma tolerante a como se escriben los codigos.
@@ -66,13 +79,36 @@ export type FiltrosBusqueda = {
  * encuentran el mismo. Tambien busca dentro de la descripcion, la tela
  * y los colores, porque muchas veces solo recuerdan "el midi de olanes".
  */
-export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConUbicacion[] {
+export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConPrecio[] {
   const db = getDb();
   const q = (filtros.q ?? "").trim();
   const limite = Math.min(filtros.limite ?? 300, 2000);
 
   const condiciones: string[] = [filtros.archivados ? "m.activo = 0" : "m.activo = 1"];
   const params: Record<string, unknown> = { limite };
+
+  // El precio vive en la tabla de la caja, que puede no estar instalada.
+  // Sin ella no se hace el JOIN (la consulta tronaria por una tabla que
+  // no existe) y todos salen sin precio.
+  const conPrecios = hayTablaPrecios();
+  const unirPrecios = conPrecios ? "LEFT JOIN caja_precios cp ON cp.modelo_id = m.id" : "";
+  const campoPrecio = conPrecios ? "cp.precio AS precio" : "NULL AS precio";
+
+  if (filtros.sinPrecio && conPrecios) {
+    // El cero cuenta como sin precio: la caja no deja vender una prenda
+    // en cero, asi que para el caso es lo mismo que no tenerlo.
+    condiciones.push("(cp.precio IS NULL OR cp.precio = 0)");
+  }
+
+  if (filtros.precioCentavos != null) {
+    if (conPrecios) {
+      condiciones.push("cp.precio = @precioCentavos");
+      params.precioCentavos = Math.round(filtros.precioCentavos);
+    } else {
+      // Sin caja nadie tiene precio, asi que ninguno cuesta eso.
+      condiciones.push("0");
+    }
+  }
 
   if (q) {
     const norm = normalizarCodigo(q);
@@ -176,15 +212,16 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConUbicacion
   const ordenFinal = [relevancia, orden].filter(Boolean).join(", ");
 
   const sql = `
-    SELECT ${CAMPOS_MODELO}
+    SELECT ${CAMPOS_MODELO}, ${campoPrecio}
     FROM modelos m
     LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
+    ${unirPrecios}
     WHERE ${condiciones.join(" AND ")}
     ORDER BY ${ordenFinal}
     LIMIT @limite
   `;
 
-  return conFotosReales(db.prepare(sql).all(params) as ModeloConUbicacion[]);
+  return conFotosReales(db.prepare(sql).all(params) as ModeloConPrecio[]);
 }
 
 /* ============================================================

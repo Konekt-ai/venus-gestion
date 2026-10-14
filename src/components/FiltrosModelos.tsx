@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { UbicacionConTotales } from "@/lib/consultas";
 
@@ -11,12 +12,23 @@ import type { UbicacionConTotales } from "@/lib/consultas";
 export function FiltrosModelos({
   ubicaciones,
   prefijos,
+  hayPrecios = false,
 }: {
   ubicaciones: UbicacionConTotales[];
   prefijos: { prefijo: string; total: number; nombre?: string }[];
+  /** Sin la caja instalada no hay precios que filtrar. */
+  hayPrecios?: boolean;
 }) {
   const router = useRouter();
   const parametros = useSearchParams();
+
+  // ?precio=sin son los que no tienen precio; ?precio=650 los que
+  // cuestan eso. "Precio exacto" solo abre el campo: el filtro se aplica
+  // hasta que se escribe la cantidad y se da Enter.
+  const precioActual = parametros.get("precio") ?? "";
+  const [modoPrecio, setModoPrecio] = useState(
+    precioActual === "sin" ? "sin" : precioActual ? "exacto" : ""
+  );
 
   function cambiar(clave: string, valor: string) {
     const p = new URLSearchParams(parametros.toString());
@@ -37,6 +49,7 @@ export function FiltrosModelos({
     "orden",
     "categoria",
     "destacado",
+    "precio",
   ].some((c) => parametros.get(c));
 
   // shrink-0: dentro de la tira ningun select debe encogerse, o un nombre
@@ -109,6 +122,61 @@ export function FiltrosModelos({
         </select>
       )}
 
+      {hayPrecios && (
+        <select
+          aria-label="Filtrar por precio"
+          value={modoPrecio}
+          onChange={(e) => {
+            const modo = e.target.value;
+            setModoPrecio(modo);
+            if (modo === "sin") cambiar("precio", "sin");
+            // Al elegir "Precio exacto" todavia no hay cantidad: se espera
+            // a que la escriban. Si estaba "Sin precio", se quita, porque
+            // seguiria filtrando mientras escriben y no es lo que se ve.
+            else if (modo === "" || precioActual === "sin") cambiar("precio", "");
+          }}
+          className={claseSelect}
+        >
+          <option value="">Todos los precios</option>
+          <option value="sin">Sin precio</option>
+          <option value="exacto">Precio exacto...</option>
+        </select>
+      )}
+
+      {hayPrecios && modoPrecio === "exacto" && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const escrito = String(new FormData(e.currentTarget).get("precio") ?? "")
+              .replace(/[$\s,]/g, "")
+              .trim();
+            cambiar("precio", escrito);
+          }}
+          className="flex shrink-0 items-center gap-1.5"
+        >
+          {/* key: si cambia el precio de la direccion, el campo se rehace
+              con el valor nuevo en vez de quedarse con el viejo. */}
+          <input
+            key={precioActual}
+            name="precio"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            autoFocus={!precioActual}
+            defaultValue={precioActual === "sin" ? "" : precioActual}
+            placeholder="$ 650"
+            aria-label="Precio exacto"
+            className="campo !w-28 sm:!py-2 sm:!text-sm"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-sm border border-[var(--color-linea-fuerte)] bg-[var(--color-papel)] px-3 py-3 text-sm font-semibold hover:border-[var(--color-oro)] sm:py-2"
+          >
+            Ver
+          </button>
+        </form>
+      )}
+
       <select
         aria-label="Ordenar"
         value={parametros.get("orden") ?? ""}
@@ -133,6 +201,7 @@ export function FiltrosModelos({
               if (v) queda.set(clave, v);
             }
             const cadena = queda.toString();
+            setModoPrecio("");
             router.replace(cadena ? `/modelos?${cadena}` : "/modelos");
           }}
           className="shrink-0 rounded-sm px-3 py-3 text-sm font-semibold text-[var(--color-vino)] hover:bg-[var(--color-crema)] sm:py-2"

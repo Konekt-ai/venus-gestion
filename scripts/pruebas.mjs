@@ -656,6 +656,14 @@ comprobar(
   "y sin tabla, pedir un precio no truena: contesta que no hay",
   habiaTabla || precios.precioDeModelo(paraRenombrar.id) === null
 );
+comprobar(
+  "sin tabla, la lista de modelos sale con todos sin precio",
+  habiaTabla || consultas.buscarModelos({ limite: 5 }).every((m) => m.precio === null)
+);
+comprobar(
+  "y buscar por un precio exacto no truena: no encuentra a nadie",
+  habiaTabla || consultas.buscarModelos({ precioCentavos: 65000 }).length === 0
+);
 
 // ---------------------------------------------------------------
 db.close();

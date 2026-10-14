@@ -8,6 +8,8 @@ import {
   prefijosEnUso,
 } from "@/lib/consultas";
 import { usaTianguis } from "@/lib/ajustes";
+import { aCentavos, pesos } from "@/lib/dinero";
+import { hayTablaPrecios } from "@/lib/precios";
 import { Buscador } from "@/components/Buscador";
 import { FiltrosModelos } from "@/components/FiltrosModelos";
 import { FotoModelo } from "@/components/FotoModelo";
@@ -92,7 +94,17 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
   // la direccion.
   const enCuadricula = uno(sp.vista) === "cuadricula";
 
+  // ?precio=sin son los que no tienen precio (o lo tienen en cero), y
+  // ?precio=650 los que cuestan exactamente eso. Lo que no se entienda
+  // como precio se ignora en vez de dejar la lista vacia sin razon.
+  const hayPrecios = hayTablaPrecios();
+  const precioParam = uno(sp.precio);
+  const sinPrecio = precioParam === "sin";
+  const precioCentavos = sinPrecio ? null : aCentavos(precioParam);
+
   const modelos = buscarModelos({
+    sinPrecio,
+    precioCentavos,
     q,
     existencia,
     orden,
@@ -157,7 +169,7 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
           </Suspense>
 
           <Suspense fallback={null}>
-            <FiltrosModelos ubicaciones={ubicaciones} prefijos={prefijos} />
+            <FiltrosModelos ubicaciones={ubicaciones} prefijos={prefijos} hayPrecios={hayPrecios} />
           </Suspense>
         </>
       )}
@@ -318,6 +330,11 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                       <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-[var(--color-humo)]">
                         {m.descripcion}
                       </p>
+                      {hayPrecios && (
+                        <div className="mt-1 text-sm">
+                          <Precio centavos={m.precio} />
+                        </div>
+                      )}
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <Existencia cantidad={m.existencia} minimo={m.minimo} />
                         <PastillaUbicacion codigo={m.ubicacion_codigo} />
@@ -333,7 +350,7 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                   las columnas no caben, asi que la tabla se desliza dentro
                   de su propio marco en vez de recortarse en silencio. */}
               <div className="desliza-h hidden rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)] md:block">
-                <table className="w-full min-w-[42rem] text-left text-sm">
+                <table className="w-full min-w-[46rem] text-left text-sm">
                   <thead className="border-b border-[var(--color-linea)] bg-[var(--color-crema)] text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-humo)]">
                     <tr>
                       <th className="w-16 px-3 py-3 font-semibold">
@@ -344,6 +361,7 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                       <th className="px-4 py-3 font-semibold">Tallas</th>
                       <th className="px-4 py-3 font-semibold">Tela</th>
                       <th className="px-4 py-3 font-semibold">Ubicacion</th>
+                      {hayPrecios && <th className="px-4 py-3 text-right font-semibold">Precio</th>}
                       <th className="px-4 py-3 text-right font-semibold">Bodega</th>
                     </tr>
                   </thead>
@@ -387,6 +405,11 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                             href={m.ubicacion_id ? `/ubicaciones/${m.ubicacion_id}` : undefined}
                           />
                         </td>
+                        {hayPrecios && (
+                          <td className="whitespace-nowrap px-4 py-3 text-right">
+                            <Precio centavos={m.precio} />
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-right">
                           <Existencia cantidad={m.existencia} minimo={m.minimo} />
                         </td>
@@ -416,6 +439,11 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                             <div className="mt-0.5 text-sm text-[var(--color-humo)]">
                               {m.descripcion}
                             </div>
+                            {hayPrecios && (
+                        <div className="mt-1 text-sm">
+                          <Precio centavos={m.precio} />
+                        </div>
+                      )}
                           </div>
                           <Existencia cantidad={m.existencia} minimo={m.minimo} />
                         </div>
@@ -460,4 +488,18 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
       )}
     </div>
   );
+}
+
+/**
+ * El precio de venta en la lista.
+ *
+ * Sin precio (o en cero) se dice con palabras y en otro color: un "$0.00"
+ * se confunde con un precio de verdad, y justo esos son los que hay que
+ * encontrar para ponerles uno antes de que lleguen a la caja.
+ */
+function Precio({ centavos }: { centavos: number | null }) {
+  if (!centavos) {
+    return <span className="text-xs font-semibold text-[var(--color-ambar)]">Sin precio</span>;
+  }
+  return <span className="font-semibold tabular-nums">{pesos(centavos)}</span>;
 }
