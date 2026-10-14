@@ -14,6 +14,7 @@ import { CodigoBarras } from "@/components/CodigoBarras";
 import { codigoParaBarras } from "@/lib/barras";
 import { Aviso, Boton, EnlaceVolver, Vacio } from "@/components/ui";
 import { IconoEtiqueta } from "@/components/iconos";
+import type { ModeloConUbicacion } from "@/lib/tipos";
 
 export const dynamic = "force-dynamic";
 
@@ -155,7 +156,9 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
   });
   const hayPedido = elegidas.length > 0;
 
-  type ConLlave = { llave: string } & (typeof todos)[number];
+  // Lo comun a las dos fuentes: buscarModelos trae ademas el precio y
+  // modelosPorIds no, y a la etiqueta el precio no le hace falta.
+  type ConLlave = { llave: string } & ModeloConUbicacion;
 
   const deLasElegidas: ConLlave[] = elegidas.flatMap(({ modelo, cantidad }) =>
     Array.from({ length: cantidad }, (_, i) => ({ ...modelo, llave: `${modelo.id}-${i}` }))
