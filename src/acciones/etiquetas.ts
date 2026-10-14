@@ -3,6 +3,7 @@
 import { exigirAcceso } from "@/lib/acceso";
 import { leerAjustes, guardarAjuste } from "@/lib/ajustes";
 import { modelosPorIds } from "@/lib/consultas";
+import { hayTablaPrecios, preciosDeModelos } from "@/lib/precios";
 import {
   estadoImpresora,
   listarImpresoras,
@@ -88,6 +89,24 @@ export async function imprimirEtiquetas(
 
   const modelos = modelosPorIds(pedidas.map((l) => l.modeloId));
   const porId = new Map(modelos.map((m) => [m.id, m]));
+
+  // Igual que en la pagina de etiquetas: una prenda sin precio (o en
+  // cero) no se etiqueta, porque etiquetada sale a piso y se podria ir
+  // regalada. No se imprime NADA del envio, para que no salgan unas si y
+  // otras no y se mezclen al colgarlas.
+  if (hayTablaPrecios()) {
+    const precios = preciosDeModelos(modelos.map((m) => m.id));
+    const sinPrecio = modelos.filter((m) => !precios.has(m.id)).map((m) => m.codigo);
+    if (sinPrecio.length > 0) {
+      return {
+        ok: false,
+        error:
+          sinPrecio.length === 1
+            ? `No se imprimio nada: ${sinPrecio[0]} no tiene precio. Ponselo en Editar producto.`
+            : `No se imprimio nada: ${sinPrecio.join(", ")} no tienen precio. Ponselo en Editar producto.`,
+      };
+    }
+  }
 
   const aImprimir = pedidas
     .map((l) => {

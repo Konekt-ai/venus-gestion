@@ -12,6 +12,8 @@ import { leerAjustes } from "@/lib/ajustes";
 import { BotonImprimir } from "@/components/BotonImprimir";
 import { CodigoBarras } from "@/components/CodigoBarras";
 import { codigoParaBarras } from "@/lib/barras";
+import { pesos } from "@/lib/dinero";
+import { hayTablaPrecios, preciosDeModelos } from "@/lib/precios";
 import { Aviso, Boton, EnlaceVolver, Vacio } from "@/components/ui";
 import { IconoEtiqueta } from "@/components/iconos";
 import type { ModeloConUbicacion } from "@/lib/tipos";
@@ -156,27 +158,54 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
   });
   const hayPedido = elegidas.length > 0;
 
-  // Lo comun a las dos fuentes: buscarModelos trae ademas el precio y
-  // modelosPorIds no, y a la etiqueta el precio no le hace falta.
-  type ConLlave = { llave: string } & ModeloConUbicacion;
-
-  const deLasElegidas: ConLlave[] = elegidas.flatMap(({ modelo, cantidad }) =>
-    Array.from({ length: cantidad }, (_, i) => ({ ...modelo, llave: `${modelo.id}-${i}` }))
-  );
-
-  let delGrupo: ConLlave[] = [];
+  let delGrupoModelos: ModeloConUbicacion[] = [];
   if (grupo) {
     let modelos = prefijo ? todos.filter((m) => m.prefijo === prefijo) : todos;
     if (soloConExistencia) modelos = modelos.filter((m) => m.existencia > 0);
     // Las que ya se eligieron a mano no se repiten: ya llevan su cantidad.
-    modelos = modelos.filter((m) => !porId.has(m.id));
-
-    // Una etiqueta por prenda: si hay 12 piezas del mismo modelo se
-    // necesitan 12 etiquetas iguales, no una.
-    delGrupo = modelos.flatMap((m) =>
-      Array.from({ length: copias }, (_, i) => ({ ...m, llave: `${m.id}-g${i}` }))
-    );
+    delGrupoModelos = modelos.filter((m) => !porId.has(m.id));
   }
+
+  // La etiqueta lleva el precio impreso, y una prenda sin precio (o en
+  // cero) NO se etiqueta: con la etiqueta puesta sale a piso, y una
+  // prenda sin precio en piso es una prenda que se puede ir regalada.
+  // Se dejan fuera y se avisa cuales, para que les pongan precio primero.
+  // Sin la caja instalada no hay precios en ningun lado: ahi no se puede
+  // exigir y las etiquetas salen sin precio, como antes.
+  const exigePrecio = hayTablaPrecios();
+  const precios = preciosDeModelos([
+    ...elegidas.map((x) => x.modelo.id),
+    ...delGrupoModelos.map((m) => m.id),
+  ]);
+  const tienePrecio = (id: number) => !exigePrecio || precios.has(id);
+
+  const elegidasSinPrecio = elegidas.filter((x) => !tienePrecio(x.modelo.id)).map((x) => x.modelo);
+  const grupoSinPrecio = delGrupoModelos.filter((m) => !tienePrecio(m.id));
+  const sinPrecio = [...elegidasSinPrecio, ...grupoSinPrecio];
+
+  type ConLlave = { llave: string; precio: number | null } & ModeloConUbicacion;
+
+  const deLasElegidas: ConLlave[] = elegidas
+    .filter((x) => tienePrecio(x.modelo.id))
+    .flatMap(({ modelo, cantidad }) =>
+      Array.from({ length: cantidad }, (_, i) => ({
+        ...modelo,
+        precio: precios.get(modelo.id) ?? null,
+        llave: `${modelo.id}-${i}`,
+      }))
+    );
+
+  // Una etiqueta por prenda: si hay 12 piezas del mismo modelo se
+  // necesitan 12 etiquetas iguales, no una.
+  const delGrupo: ConLlave[] = delGrupoModelos
+    .filter((m) => tienePrecio(m.id))
+    .flatMap((m) =>
+      Array.from({ length: copias }, (_, i) => ({
+        ...m,
+        precio: precios.get(m.id) ?? null,
+        llave: `${m.id}-g${i}`,
+      }))
+    );
 
   const etiquetas = [...deLasElegidas, ...delGrupo];
 
@@ -273,6 +302,20 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
                       <span className="min-w-0 flex-1 truncate text-sm text-[var(--color-humo)]">
                         {modelo.descripcion}
                       </span>
+                      {tienePrecio(modelo.id) ? (
+                        exigePrecio && (
+                          <span className="shrink-0 text-sm font-semibold tabular-nums">
+                            {pesos(precios.get(modelo.id) ?? 0)}
+                          </span>
+                        )
+                      ) : (
+                        <Link
+                          href={`/modelos/${modelo.id}/editar`}
+                          className="shrink-0 text-xs font-semibold text-[var(--color-rojo)] underline underline-offset-2"
+                        >
+                          Sin precio
+                        </Link>
+                      )}
                       <div className="flex shrink-0 items-center gap-1">
                         {cantidad > 1 ? (
                           <Link
@@ -393,6 +436,29 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
             </div>
           </div>
 
+          {sinPrecio.length > 0 && (
+            <Aviso tipo="error">
+              {sinPrecio.length === 1
+                ? "Esta prenda no tiene precio y su etiqueta no se va a imprimir: "
+                : `Estas ${sinPrecio.length} prendas no tienen precio y sus etiquetas no se van a imprimir: `}
+              {sinPrecio.slice(0, 12).map((m, i) => (
+                <span key={m.id}>
+                  {i > 0 && ", "}
+                  <Link href={`/modelos/${m.id}/editar`} className="font-semibold underline underline-offset-2">
+                    {m.codigo}
+                  </Link>
+                </span>
+              ))}
+              {sinPrecio.length > 12 && ` y ${sinPrecio.length - 12} mas`}. Ponles precio y vuelve
+              a esta pagina.{" "}
+              {sinPrecio.length > 12 && (
+                <Link href="/modelos?precio=sin" className="font-semibold underline underline-offset-2">
+                  Ver todas las que no tienen precio
+                </Link>
+              )}
+            </Aviso>
+          )}
+
           {etiquetas.length > 0 &&
             (rollo ? (
               <p className="border-l-2 border-[var(--color-linea-fuerte)] bg-[var(--color-crema)] px-3 py-2 text-xs leading-relaxed text-[var(--color-humo)]">
@@ -418,7 +484,13 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
 
       {etiquetas.length === 0 ? (
         <div className="no-imprimir">
-          {hayPedido || grupo ? (
+          {sinPrecio.length > 0 ? (
+            <Vacio
+              icono={<IconoEtiqueta tamano={24} />}
+              titulo="Ninguna se puede imprimir todavia"
+              descripcion="Las prendas elegidas no tienen precio. Ponselo y vuelve a esta pagina."
+            />
+          ) : hayPedido || grupo ? (
             <Vacio
               icono={<IconoEtiqueta tamano={24} />}
               titulo="Ningun modelo con ese filtro"
@@ -464,8 +536,13 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
               <div className="marca text-[0.6rem] leading-none text-[#8a6d1f]">Venus</div>
               {/* Sin espacio, igual que en la etiqueta de rollo y que en las
                   que el negocio ya tiene pegadas. */}
-              <div className="codigo mt-1 text-base leading-none text-black">
-                {codigoParaBarras(m.codigo)}
+              <div
+                className={`codigo mt-1 flex w-full max-w-[4.5cm] items-baseline text-base leading-none text-black ${
+                  m.precio ? "justify-between" : "justify-center"
+                }`}
+              >
+                <span>{codigoParaBarras(m.codigo)}</span>
+                {m.precio ? <span>{pesos(m.precio)}</span> : null}
               </div>
               <CodigoBarras texto={m.codigo} alto={34} className="mt-1.5 w-full max-w-[4.5cm]" />
               <div className="mt-1 line-clamp-1 w-full text-[0.6rem] leading-tight text-slate-600">
@@ -498,7 +575,7 @@ function EtiquetaRollo({
   anchoMm,
   altoMm,
 }: {
-  modelo: { codigo: string; descripcion: string; tallas?: string | null };
+  modelo: { codigo: string; descripcion: string; tallas?: string | null; precio: number | null };
   anchoMm: number;
   altoMm: number;
 }) {
@@ -518,11 +595,22 @@ function EtiquetaRollo({
       <div className="marca leading-none text-black" style={{ fontSize: mm(altoMm * 0.08) }}>
         Venus
       </div>
+      {/* El codigo a la izquierda es para la bodega; el precio a la
+          derecha, para la clienta. Mismo tamano y en negritas los dos:
+          es lo mas grande de la etiqueta. Sin precio, el codigo se queda
+          centrado como siempre. */}
       <div
-        className="codigo leading-none text-black"
-        style={{ fontSize: mm(altoMm * 0.13), marginTop: mm(altoMm * 0.025) }}
+        className={`codigo flex w-full items-baseline leading-none text-black ${
+          modelo.precio ? "justify-between" : "justify-center"
+        }`}
+        style={{
+          fontSize: mm(altoMm * 0.13),
+          marginTop: mm(altoMm * 0.025),
+          paddingInline: mm(anchoMm * 0.02),
+        }}
       >
-        {codigoParaBarras(modelo.codigo)}
+        <span>{codigoParaBarras(modelo.codigo)}</span>
+        {modelo.precio ? <span>{pesos(modelo.precio)}</span> : null}
       </div>
       {/* Ancho casi completo: entre mas ancha cada barra, mas facil la
           agarra el lector a 203 puntos por pulgada. */}

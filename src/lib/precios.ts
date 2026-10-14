@@ -47,6 +47,32 @@ export function precioDeModelo(modeloId: number): number | null {
 }
 
 /**
+ * Los precios de varias prendas de un jalon, en centavos.
+ *
+ * Solo trae las que tienen precio de verdad: una prenda que no esta en
+ * el mapa no tiene precio, y un cero cuenta igual que no tenerlo (la
+ * caja no deja vender en cero). Asi quien pregunta no tiene que
+ * acordarse de las dos formas de "sin precio".
+ */
+export function preciosDeModelos(ids: number[]): Map<number, number> {
+  const precios = new Map<number, number>();
+  if (!hayTablaPrecios()) return precios;
+
+  const limpios = [...new Set(ids)].filter((n) => Number.isInteger(n) && n > 0);
+  if (limpios.length === 0) return precios;
+
+  const filas = getDb()
+    .prepare(
+      `SELECT modelo_id, precio FROM caja_precios
+        WHERE precio > 0 AND modelo_id IN (${limpios.map(() => "?").join(",")})`
+    )
+    .all(...limpios) as { modelo_id: number; precio: number }[];
+
+  for (const f of filas) precios.set(f.modelo_id, f.precio);
+  return precios;
+}
+
+/**
  * Pone o quita el precio de una prenda.
  *
  * Recibe la conexion por parametro para poder correr dentro de la misma
