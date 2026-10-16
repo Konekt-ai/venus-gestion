@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BotonEtiquetas } from "@/components/BotonEtiquetas";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
 import type { EntradaRegistrada } from "@/acciones/movimientos";
+import { LUGARES, NOMBRE_LUGAR } from "@/lib/lugares";
 
 export type EstadoImpresion =
   | { tipo: "imprimiendo" }
@@ -78,9 +79,16 @@ export function AcuseEntrada({
                 </div>
                 <div className="mt-0.5 text-xs text-[var(--color-humo)]">
                   Entraron {l.cantidad}
+                  {/* Si llego repartido se dice a donde fue cada parte;
+                      si todo fue a bodega, sobra decirlo. */}
+                  {Object.keys(l.reparto).length > 1 || !l.reparto.bodega
+                    ? ` (${LUGARES.filter((x) => l.reparto[x])
+                        .map((x) => `${l.reparto[x]} a ${NOMBRE_LUGAR[x].toLowerCase()}`)
+                        .join(", ")})`
+                    : ""}
                   {/* El "despues" viene de la accion, no del modelo que
                       tenia la pantalla: ese traia el valor de antes. */}
-                  {" · "}quedan {l.despues} en bodega
+                  {" · "}quedan {l.despues.bodega} en bodega
                 </div>
               </div>
 

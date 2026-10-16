@@ -5,9 +5,14 @@
  * esquema viaja dentro del build de Next y no depende de que el
  * archivo .sql siga en su lugar cuando la app corre en la bodega.
  *
- * Todo el inventario se lleva POR MODELO (una existencia total por
- * codigo). Tallas, colores y tela se guardan como datos descriptivos
- * del modelo, tal como aparecen en el cuaderno.
+ * Todo el inventario se lleva POR MODELO, con una cuenta por lugar:
+ * bodega (existencia), tienda (en_tienda) y tianguis (en_tianguis).
+ * Tallas, colores y tela se guardan como datos descriptivos del
+ * modelo, tal como aparecen en el cuaderno.
+ *
+ * La tabla ubicaciones y la columna ubicacion_id son de cuando se
+ * llevaba el rack de bodega. Ya no se usan, pero se dejan para no
+ * romper bases que las tienen ni perder lo que guardaron.
  */
 export const ESQUEMA = `
 PRAGMA foreign_keys = ON;
@@ -100,14 +105,23 @@ CREATE INDEX IF NOT EXISTS idx_remisiones_estado ON remisiones(estado, fecha DES
 
 -- ------------------------------------------------------------
 -- Movimientos: historial de todo lo que entra y sale.
--- 'cantidad' siempre es positiva; el 'tipo' define si suma o resta.
---   entrada           llego mercancia a bodega       (+bodega)
---   salida_tienda     salio a la tienda              (-bodega, +tienda)
---   salida_tianguis   salio al tianguis              (-bodega, +tianguis)
---   retorno_tienda    regreso de la tienda           (+bodega, -tienda)
---   retorno_tianguis  regreso del tianguis           (+bodega, -tianguis)
---   ajuste            correccion manual              (+/-bodega)
---   conteo            cuadre por inventario fisico   (=bodega)
+-- 'cantidad' es positiva salvo en los ajustes; el 'tipo' define si
+-- suma o resta y en que lugar (la tabla completa esta en lugares.ts):
+--   entrada              llego mercancia a bodega     (+bodega)
+--   entrada_tienda       llego directo a la tienda    (+tienda)
+--   entrada_tianguis     llego directo al tianguis    (+tianguis)
+--   salida_tienda        salio a la tienda            (-bodega, +tienda)
+--   salida_tianguis      salio al tianguis            (-bodega, +tianguis)
+--   retorno_tienda       regreso de la tienda         (+bodega, -tienda)
+--   retorno_tianguis     regreso del tianguis         (+bodega, -tianguis)
+--   tienda_a_tianguis    de la tienda al tianguis     (-tienda, +tianguis)
+--   tianguis_a_tienda    del tianguis a la tienda     (-tianguis, +tienda)
+--   ajuste / _tienda / _tianguis   correccion manual  (+/- ese lugar)
+--   conteo               cuadre por inventario fisico (=bodega)
+--   venta_tianguis       se vendio en el tianguis     (-tianguis)
+--   cancelacion_tianguis se cancelo esa venta         (+tianguis)
+-- existencia_antes/despues son la cuenta de bodega, salvo en los que
+-- no la tocan: ahi son la del lugar que cambio.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS movimientos (
   id                 INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -126,6 +140,33 @@ CREATE TABLE IF NOT EXISTS movimientos (
 CREATE INDEX IF NOT EXISTS idx_mov_modelo   ON movimientos(modelo_id, fecha DESC);
 CREATE INDEX IF NOT EXISTS idx_mov_fecha    ON movimientos(fecha DESC);
 CREATE INDEX IF NOT EXISTS idx_mov_remision ON movimientos(remision_id);
+
+-- ------------------------------------------------------------
+-- Ventas del tianguis.
+--
+-- Las de la tienda las cobra la caja en sus propias tablas; en el
+-- tianguis no hay caja, se registran desde el celular. Cada renglon es
+-- un modelo con sus piezas y el precio al que de verdad se vendio, en
+-- centavos. 'precio_lista' es el que tenia registrado en ese momento,
+-- para saber despues cuanto se rebajo.
+--
+-- Los vendedores ven estas ventas SIN el precio; el dinero solo queda
+-- guardado.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tianguis_ventas (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  modelo_id       INTEGER NOT NULL REFERENCES modelos(id) ON DELETE CASCADE,
+  piezas          INTEGER NOT NULL,
+  precio          INTEGER NOT NULL,
+  precio_lista    INTEGER,
+  persona         TEXT    NOT NULL DEFAULT '',
+  estado          TEXT    NOT NULL DEFAULT 'vendida',
+  movimiento_id   INTEGER REFERENCES movimientos(id) ON DELETE SET NULL,
+  fecha           TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+  cancelada_en    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_tianguis_ventas_fecha ON tianguis_ventas(fecha DESC);
 
 -- ------------------------------------------------------------
 -- Conteos fisicos: para cuadrar la bodega contra lo que dice

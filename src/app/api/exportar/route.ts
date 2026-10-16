@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { movimientosRecientes, todosLosModelos } from "@/lib/consultas";
-import { getDb } from "@/lib/db";
 import { escribirCSV } from "@/lib/csv";
 import { NOMBRE_MOVIMIENTO, type TipoMovimiento } from "@/lib/tipos";
 import { puedeEntrar } from "@/lib/acceso";
@@ -45,18 +44,7 @@ export async function GET(peticion: Request) {
     );
     nombre = `venus-movimientos-${fecha}.csv`;
   } else {
-    const db = getDb();
     const modelos = todosLosModelos();
-
-    // Se resuelve el codigo de ubicacion para que el archivo se
-    // entienda solo, sin tener que cruzar con otra tabla.
-    const ubicaciones = new Map<number, string>();
-    for (const u of db.prepare("SELECT id, codigo FROM ubicaciones").all() as {
-      id: number;
-      codigo: string;
-    }[]) {
-      ubicaciones.set(u.id, u.codigo);
-    }
 
     csv = escribirCSV(
       [
@@ -70,7 +58,6 @@ export async function GET(peticion: Request) {
         "en_tienda",
         "en_tianguis",
         "minimo",
-        "ubicacion",
         "notas",
       ],
       modelos.map((m) => [
@@ -84,7 +71,6 @@ export async function GET(peticion: Request) {
         m.en_tienda,
         m.en_tianguis,
         m.minimo,
-        m.ubicacion_id ? (ubicaciones.get(m.ubicacion_id) ?? "") : "",
         m.notas,
       ])
     );

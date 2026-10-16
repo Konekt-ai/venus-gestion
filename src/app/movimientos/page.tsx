@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { movimientosRecientes } from "@/lib/consultas";
-import { usaTianguis } from "@/lib/ajustes";
 import { Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
 import { IconoHistorial } from "@/components/iconos";
 import {
@@ -11,6 +10,7 @@ import {
 
 } from "@/lib/tipos";
 import { exigirEntrada } from "@/lib/acceso";
+import { EN_LUGAR, lugarDelMovimiento } from "@/lib/lugares";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +18,20 @@ type Params = Promise<{ [k: string]: string | string[] | undefined }>;
 
 const TONO_POR_TIPO: Record<TipoEnHistorial, "ok" | "vino" | "neutro"> = {
   entrada: "ok",
+  entrada_tienda: "ok",
+  entrada_tianguis: "ok",
   retorno_tienda: "ok",
   retorno_tianguis: "ok",
   salida_tienda: "vino",
   salida_tianguis: "vino",
+  tienda_a_tianguis: "vino",
+  tianguis_a_tienda: "vino",
   ajuste: "neutro",
+  ajuste_tienda: "neutro",
+  ajuste_tianguis: "neutro",
   conteo: "neutro",
+  venta_tianguis: "vino",
+  cancelacion_tianguis: "ok",
   // Lo que viene de la caja de la tienda.
   venta: "vino",
   cancelacion: "ok",
@@ -33,15 +41,13 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
   await exigirEntrada();
   const sp = await searchParams;
   const filtro = typeof sp.tipo === "string" ? sp.tipo : "";
-  const conTianguis = usaTianguis();
-
-  // Solo se dejan de ofrecer como filtro: lo que ya paso por el tianguis
-  // sigue apareciendo en la bitacora, con su nombre de siempre.
-  const propios = TIPOS_MOVIMIENTO.filter(
-    (t) => conTianguis || (t !== "salida_tianguis" && t !== "retorno_tianguis")
-  );
-
   const todos = movimientosRecientes(400);
+
+  // Solo se ofrecen como filtro los tipos que de verdad aparecen: son
+  // quince y la mayoria de los dias se usan cuatro o cinco.
+  const propios = TIPOS_MOVIMIENTO.filter(
+    (t) => t === filtro || todos.some((m) => m.tipo === t)
+  );
 
   // Las ventas las escribe la caja de la tienda en esta misma base. El
   // filtro solo aparece cuando ya hay alguna: mientras la caja no este
@@ -62,7 +68,7 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
     <div className="space-y-5">
       <TituloPagina
         titulo="Historial"
-        descripcion="Todo lo que ha entrado y salido de la bodega."
+        descripcion="Todo lo que ha entrado y salido de la bodega, la tienda y el tianguis."
       />
 
       {/* Los filtros apilados empujaban el primer movimiento fuera de la
@@ -144,7 +150,7 @@ export default async function PaginaMovimientos({ searchParams }: { searchParams
                               {diferencia > 0 ? `+${diferencia}` : diferencia}
                             </span>
                             <span className="mt-1 block text-xs text-[var(--color-humo)]">
-                              quedaron {mv.existencia_despues}
+                              quedaron {mv.existencia_despues} {EN_LUGAR[lugarDelMovimiento(mv.tipo)]}
                             </span>
                           </span>
                         </Link>

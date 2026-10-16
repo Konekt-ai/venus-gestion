@@ -157,13 +157,11 @@ export function ImportadorCSV() {
           <ul className="ml-5 list-disc space-y-0.5">
             <li>descripcion, nombre o prenda</li>
             <li>tallas, colores, tela</li>
-            <li>existencia, cantidad, piezas o stock</li>
-            <li>ubicacion, lugar o rack</li>
+            <li>existencia, cantidad, piezas o stock (las de bodega)</li>
             <li>minimo, notas</li>
           </ul>
           <p>
-            Si pones una ubicacion que todavia no existe, se crea sola. Descarga el inventario
-            actual para ver un archivo de ejemplo con el formato exacto.
+            Descarga el inventario actual para ver un archivo de ejemplo con el formato exacto.
           </p>
         </div>
       </details>

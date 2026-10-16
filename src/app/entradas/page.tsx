@@ -19,7 +19,6 @@ export default async function PaginaEntradas() {
     existencia: m.existencia,
     en_tienda: m.en_tienda,
     en_tianguis: m.en_tianguis,
-    ubicacion_codigo: m.ubicacion_codigo,
     foto: m.foto,
   }));
 
@@ -27,7 +26,7 @@ export default async function PaginaEntradas() {
     <div className="space-y-5">
       <TituloPagina
         titulo="Llego mercancia"
-        descripcion="Suma a la bodega las piezas que acaban de entrar."
+        descripcion="Suma las piezas que acaban de entrar. Todo va a bodega, salvo lo que repartas directo a la tienda o al tianguis."
       />
 
       {modelos.length === 0 ? (

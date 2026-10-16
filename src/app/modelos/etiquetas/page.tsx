@@ -16,7 +16,7 @@ import { pesos, pesosCortos } from "@/lib/dinero";
 import { hayTablaPrecios, preciosDeModelos } from "@/lib/precios";
 import { Aviso, Boton, EnlaceVolver, Vacio } from "@/components/ui";
 import { IconoEtiqueta } from "@/components/iconos";
-import type { ModeloConUbicacion } from "@/lib/tipos";
+import type { Modelo } from "@/lib/tipos";
 
 export const dynamic = "force-dynamic";
 
@@ -158,7 +158,7 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
   });
   const hayPedido = elegidas.length > 0;
 
-  let delGrupoModelos: ModeloConUbicacion[] = [];
+  let delGrupoModelos: Modelo[] = [];
   if (grupo) {
     let modelos = prefijo ? todos.filter((m) => m.prefijo === prefijo) : todos;
     if (soloConExistencia) modelos = modelos.filter((m) => m.existencia > 0);
@@ -183,7 +183,7 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
   const grupoSinPrecio = delGrupoModelos.filter((m) => !tienePrecio(m.id));
   const sinPrecio = [...elegidasSinPrecio, ...grupoSinPrecio];
 
-  type ConLlave = { llave: string; precio: number | null } & ModeloConUbicacion;
+  type ConLlave = { llave: string; precio: number | null } & Modelo;
 
   const deLasElegidas: ConLlave[] = elegidas
     .filter((x) => tienePrecio(x.modelo.id))
@@ -555,11 +555,9 @@ export default async function EtiquetasModelos({ searchParams }: { searchParams:
               <div className="mt-1 line-clamp-1 w-full text-[0.6rem] leading-tight text-slate-600">
                 {m.descripcion}
               </div>
-              {(m.tallas || m.ubicacion_codigo) && (
+              {m.tallas && (
                 <div className="mt-0.5 text-[0.55rem] leading-tight text-slate-500">
-                  {m.tallas && `Tallas ${m.tallas}`}
-                  {m.tallas && m.ubicacion_codigo && " · "}
-                  {m.ubicacion_codigo}
+                  Tallas {m.tallas}
                 </div>
               )}
             </div>

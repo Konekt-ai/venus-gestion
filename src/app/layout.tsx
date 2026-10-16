@@ -7,7 +7,7 @@ import { puedeEntrar } from "@/lib/acceso";
 
 export const metadata: Metadata = {
   title: "Venus Bodega",
-  description: "Control de inventario y ubicaciones de la bodega",
+  description: "Control de inventario de la bodega, la tienda y el tianguis",
   applicationName: "Venus Bodega",
   appleWebApp: {
     capable: true,

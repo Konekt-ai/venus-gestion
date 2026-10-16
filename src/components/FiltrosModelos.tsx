@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { UbicacionConTotales } from "@/lib/consultas";
 
 /**
  * Filtros de la lista de modelos.
@@ -10,11 +9,9 @@ import type { UbicacionConTotales } from "@/lib/consultas";
  * util se pueda dejar en favoritos o mandar por mensaje.
  */
 export function FiltrosModelos({
-  ubicaciones,
   prefijos,
   hayPrecios = false,
 }: {
-  ubicaciones: UbicacionConTotales[];
   prefijos: { prefijo: string; total: number; nombre?: string }[];
   /** Sin la caja instalada no hay precios que filtrar. */
   hayPrecios?: boolean;
@@ -34,8 +31,6 @@ export function FiltrosModelos({
     const p = new URLSearchParams(parametros.toString());
     if (valor) p.set(clave, valor);
     else p.delete(clave);
-    // 'sinubicacion' y 'ubicacion' se contradicen: al usar uno se limpia el otro.
-    if (clave === "ubicacion" && valor) p.delete("sinubicacion");
     router.replace(`/modelos?${p.toString()}`);
   }
 
@@ -43,9 +38,8 @@ export function FiltrosModelos({
   // el boton aparecería solo por haber cambiado a cuadricula.
   const hayFiltros = [
     "existencia",
-    "ubicacion",
+    "hay",
     "prefijo",
-    "sinubicacion",
     "orden",
     "categoria",
     "destacado",
@@ -73,37 +67,16 @@ export function FiltrosModelos({
         <option value="sin">Agotados</option>
       </select>
 
-      {ubicaciones.length > 0 && (
-        <select
-          aria-label="Filtrar por ubicacion"
-          value={
-            parametros.get("sinubicacion") === "1" ? "SIN" : (parametros.get("ubicacion") ?? "")
-          }
-          onChange={(e) => {
-            if (e.target.value === "SIN") {
-              const p = new URLSearchParams(parametros.toString());
-              p.delete("ubicacion");
-              p.set("sinubicacion", "1");
-              router.replace(`/modelos?${p.toString()}`);
-            } else {
-              const p = new URLSearchParams(parametros.toString());
-              p.delete("sinubicacion");
-              if (e.target.value) p.set("ubicacion", e.target.value);
-              else p.delete("ubicacion");
-              router.replace(`/modelos?${p.toString()}`);
-            }
-          }}
-          className={claseSelect}
-        >
-          <option value="">Toda la bodega</option>
-          <option value="SIN">Sin ubicacion</option>
-          {ubicaciones.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.codigo} ({u.total_modelos})
-            </option>
-          ))}
-        </select>
-      )}
+      <select
+        aria-label="Filtrar por lugar"
+        value={parametros.get("hay") ?? ""}
+        onChange={(e) => cambiar("hay", e.target.value)}
+        className={claseSelect}
+      >
+        <option value="">Cualquier lugar</option>
+        <option value="tienda">Con piezas en tienda</option>
+        <option value="tianguis">Con piezas en tianguis</option>
+      </select>
 
       {prefijos.length > 1 && (
         <select
@@ -184,7 +157,6 @@ export function FiltrosModelos({
         className={claseSelect}
       >
         <option value="">Ordenar por codigo</option>
-        <option value="ubicacion">Por ubicacion</option>
         <option value="existencia">Mas piezas primero</option>
         <option value="reciente">Modificados al final</option>
       </select>

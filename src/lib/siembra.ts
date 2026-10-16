@@ -14,8 +14,8 @@ import { normalizarCodigo, normalizarTexto, partirCodigo } from "./codigos";
  *                         catalogo dice QUE se vende, no CUANTO hay. Las
  *                         cantidades salen del primer conteo fisico.
  *
- *   sembrarDemostracion() lo mismo, pero ademas inventa ubicaciones y
- *                         existencias para que la demostracion publica se
+ *   sembrarDemostracion() lo mismo, pero ademas inventa existencias en
+ *                         bodega, tienda y tianguis para que la demostracion se
  *                         vea viva. NUNCA se usa en la bodega.
  */
 
@@ -143,10 +143,10 @@ export function sembrarCatalogo(db: Database.Database): number {
 }
 
 /**
- * Ubicaciones y existencias inventadas para la demostracion publica.
+ * Existencias inventadas para la demostracion publica.
  *
- * Se reparte el catalogo entre dos zonas de tres racks para que se vea
- * como se veria una bodega ya acomodada. Las cantidades salen de una
+ * Se reparte el catalogo entre bodega, tienda y tianguis para que se
+ * vea como se veria un negocio ya andando. Las cantidades salen de una
  * cuenta fija a partir del codigo, no al azar: asi la demostracion se
  * ve igual cada vez que se reinicia.
  */
@@ -157,59 +157,28 @@ export function sembrarDemostracion(db: Database.Database): void {
 
   if (modelos.length === 0) return;
 
-  const yaTieneUbicaciones = db.prepare("SELECT COUNT(*) AS n FROM ubicaciones").get() as {
-    n: number;
-  };
-
-  const insertarUbicacion = db.prepare(
-    `INSERT OR IGNORE INTO ubicaciones (codigo, zona, rack, nivel, descripcion, orden)
-     VALUES (?, ?, ?, ?, ?, ?)`
+  const acomodar = db.prepare(
+    "UPDATE modelos SET existencia = ?, en_tienda = ?, en_tianguis = ?, minimo = ? WHERE id = ?"
+  );
+  const movimiento = db.prepare(
+    `INSERT INTO movimientos
+       (modelo_id, tipo, cantidad, existencia_antes, existencia_despues, nota)
+     VALUES (?, ?, ?, 0, ?, 'Existencia inicial (demostracion)')`
   );
 
-  const preparar = db.transaction(() => {
-    if (yaTieneUbicaciones.n === 0) {
-      let orden = 0;
-      for (const zona of ["A", "B"]) {
-        for (let rack = 1; rack <= 3; rack++) {
-          for (let nivel = 1; nivel <= 3; nivel++) {
-            const r = String(rack).padStart(2, "0");
-            insertarUbicacion.run(
-              `${zona}-${r}-${nivel}`,
-              zona,
-              r,
-              String(nivel),
-              zona === "A" && rack === 1 ? "Entrando a la derecha" : "",
-              orden++
-            );
-          }
-        }
-      }
-    }
-
-    const ubicaciones = db.prepare("SELECT id FROM ubicaciones ORDER BY orden, id").all() as {
-      id: number;
-    }[];
-
-    const acomodar = db.prepare(
-      "UPDATE modelos SET ubicacion_id = ?, existencia = ?, minimo = ? WHERE id = ?"
-    );
-    const movimiento = db.prepare(
-      `INSERT INTO movimientos
-         (modelo_id, tipo, cantidad, existencia_antes, existencia_despues, ubicacion_id, nota)
-       VALUES (?, 'entrada', ?, 0, ?, ?, 'Existencia inicial (demostracion)')`
-    );
-
-    modelos.forEach((m, i) => {
+  db.transaction(() => {
+    for (const m of modelos) {
       // Cuenta estable a partir del codigo: la demostracion se ve igual
       // cada vez que se reinicia, en vez de cambiar sola.
       const semilla = [...m.codigo_norm].reduce((s, c) => s + c.charCodeAt(0), 0);
-      const piezas = semilla % 7 === 0 ? 0 : (semilla % 34) + 3;
-      const ubicacion = ubicaciones.length ? ubicaciones[i % ubicaciones.length].id : null;
+      const bodega = semilla % 7 === 0 ? 0 : (semilla % 34) + 3;
+      const tienda = semilla % 5;
+      const tianguis = semilla % 3 === 0 ? (semilla % 6) + 1 : 0;
 
-      acomodar.run(ubicacion, piezas, 8, m.id);
-      if (piezas > 0) movimiento.run(m.id, piezas, piezas, ubicacion);
-    });
-  });
-
-  preparar();
+      acomodar.run(bodega, tienda, tianguis, 8, m.id);
+      if (bodega > 0) movimiento.run(m.id, "entrada", bodega, bodega);
+      if (tienda > 0) movimiento.run(m.id, "entrada_tienda", tienda, tienda);
+      if (tianguis > 0) movimiento.run(m.id, "entrada_tianguis", tianguis, tianguis);
+    }
+  })();
 }

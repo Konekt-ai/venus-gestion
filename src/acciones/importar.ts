@@ -29,7 +29,6 @@ const ALIAS: Record<string, string[]> = {
   tela: ["tela", "material", "telas"],
   categoria: ["categoria", "categoría", "tipo", "linea", "línea"],
   existencia: ["existencia", "existencias", "cantidad", "piezas", "stock", "total"],
-  ubicacion: ["ubicacion", "ubicación", "lugar", "rack", "posicion", "posición"],
   minimo: ["minimo", "mínimo", "min"],
   notas: ["notas", "nota", "observaciones", "comentarios"],
 };
@@ -90,35 +89,6 @@ export async function importarCSV(
   };
 
   const aplicar = db.transaction(() => {
-    // Las ubicaciones se van creando conforme aparecen en el archivo.
-    const cacheUbicaciones = new Map<string, number>();
-
-    const buscarUbicacion = (codigo: string): number | null => {
-      const norm = normalizarCodigo(codigo);
-      if (!norm) return null;
-      if (cacheUbicaciones.has(norm)) return cacheUbicaciones.get(norm)!;
-
-      const existente = db.prepare("SELECT id FROM ubicaciones WHERE codigo = ?").get(norm) as
-        | { id: number }
-        | undefined;
-
-      if (existente) {
-        cacheUbicaciones.set(norm, existente.id);
-        return existente.id;
-      }
-
-      // Se parte "A-03-2" en zona/rack/nivel para que encaje con el
-      // resto del sistema; si no trae guiones, todo va como zona.
-      const partes = norm.split("-");
-      const info = db
-        .prepare("INSERT INTO ubicaciones (codigo, zona, rack, nivel) VALUES (?, ?, ?, ?)")
-        .run(norm, partes[0] ?? norm, partes[1] ?? "", partes[2] ?? "");
-
-      const id = Number(info.lastInsertRowid);
-      cacheUbicaciones.set(norm, id);
-      return id;
-    };
-
     for (let i = 1; i < filas.length; i++) {
       const fila = filas[i];
       const numeroFila = i + 1;
@@ -148,9 +118,6 @@ export async function importarCSV(
       const minimoTexto = dato(fila, "minimo");
       const minimo = minimoTexto ? parseInt(minimoTexto, 10) || 0 : 0;
 
-      const ubicacionTexto = dato(fila, "ubicacion");
-      const ubicacionId = ubicacionTexto ? buscarUbicacion(ubicacionTexto) : null;
-
       const campos = {
         codigo: codigoCrudo.toUpperCase(),
         codigo_norm: codigoNorm,
@@ -163,7 +130,6 @@ export async function importarCSV(
         tela: normalizarTexto(dato(fila, "tela")),
         notas: dato(fila, "notas"),
         minimo,
-        ubicacion_id: ubicacionId,
       };
 
       const existente = db
@@ -183,7 +149,6 @@ export async function importarCSV(
              tela        = CASE WHEN @tela        <> '' THEN @tela        ELSE tela        END,
              notas       = CASE WHEN @notas       <> '' THEN @notas       ELSE notas       END,
              minimo      = @minimo,
-             ubicacion_id = COALESCE(@ubicacion_id, ubicacion_id),
              activo = 1,
              actualizado_en = datetime('now','localtime')
            WHERE id = @id`
@@ -204,9 +169,9 @@ export async function importarCSV(
           .prepare(
             `INSERT INTO modelos
                (codigo, codigo_norm, prefijo, numero, descripcion, categoria,
-                tallas, colores, tela, notas, minimo, ubicacion_id)
+                tallas, colores, tela, notas, minimo)
              VALUES (@codigo, @codigo_norm, @prefijo, @numero, @descripcion, @categoria,
-                     @tallas, @colores, @tela, @notas, @minimo, @ubicacion_id)`
+                     @tallas, @colores, @tela, @notas, @minimo)`
           )
           .run(campos);
 

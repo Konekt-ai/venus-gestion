@@ -8,8 +8,7 @@ import { pesosSimple } from "@/lib/dinero";
 import { formatearCodigo } from "@/lib/codigos";
 import { FotoModelo } from "@/components/FotoModelo";
 import { Aviso, Boton, Tarjeta } from "@/components/ui";
-import type { ModeloConUbicacion } from "@/lib/tipos";
-import type { UbicacionConTotales } from "@/lib/consultas";
+import type { Modelo } from "@/lib/tipos";
 
 /**
  * Alta y edicion de un modelo.
@@ -20,7 +19,6 @@ import type { UbicacionConTotales } from "@/lib/consultas";
  */
 export function FormularioModelo({
   modelo,
-  ubicaciones,
   catalogos,
   codigoSugerido = "",
   // El precio vive en la tabla de la caja. Si la caja no esta
@@ -29,8 +27,7 @@ export function FormularioModelo({
   hayPrecios = false,
   precio = null,
 }: {
-  modelo?: ModeloConUbicacion;
-  ubicaciones: UbicacionConTotales[];
+  modelo?: Modelo;
   catalogos: { tallas: string[]; colores: string[]; telas: string[]; categorias: string[] };
   codigoSugerido?: string;
   hayPrecios?: boolean;
@@ -221,54 +218,13 @@ export function FormularioModelo({
       </Tarjeta>
 
       <Tarjeta className="space-y-4">
-        <h2 className="titulo text-lg">Ubicacion y existencia</h2>
+        <h2 className="titulo text-lg">{editando ? "Precio y avisos" : "Piezas, precio y avisos"}</h2>
+
+        {/* Al editar no se tocan las piezas: eso va por un movimiento en
+            la ficha, para que quede quien y por que. */}
+        {!editando && <PiezasIniciales />}
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className="sm:col-span-2">
-            <label htmlFor="ubicacion_id" className="etiqueta">
-              ¿En que lugar de la bodega esta?
-            </label>
-            <select
-              id="ubicacion_id"
-              name="ubicacion_id"
-              defaultValue={modelo?.ubicacion_id ?? ""}
-              className="campo cursor-pointer"
-            >
-              <option value="">Sin asignar todavia</option>
-              {ubicaciones.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.codigo}
-                  {u.descripcion ? ` — ${u.descripcion}` : ""}
-                </option>
-              ))}
-            </select>
-            {ubicaciones.length === 0 && (
-              <p className="mt-1 text-xs text-[var(--color-humo)]">
-                Todavia no hay ubicaciones.{" "}
-                <Link href="/ubicaciones" className="font-semibold text-[var(--color-vino)]">
-                  Crear las de la bodega
-                </Link>
-              </p>
-            )}
-          </div>
-
-          {!editando && (
-            <div>
-              <label htmlFor="existencia" className="etiqueta">
-                Piezas que hay ahora
-              </label>
-              <input
-                id="existencia"
-                name="existencia"
-                type="number"
-                min={0}
-                defaultValue={0}
-                inputMode="numeric"
-                onFocus={(e) => e.currentTarget.select()}
-                className="campo sin-flechas !py-3.5 text-center !text-2xl !font-bold"
-              />
-            </div>
-          )}
 
           {hayPrecios && (
             <div>
@@ -348,5 +304,53 @@ export function FormularioModelo({
         </Link>
       </div>
     </form>
+  );
+}
+
+/**
+ * Cuantas piezas hay al dar de alta, por lugar.
+ *
+ * Bodega va primero y en grande porque es lo normal; tienda y tianguis
+ * se quedan escondidos hasta que se piden, para no estorbar en el alta
+ * de todos los dias.
+ */
+function PiezasIniciales() {
+  const [repartir, setRepartir] = useState(false);
+
+  const campo = (nombre: string, texto: string, grande = false) => (
+    <div>
+      <label htmlFor={nombre} className="etiqueta">
+        {texto}
+      </label>
+      <input
+        id={nombre}
+        name={nombre}
+        type="number"
+        min={0}
+        defaultValue={0}
+        inputMode="numeric"
+        onFocus={(e) => e.currentTarget.select()}
+        className={`campo sin-flechas text-center !font-bold ${grande ? "!py-3.5 !text-2xl" : "!py-3 !text-xl"}`}
+      />
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      <div className="grid gap-4 sm:grid-cols-3">
+        {campo("existencia", "Piezas en bodega", true)}
+        {repartir && campo("existencia_tienda", "Piezas en la tienda")}
+        {repartir && campo("existencia_tianguis", "Piezas en el tianguis")}
+      </div>
+      {!repartir && (
+        <button
+          type="button"
+          onClick={() => setRepartir(true)}
+          className="inline-flex min-h-11 items-center text-sm font-semibold text-[var(--color-vino)] hover:underline"
+        >
+          + Algunas ya estan en la tienda o el tianguis
+        </button>
+      )}
+    </div>
   );
 }

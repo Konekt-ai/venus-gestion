@@ -2,7 +2,7 @@
  * Deja la base lista para trabajar o para ensenar el sistema.
  *
  *   npm run datos                    carga el catalogo del cliente (sin existencias)
- *   npm run datos -- --demo          ademas inventa ubicaciones y existencias
+ *   npm run datos -- --demo          ademas inventa existencias
  *   npm run datos -- --limpiar       borra todo y vuelve a empezar
  *
  * El catalogo real vive en src/datos/catalogo.json y se genera del PDF
@@ -64,6 +64,7 @@ if (limpiar) {
   db.exec(`
     DELETE FROM conteo_lineas;
     DELETE FROM conteos;
+    DELETE FROM tianguis_ventas;
     DELETE FROM movimientos;
     DELETE FROM remisiones;
     DELETE FROM modelos;
@@ -105,10 +106,7 @@ if (conExistencias) sembrarDemostracion(db);
 const total = db
   .prepare("SELECT COUNT(*) AS n, COALESCE(SUM(existencia),0) AS p FROM modelos")
   .get();
-const ubicaciones = db.prepare("SELECT COUNT(*) AS n FROM ubicaciones").get();
-
-console.log(`Listo: ${total.n} modelos del catalogo, ${total.p} piezas.`);
-if (ubicaciones.n) console.log(`       ${ubicaciones.n} ubicaciones.`);
+console.log(`Listo: ${total.n} modelos del catalogo, ${total.p} piezas en bodega.`);
 
 if (!conExistencias) {
   console.log("");

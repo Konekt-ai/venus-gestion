@@ -9,17 +9,11 @@ import type {
   ConteoLineaConModelo,
   Linea,
   Modelo,
-  ModeloConUbicacion,
   MovimientoConModelo,
   Remision,
-  Ubicacion,
 } from "./tipos";
 
-const CAMPOS_MODELO = `
-  m.*,
-  u.codigo AS ubicacion_codigo,
-  u.zona   AS ubicacion_zona
-`;
+const CAMPOS_MODELO = "m.*";
 
 
 /**
@@ -40,9 +34,8 @@ export function conFotosReales<T extends { foto: string }>(filas: T[]): T[] {
 
 export type FiltrosBusqueda = {
   q?: string;
-  ubicacionId?: number | null;
-  /** Solo los modelos a los que todavia no se les asigno un lugar. */
-  sinUbicacion?: boolean;
+  /** Solo los que tienen piezas en ese lugar: 'tienda' | 'tianguis'. */
+  hayEn?: string;
   /** Filtra por la linea del codigo: VD, VN, PD... */
   prefijo?: string;
   categoria?: string;
@@ -55,7 +48,7 @@ export type FiltrosBusqueda = {
   archivados?: boolean;
   /** 'todos' | 'con' (hay piezas) | 'sin' (agotado) | 'bajo' (por debajo del minimo) */
   existencia?: string;
-  /** 'codigo' | 'existencia' | 'reciente' | 'ubicacion' */
+  /** 'codigo' | 'existencia' | 'reciente' */
   orden?: string;
   /** Solo los que no tienen precio de venta, o lo tienen en cero. */
   sinPrecio?: boolean;
@@ -70,7 +63,7 @@ export type FiltrosBusqueda = {
  * null es "no tiene precio". Tambien es lo que sale para todos cuando la
  * caja no esta instalada, porque entonces no hay de donde leer precios.
  */
-export type ModeloConPrecio = ModeloConUbicacion & { precio: number | null };
+export type ModeloConPrecio = Modelo & { precio: number | null };
 
 /**
  * Busca modelos de forma tolerante a como se escriben los codigos.
@@ -142,14 +135,8 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConPrecio[] 
     )`);
   }
 
-  if (filtros.ubicacionId != null) {
-    condiciones.push("m.ubicacion_id = @ubicacionId");
-    params.ubicacionId = filtros.ubicacionId;
-  }
-
-  if (filtros.sinUbicacion) {
-    condiciones.push("m.ubicacion_id IS NULL");
-  }
+  if (filtros.hayEn === "tienda") condiciones.push("m.en_tienda > 0");
+  if (filtros.hayEn === "tianguis") condiciones.push("m.en_tianguis > 0");
 
   if (filtros.prefijo) {
     condiciones.push("m.prefijo = @prefijoFiltro");
@@ -202,9 +189,6 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConPrecio[] 
     case "reciente":
       orden = "m.actualizado_en DESC";
       break;
-    case "ubicacion":
-      orden = "u.zona IS NULL, u.zona, u.rack, u.nivel, m.prefijo, m.numero";
-      break;
     default:
       orden = "m.prefijo, m.numero, m.codigo_norm";
   }
@@ -214,7 +198,6 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConPrecio[] 
   const sql = `
     SELECT ${CAMPOS_MODELO}, ${campoPrecio}
     FROM modelos m
-    LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
     ${unirPrecios}
     WHERE ${condiciones.join(" AND ")}
     ORDER BY ${ordenFinal}
@@ -235,7 +218,7 @@ export function buscarModelos(filtros: FiltrosBusqueda = {}): ModeloConPrecio[] 
  * imprimir. Se pide asi y no con buscarModelos para no barrer los dos
  * mil modelos del catalogo cuando se van a etiquetar tres.
  */
-export function modelosPorIds(ids: number[]): ModeloConUbicacion[] {
+export function modelosPorIds(ids: number[]): Modelo[] {
   const limpios = [...new Set(ids)].filter((n) => Number.isInteger(n) && n > 0);
   if (limpios.length === 0) return [];
 
@@ -245,28 +228,26 @@ export function modelosPorIds(ids: number[]): ModeloConUbicacion[] {
     .prepare(
       `SELECT ${CAMPOS_MODELO}
          FROM modelos m
-         LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
         WHERE m.id IN (${huecos})`
     )
-    .all(...limpios) as ModeloConUbicacion[];
+    .all(...limpios) as Modelo[];
 
   return conFotosReales(filas);
 }
 
-export function obtenerModelo(id: number): ModeloConUbicacion | null {
+export function obtenerModelo(id: number): Modelo | null {
   const db = getDb();
   const fila = db
     .prepare(
       `SELECT ${CAMPOS_MODELO}
        FROM modelos m
-       LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
        WHERE m.id = ?`
     )
-    .get(id) as ModeloConUbicacion | undefined;
+    .get(id) as Modelo | undefined;
   return fila ? conFotosReales([fila])[0] : null;
 }
 
-export function obtenerModeloPorCodigo(codigo: string): ModeloConUbicacion | null {
+export function obtenerModeloPorCodigo(codigo: string): Modelo | null {
   const db = getDb();
   const norm = normalizarCodigo(codigo);
 
@@ -274,10 +255,9 @@ export function obtenerModeloPorCodigo(codigo: string): ModeloConUbicacion | nul
     .prepare(
       `SELECT ${CAMPOS_MODELO}
        FROM modelos m
-       LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
        WHERE m.codigo_norm = ?`
     )
-    .get(norm) as ModeloConUbicacion | undefined;
+    .get(norm) as Modelo | undefined;
 
   if (fila) return conFotosReales([fila])[0] ?? null;
 
@@ -299,10 +279,9 @@ export function obtenerModeloPorCodigo(codigo: string): ModeloConUbicacion | nul
     .prepare(
       `SELECT ${CAMPOS_MODELO}
        FROM modelos m
-       LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
        WHERE m.id = ?`
     )
-    .get(anteriores[0].modelo_id) as ModeloConUbicacion | undefined;
+    .get(anteriores[0].modelo_id) as Modelo | undefined;
 
   return viejo ? (conFotosReales([viejo])[0] ?? null) : null;
 }
@@ -319,38 +298,6 @@ export function movimientosDeModelo(modeloId: number, limite = 50): MovimientoCo
        LIMIT ?`
     )
     .all(modeloId, limite) as MovimientoConModelo[];
-}
-
-/* ============================================================
-   UBICACIONES
-   ============================================================ */
-
-export type UbicacionConTotales = Ubicacion & {
-  total_modelos: number;
-  total_piezas: number;
-};
-
-export function listarUbicaciones(): UbicacionConTotales[] {
-  const db = getDb();
-  return db
-    .prepare(
-      `SELECT u.*,
-              COUNT(m.id)                      AS total_modelos,
-              COALESCE(SUM(m.existencia), 0)   AS total_piezas
-       FROM ubicaciones u
-       LEFT JOIN modelos m ON m.ubicacion_id = u.id AND m.activo = 1
-       GROUP BY u.id
-       ORDER BY u.zona, u.rack, u.nivel`
-    )
-    .all() as UbicacionConTotales[];
-}
-
-export function obtenerUbicacion(id: number): Ubicacion | null {
-  const db = getDb();
-  const fila = db.prepare("SELECT * FROM ubicaciones WHERE id = ?").get(id) as
-    | Ubicacion
-    | undefined;
-  return fila ?? null;
 }
 
 /* ============================================================
@@ -479,13 +426,11 @@ export function lineasDeConteo(conteoId: number): ConteoLineaConModelo[] {
     .prepare(
       `SELECT cl.*,
               m.codigo      AS modelo_codigo,
-              m.descripcion AS modelo_descripcion,
-              u.codigo      AS ubicacion_codigo
+              m.descripcion AS modelo_descripcion
        FROM conteo_lineas cl
        JOIN modelos m ON m.id = cl.modelo_id
-       LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
        WHERE cl.conteo_id = ?
-       ORDER BY u.zona, u.rack, u.nivel, m.prefijo, m.numero`
+       ORDER BY m.prefijo, m.numero`
     )
     .all(conteoId) as ConteoLineaConModelo[];
 }
@@ -501,8 +446,6 @@ export type Resumen = {
   piezas_tianguis: number;
   agotados: number;
   bajos: number;
-  sin_ubicacion: number;
-  total_ubicaciones: number;
   /**
    * false mientras la bodega no se haya contado ni una vez.
    * Recien instalado, el catalogo esta cargado pero todo vale cero: los
@@ -523,38 +466,32 @@ export function resumen(): Resumen {
          COALESCE(SUM(en_tianguis), 0)                              AS piezas_tianguis,
          COALESCE(SUM(CASE WHEN existencia <= 0 THEN 1 ELSE 0 END), 0) AS agotados,
          COALESCE(SUM(CASE WHEN minimo > 0 AND existencia > 0 AND existencia <= minimo
-                           THEN 1 ELSE 0 END), 0)                   AS bajos,
-         COALESCE(SUM(CASE WHEN ubicacion_id IS NULL THEN 1 ELSE 0 END), 0) AS sin_ubicacion
+                           THEN 1 ELSE 0 END), 0)                   AS bajos
        FROM modelos WHERE activo = 1`
     )
-    .get() as Omit<Resumen, "total_ubicaciones">;
-
-  const u = db.prepare("SELECT COUNT(*) AS n FROM ubicaciones WHERE activa = 1").get() as {
-    n: number;
-  };
+    .get() as Omit<Resumen, "ya_hubo_inventario">;
 
   // Cualquier movimiento sirve como senal de que ya empezaron a usarlo.
   const mov = db.prepare("SELECT EXISTS(SELECT 1 FROM movimientos) AS hay").get() as {
     hay: number;
   };
 
-  return { ...r, total_ubicaciones: u.n, ya_hubo_inventario: mov.hay === 1 };
+  return { ...r, ya_hubo_inventario: mov.hay === 1 };
 }
 
 /** Modelos que ya se agotaron o van bajos, para avisar en el inicio. */
-export function modelosPorSurtir(limite = 12): ModeloConUbicacion[] {
+export function modelosPorSurtir(limite = 12): Modelo[] {
   const db = getDb();
   return conFotosReales(db
     .prepare(
       `SELECT ${CAMPOS_MODELO}
        FROM modelos m
-       LEFT JOIN ubicaciones u ON u.id = m.ubicacion_id
        WHERE m.activo = 1
          AND (m.existencia <= 0 OR (m.minimo > 0 AND m.existencia <= m.minimo))
        ORDER BY m.existencia, m.prefijo, m.numero
        LIMIT ?`
     )
-    .all(limite) as ModeloConUbicacion[]);
+    .all(limite) as Modelo[]);
 }
 
 export function todosLosModelos(): Modelo[] {

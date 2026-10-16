@@ -1,8 +1,9 @@
 # Venus — Sistema de bodega
 
-Control de inventario y ubicaciones para la bodega. Sirve para saber, en
-segundos, **cuántas piezas hay de un modelo y en qué rack está**, y para
-llevar el registro de lo que sale a la tienda o al tianguis.
+Control de inventario para la bodega, la tienda y el tianguis. Sirve para
+saber, en segundos, **cuántas piezas hay de un modelo y dónde están**, para
+llevar el registro de lo que sale a la tienda o al tianguis, y para vender en
+el tianguis desde el celular.
 
 Corre en la computadora de la bodega y se puede consultar desde cualquier
 celular conectado al mismo WiFi.
@@ -63,19 +64,30 @@ lo busca de forma tolerante:
 Las letras del código son la **línea** (`VD`, `VN`, `PD`…) y el sistema las
 usa para agrupar y filtrar.
 
-El inventario se lleva **por modelo**: una existencia total por código.
+El inventario se lleva **por modelo**, con una cuenta por lugar (ver abajo).
 Tallas, colores y tela se guardan como datos descriptivos de la prenda, igual
 que en el cuaderno.
 
-### Ubicaciones
+### Lugares: bodega, tienda y tianguis
 
-Los lugares de la bodega se nombran **Zona → Rack → Repisa**, lo que da
-códigos que se leen solos: `A-03-2` es zona A, rack 3, segunda repisa.
+Las piezas de un mismo modelo pueden estar repartidas en **tres lugares**, y
+el sistema lleva cuántas hay en cada uno: por ejemplo `VD 194` con 12 en
+bodega, 3 en la tienda y 5 en el tianguis.
 
-- Desde **Ubicaciones → Mapear la bodega** se crea una zona completa de
-  golpe (por ejemplo 5 racks × 4 repisas = 20 lugares).
-- **Imprimir etiquetas** genera hojas con el código en grande, 6 por hoja,
-  para recortar y pegar en cada anaquel.
+- **Bodega es el lugar por omisión.** Todo lo que entra cae ahí, salvo que al
+  registrar la entrada (o al dar de alta el modelo) se reparta una parte
+  directo a la tienda o al tianguis.
+- En la ficha de cada modelo están los botones **A tienda**, **A tianguis** y
+  **A bodega**: cada uno pregunta cuántas piezas y de qué lugar salen.
+- **Corrección de piezas** deja cada lugar con la cantidad que se escriba.
+
+Ya no se lleva el rack dentro de la bodega. Al actualizar, las "ubicaciones"
+que se habían creado con el nombre de *Bodega*, *Tienda* o *Tianguis* se
+borran y sus piezas pasan a la cuenta del lugar real, dejando el movimiento en
+el historial.
+
+La caja de la tienda sigue descontando de la cuenta de **tienda** al cobrar,
+igual que antes.
 
 ### Salidas y regresos
 
@@ -84,9 +96,7 @@ tienda o al tianguis. Al confirmar se genera una **hoja con folio**
 (`TIE-0001`) lista para imprimir y firmar: es el reemplazo del cuaderno con
 el que hoy se compara bodega contra tienda.
 
-El sistema lleva tres cuentas por modelo: cuántas piezas están **en bodega**,
-cuántas **en la tienda** y cuántas **en el tianguis**. Los regresos del
-tianguis vuelven a sumar a bodega.
+Los regresos de la tienda o del tianguis vuelven a sumar a bodega.
 
 ### Conteo físico
 
@@ -122,11 +132,10 @@ La única columna obligatoria es `codigo` (o `modelo`). Las demás son
 opcionales y se reconocen escritas de varias formas:
 
 `descripcion` · `tallas` · `colores` · `tela` · `existencia` (o `cantidad`,
-`piezas`, `stock`) · `ubicacion` (o `lugar`, `rack`) · `minimo` · `notas`
+`piezas`, `stock`; son las de bodega) · `minimo` · `notas`
 
 Antes de guardar nada, el sistema muestra cuántos modelos entrarían, cuántos
-se actualizarían y cuáles se omitirían y por qué. Las ubicaciones que no
-existan se crean solas.
+se actualizarían y cuáles se omitirían y por qué.
 
 Los modelos que ya existen **conservan su historial**: si la cantidad del
 archivo es distinta a la registrada, se anota como un ajuste en vez de
@@ -169,8 +178,7 @@ npm run catalogo:importar                     # lo mete a la base
 ```
 
 El segundo paso **no pisa el inventario**: a los modelos que ya existen sólo
-les actualiza la ficha (nombre, tela, foto), nunca las existencias ni la
-ubicación.
+les actualiza la ficha (nombre, tela, foto), nunca las existencias.
 
 ---
 
@@ -206,7 +214,7 @@ npm run catalogo -- "MODELOS MAS VENDIDOS + MODELOS VARIADOS.pdf"
 
 En **Modelos → Imprimir etiquetas con código de barras** salen las etiquetas
 para colgar en la prenda: la marca, el código, el código de barras, la
-descripción y la ubicación. Se puede elegir una línea (`VD`, `VN`…), pedir
+descripción y las tallas. Se puede elegir una línea (`VD`, `VN`…), pedir
 varias iguales por modelo y dejar fuera lo que está en cero. Salen 24 por
 hoja carta.
 
@@ -250,9 +258,23 @@ su historial.
 
 ## Tianguis
 
-Viene **apagado**, como pidio el cliente: por ahora solo bodega y tienda. Se
-prende desde *Ajustes* cuando lo necesiten y todas las pantallas lo vuelven a
-ofrecer solas. Apagarlo nunca borra lo que se haya registrado.
+La sección **Tianguis** es para quien está vendiendo, con el celular en la
+mano. Adentro, la barra de abajo cambia por sus cuatro pestañas, en el orden
+en que se usan:
+
+| Pestaña | Para qué |
+| --- | --- |
+| **Vender** | Buscar la prenda (o escanearla), poner cuántas y en cuánto. El precio viene puesto con el registrado; si se vende en otro, se cambia ahí y **solo cuenta para esa venta**. Tiene *Deshacer* por si se picó mal. |
+| **Inventario** | Todo lo que hay en el tianguis, con foto, piezas y precio. Tocar una prenda lleva a venderla. |
+| **Ventas** | Lo vendido en el día (y los días anteriores): modelo y piezas, **sin el precio**. Desde aquí se cancela una venta equivocada. |
+| **Cierre** | Al terminar el día: todo lo que no se vendió regresa a bodega. Se buscan las prendas que vayan a otro lado y se dice cuántas van a la tienda y cuántas se quedan en el tianguis; un botón al final mueve todo junto. |
+
+Lo que aparece en el tianguis es lo que se haya mandado antes desde bodega o
+la tienda (con **Salidas** o con el botón **A tianguis** de cada modelo).
+
+El dinero de cada venta queda guardado en la base (tabla `tianguis_ventas`,
+en centavos, junto con el precio registrado en ese momento), pero por ahora no
+se muestra en ninguna pantalla.
 
 ---
 
@@ -266,7 +288,7 @@ accesos de abajo respeta la zona de gestos del iPhone.
 **Se puede instalar como app**: al abrirlo en el celular, desde el menú del
 navegador se elige *Agregar a pantalla de inicio*. Queda con su propio icono y
 se abre sin la barra de direcciones. Al mantener presionado el icono aparecen
-accesos directos a **Conteo**, **Salidas** y **Modelos**.
+accesos directos a **Tianguis**, **Conteo**, **Salidas** y **Modelos**.
 
 ---
 

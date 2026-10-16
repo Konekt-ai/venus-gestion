@@ -10,7 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "Venus Bodega",
     short_name: "Venus",
-    description: "Control de inventario y ubicaciones de la bodega",
+    description: "Control de inventario de la bodega, la tienda y el tianguis",
     lang: "es-MX",
     dir: "ltr",
     start_url: "/",
@@ -28,6 +28,7 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     // Accesos que aparecen al mantener presionado el icono.
     shortcuts: [
+      { name: "Vender en el tianguis", short_name: "Tianguis", url: "/tianguis" },
       { name: "Conteo", short_name: "Conteo", url: "/conteo" },
       { name: "Salidas", short_name: "Salidas", url: "/salidas" },
       { name: "Modelos", short_name: "Modelos", url: "/modelos" },

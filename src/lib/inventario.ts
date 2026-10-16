@@ -2,37 +2,36 @@ import "server-only";
 import type Database from "better-sqlite3";
 import { getDb } from "./db";
 import type { Modelo, TipoMovimiento } from "./tipos";
+import {
+  EFECTOS,
+  EN_LUGAR,
+  LUGARES,
+  lugarDelMovimiento,
+  piezasEn,
+  type Lugar,
+} from "./lugares";
 
 /**
  * Motor de existencias.
  *
  * Toda modificacion de inventario pasa por aqui, para que nunca quede
  * un movimiento sin su cambio de existencia ni al reves. Cada tipo de
- * movimiento sabe como afecta a los tres contadores del modelo:
- * bodega, tienda y tianguis.
+ * movimiento sabe como afecta a las tres cuentas del modelo: bodega,
+ * tienda y tianguis (ver EFECTOS en lugares.ts).
  */
 
-type Efecto = { bodega: number; tienda: number; tianguis: number };
-
-/** Cuanto suma o resta cada tipo de movimiento por pieza. */
-const EFECTOS: Record<Exclude<TipoMovimiento, "conteo">, Efecto> = {
-  entrada: { bodega: +1, tienda: 0, tianguis: 0 },
-  salida_tienda: { bodega: -1, tienda: +1, tianguis: 0 },
-  salida_tianguis: { bodega: -1, tienda: 0, tianguis: +1 },
-  retorno_tienda: { bodega: +1, tienda: -1, tianguis: 0 },
-  retorno_tianguis: { bodega: +1, tienda: 0, tianguis: -1 },
-  ajuste: { bodega: +1, tienda: 0, tianguis: 0 }, // la cantidad lleva el signo
-};
-
 export class ErrorInventario extends Error {}
+
+/** Los tipos cuya cantidad trae el signo: pueden sumar o restar. */
+const CON_SIGNO = new Set<TipoMovimiento>(["ajuste", "ajuste_tienda", "ajuste_tianguis"]);
 
 export type DatosMovimiento = {
   modeloId: number;
   tipo: TipoMovimiento;
   /**
    * Piezas del movimiento.
-   * - 'ajuste' acepta negativo para descontar.
-   * - 'conteo' es la existencia final, no una diferencia.
+   * - los ajustes aceptan negativo para descontar.
+   * - 'conteo' es la existencia final de bodega, no una diferencia.
    * - los demas tipos deben ser mayores a cero.
    */
   cantidad: number;
@@ -44,6 +43,8 @@ export type DatosMovimiento = {
 /**
  * Aplica un movimiento y deja el historial escrito.
  * Debe llamarse dentro de una transaccion cuando se procesan varios.
+ * Devuelve la cuenta antes y despues del lugar del que habla el
+ * movimiento (bodega, salvo los que no la tocan).
  */
 export function aplicarMovimiento(db: Database.Database, datos: DatosMovimiento) {
   const modelo = db.prepare("SELECT * FROM modelos WHERE id = ?").get(datos.modeloId) as
@@ -55,48 +56,39 @@ export function aplicarMovimiento(db: Database.Database, datos: DatosMovimiento)
     throw new ErrorInventario("La cantidad debe ser un numero entero.");
   }
 
-  const antes = modelo.existencia;
-  let bodega = modelo.existencia;
-  let tienda = modelo.en_tienda;
-  let tianguis = modelo.en_tianguis;
+  const cuentas: Record<Lugar, number> = {
+    bodega: modelo.existencia,
+    tienda: modelo.en_tienda,
+    tianguis: modelo.en_tianguis,
+  };
+  const lugar = lugarDelMovimiento(datos.tipo);
+  const antes = cuentas[lugar];
 
   if (datos.tipo === "conteo") {
     if (datos.cantidad < 0) {
       throw new ErrorInventario("El conteo no puede ser negativo.");
     }
-    bodega = datos.cantidad;
+    cuentas.bodega = datos.cantidad;
   } else {
     const efecto = EFECTOS[datos.tipo];
     if (!efecto) throw new ErrorInventario("Tipo de movimiento no valido.");
 
-    if (datos.tipo === "ajuste") {
-      if (datos.cantidad === 0) throw new ErrorInventario("El ajuste no puede ser cero.");
+    if (CON_SIGNO.has(datos.tipo)) {
+      if (datos.cantidad === 0) throw new ErrorInventario("La correccion no puede ser cero.");
     } else if (datos.cantidad <= 0) {
       throw new ErrorInventario("La cantidad debe ser mayor a cero.");
     }
 
-    bodega += efecto.bodega * datos.cantidad;
-    tienda += efecto.tienda * datos.cantidad;
-    tianguis += efecto.tianguis * datos.cantidad;
+    for (const l of LUGARES) cuentas[l] += efecto[l] * datos.cantidad;
   }
 
   // Nunca se permite dejar existencias en negativo: significa que el
   // dato de partida estaba mal y hay que revisarlo, no arrastrarlo.
-  if (bodega < 0) {
+  for (const l of LUGARES) {
+    if (cuentas[l] >= 0) continue;
+    const habia = piezasEn(modelo, l);
     throw new ErrorInventario(
-      `No alcanza: ${modelo.codigo} tiene ${modelo.existencia} ${
-        modelo.existencia === 1 ? "pieza" : "piezas"
-      } en bodega.`
-    );
-  }
-  if (tienda < 0) {
-    throw new ErrorInventario(
-      `${modelo.codigo} solo tiene ${modelo.en_tienda} en tienda; no puede regresar mas.`
-    );
-  }
-  if (tianguis < 0) {
-    throw new ErrorInventario(
-      `${modelo.codigo} solo tiene ${modelo.en_tianguis} en tianguis; no puede regresar mas.`
+      `No alcanza: ${modelo.codigo} tiene ${habia} ${habia === 1 ? "pieza" : "piezas"} ${EN_LUGAR[l]}.`
     );
   }
 
@@ -105,27 +97,34 @@ export function aplicarMovimiento(db: Database.Database, datos: DatosMovimiento)
      SET existencia = ?, en_tienda = ?, en_tianguis = ?,
          actualizado_en = datetime('now','localtime')
      WHERE id = ?`
-  ).run(bodega, tienda, tianguis, datos.modeloId);
+  ).run(cuentas.bodega, cuentas.tienda, cuentas.tianguis, datos.modeloId);
 
-  db.prepare(
-    `INSERT INTO movimientos
-       (modelo_id, tipo, cantidad, existencia_antes, existencia_despues,
-        ubicacion_id, remision_id, persona, nota)
-     VALUES (@modelo_id, @tipo, @cantidad, @antes, @despues,
-             @ubicacion_id, @remision_id, @persona, @nota)`
-  ).run({
-    modelo_id: datos.modeloId,
-    tipo: datos.tipo,
-    cantidad: datos.cantidad,
+  const info = db
+    .prepare(
+      `INSERT INTO movimientos
+         (modelo_id, tipo, cantidad, existencia_antes, existencia_despues,
+          remision_id, persona, nota)
+       VALUES (@modelo_id, @tipo, @cantidad, @antes, @despues,
+               @remision_id, @persona, @nota)`
+    )
+    .run({
+      modelo_id: datos.modeloId,
+      tipo: datos.tipo,
+      cantidad: datos.cantidad,
+      antes,
+      despues: cuentas[lugar],
+      remision_id: datos.remisionId ?? null,
+      persona: (datos.persona ?? "").trim(),
+      nota: (datos.nota ?? "").trim(),
+    });
+
+  return {
     antes,
-    despues: bodega,
-    ubicacion_id: modelo.ubicacion_id,
-    remision_id: datos.remisionId ?? null,
-    persona: (datos.persona ?? "").trim(),
-    nota: (datos.nota ?? "").trim(),
-  });
-
-  return { antes, despues: bodega };
+    despues: cuentas[lugar],
+    lugar,
+    cuentas,
+    movimientoId: Number(info.lastInsertRowid),
+  };
 }
 
 /** Version suelta: abre su propia transaccion para un movimiento unico. */

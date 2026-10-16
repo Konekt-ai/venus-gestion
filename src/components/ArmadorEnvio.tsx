@@ -24,13 +24,23 @@ export type ModeloElegible = {
   existencia: number;
   en_tienda: number;
   en_tianguis: number;
-  ubicacion_codigo: string | null;
   /* Opcional a proposito: las pantallas que arman este objeto se fueron
      sumando una por una y sin foto siguen funcionando. */
   foto?: string | null;
 };
 
-type Renglon = { modelo: ModeloElegible; cantidad: number };
+/**
+ * Un modelo de la lista. 'cantidad' es lo que sale o regresa; en una
+ * entrada es lo que llega a bodega, y 'tienda' y 'tianguis' lo que llega
+ * directo alla cuando se reparte.
+ */
+type Renglon = {
+  modelo: ModeloElegible;
+  cantidad: number;
+  repartir?: boolean;
+  tienda?: number;
+  tianguis?: number;
+};
 
 type Modo =
   | { clase: "envio"; destino: Destino }
@@ -116,18 +126,30 @@ export function ArmadorEnvio({
     setError("");
   }
 
-  function cambiarCantidad(id: number, valor: string) {
+  function cambiarCantidad(
+    id: number,
+    valor: string,
+    campo: "cantidad" | "tienda" | "tianguis" = "cantidad"
+  ) {
     const n = parseInt(valor, 10);
     setRenglones((prev) =>
-      prev.map((r) => (r.modelo.id === id ? { ...r, cantidad: Number.isFinite(n) ? n : 0 } : r))
+      prev.map((r) => (r.modelo.id === id ? { ...r, [campo]: Number.isFinite(n) ? n : 0 } : r))
     );
   }
+
+  function abrirReparto(id: number) {
+    setRenglones((prev) => prev.map((r) => (r.modelo.id === id ? { ...r, repartir: true } : r)));
+  }
+
+  /** Todas las piezas del renglon, sumando lo que va directo a otro lugar. */
+  const piezasDe = (r: Renglon) =>
+    Math.max(0, r.cantidad) + Math.max(0, r.tienda ?? 0) + Math.max(0, r.tianguis ?? 0);
 
   function quitar(id: number) {
     setRenglones((prev) => prev.filter((r) => r.modelo.id !== id));
   }
 
-  const totalPiezas = renglones.reduce((s, r) => s + Math.max(0, r.cantidad), 0);
+  const totalPiezas = renglones.reduce((s, r) => s + piezasDe(r), 0);
 
   // Renglones que piden mas de lo que hay: se marcan antes de enviar.
   const excedidos = renglones.filter(
@@ -193,7 +215,15 @@ export function ArmadorEnvio({
 
     iniciar(async () => {
       if (modo.clase === "entrada") {
-        const r = await registrarEntrada({ persona, nota, lineas });
+        // Un renglon por lugar: el servidor los vuelve a juntar por prenda.
+        const repartidas = renglones.flatMap((r) =>
+          [
+            { modeloId: r.modelo.id, lugar: "bodega" as const, cantidad: r.cantidad },
+            { modeloId: r.modelo.id, lugar: "tienda" as const, cantidad: r.tienda ?? 0 },
+            { modeloId: r.modelo.id, lugar: "tianguis" as const, cantidad: r.tianguis ?? 0 },
+          ].filter((l) => l.cantidad > 0)
+        );
+        const r = await registrarEntrada({ persona, nota, lineas: repartidas });
         if (r.ok && r.datos) {
           // Ya no se navega: registrar produccion y etiquetarla son el
           // mismo momento, y cambiar de pantalla en medio los separa.
@@ -298,7 +328,6 @@ export function ArmadorEnvio({
                     <span className="codigo block text-sm">{m.codigo}</span>
                     <span className="block truncate text-xs text-[var(--color-humo)]">
                       {m.descripcion}
-                      {m.ubicacion_codigo && ` · ${m.ubicacion_codigo}`}
                     </span>
                   </span>
                   <span className="shrink-0 text-xs font-semibold text-[var(--color-humo)]">
@@ -320,7 +349,8 @@ export function ArmadorEnvio({
               const max = disponible(r.modelo);
               const excede = modo.clase !== "entrada" && r.cantidad > max;
               return (
-                <li key={r.modelo.id} className="flex items-center gap-3 p-3">
+                <li key={r.modelo.id} className="p-3">
+                  <div className="flex items-center gap-3">
                   <FotoModelo
                     foto={r.modelo.foto ?? null}
                     descripcion={r.modelo.descripcion}
@@ -334,6 +364,11 @@ export function ArmadorEnvio({
                     {modo.clase !== "entrada" && (
                       <div className="mt-0.5 text-xs text-[var(--color-humo)]">
                         Disponibles: {max}
+                      </div>
+                    )}
+                    {modo.clase === "entrada" && r.repartir && (
+                      <div className="mt-0.5 text-xs font-semibold text-[var(--color-humo)]">
+                        A bodega
                       </div>
                     )}
                   </div>
@@ -363,6 +398,40 @@ export function ArmadorEnvio({
                   >
                     <IconoCerrar tamano={18} />
                   </button>
+                  </div>
+
+                  {/* Lo normal es que todo llegue a bodega. Repartir abre dos
+                      campos mas para lo que se va directo a otro lugar. */}
+                  {modo.clase === "entrada" &&
+                    (r.repartir ? (
+                      <div className="mt-2 grid grid-cols-2 gap-2 pl-14">
+                        {(["tienda", "tianguis"] as const).map((lugar) => (
+                          <label key={lugar} className="block">
+                            <span className="etiqueta !mb-1">
+                              {lugar === "tienda" ? "Directo a tienda" : "Directo a tianguis"}
+                            </span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={r[lugar] ?? 0}
+                              onChange={(e) => cambiarCantidad(r.modelo.id, e.target.value, lugar)}
+                              onFocus={(e) => e.currentTarget.select()}
+                              inputMode="numeric"
+                              enterKeyHint="done"
+                              className="campo sin-flechas !py-2 text-center !text-lg !font-bold"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => abrirReparto(r.modelo.id)}
+                        className="mt-1 ml-14 inline-flex min-h-9 items-center text-xs font-semibold text-[var(--color-vino)] hover:underline"
+                      >
+                        + Repartir en tienda o tianguis
+                      </button>
+                    ))}
                 </li>
               );
             })}

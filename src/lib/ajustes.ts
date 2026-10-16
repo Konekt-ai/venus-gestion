@@ -9,8 +9,6 @@ import { getDb } from "./db";
  */
 
 export type Ajustes = {
-  /** El tianguis se maneja aparte; por ahora el cliente no lo usa. */
-  usaTianguis: boolean;
   /** Nombre del negocio, para las hojas impresas. */
   negocio: string;
 
@@ -49,9 +47,6 @@ export type Ajustes = {
 };
 
 const POR_OMISION: Ajustes = {
-  // Apagado a peticion del cliente: primero bodega y tienda.
-  // La informacion del tianguis NO se borra, solo se deja de mostrar.
-  usaTianguis: false,
   negocio: "Venus Boutique",
 
   // Sin impresora elegida: el sistema arranca imprimiendo en hoja y el
@@ -91,9 +86,6 @@ export function leerAjustes(): Ajustes {
   const mapa = new Map(filas.map((f) => [f.clave, f.valor]));
 
   return {
-    usaTianguis: mapa.has("usa_tianguis")
-      ? mapa.get("usa_tianguis") === "1"
-      : POR_OMISION.usaTianguis,
     negocio: mapa.get("negocio") || POR_OMISION.negocio,
 
     impresoraEtiquetas: mapa.get("impresora_etiquetas") || POR_OMISION.impresoraEtiquetas,
@@ -118,10 +110,3 @@ export function guardarAjuste(clave: string, valor: string) {
   ).run(clave, valor);
 }
 
-/**
- * Atajo: casi todas las pantallas solo necesitan saber si mostrar o no
- * lo del tianguis.
- */
-export function usaTianguis(): boolean {
-  return leerAjustes().usaTianguis;
-}

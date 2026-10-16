@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { listarCatalogo, listarUbicaciones, obtenerModelo } from "@/lib/consultas";
+import { listarCatalogo, obtenerModelo } from "@/lib/consultas";
 import { FormularioModelo } from "@/components/FormularioModelo";
 import { ArchivarModelo } from "@/components/ArchivarModelo";
 import { TituloPagina } from "@/components/ui";
@@ -26,7 +26,6 @@ export default async function EditarModelo({ params }: { params: Promise<{ id: s
         modelo={modelo}
         hayPrecios={hayTablaPrecios()}
         precio={precioDeModelo(modelo.id)}
-        ubicaciones={listarUbicaciones()}
         catalogos={{
           tallas: listarCatalogo("talla"),
           colores: listarCatalogo("color"),

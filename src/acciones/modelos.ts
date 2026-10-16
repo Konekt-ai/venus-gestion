@@ -8,6 +8,14 @@ import type { Resultado } from "@/lib/tipos";
 import { exigirAcceso } from "@/lib/acceso";
 import { aCentavos } from "@/lib/dinero";
 import { guardarPrecio, hayTablaPrecios } from "@/lib/precios";
+import { EN_LUGAR, LUGARES, tipoEntrada, type Lugar } from "@/lib/lugares";
+
+/** El campo del formulario de alta que trae las piezas de cada lugar. */
+const CAMPO_PIEZAS: Record<Lugar, string> = {
+  bodega: "existencia",
+  tienda: "existencia_tienda",
+  tianguis: "existencia_tianguis",
+};
 
 function texto(v: FormDataEntryValue | null): string {
   return typeof v === "string" ? v.trim() : "";
@@ -42,7 +50,6 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
   const descripcion = normalizarTexto(texto(form.get("descripcion")));
   if (!descripcion) return { ok: false, error: "Escribe la descripcion de la prenda." };
 
-  const ubicacionId = entero(form.get("ubicacion_id"), 0) || null;
   const minimo = Math.max(0, entero(form.get("minimo"), 0));
 
   const campos = {
@@ -56,7 +63,6 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
     colores: normalizarTexto(texto(form.get("colores"))),
     tela: normalizarTexto(texto(form.get("tela"))),
     minimo,
-    ubicacion_id: ubicacionId,
     notas: texto(form.get("notas")),
     foto: texto(form.get("foto")),
     destacado: form.get("destacado") ? 1 : 0,
@@ -103,7 +109,7 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
           `UPDATE modelos SET
              codigo = @codigo, codigo_norm = @codigo_norm, prefijo = @prefijo, numero = @numero,
              descripcion = @descripcion, categoria = @categoria, tallas = @tallas,
-             colores = @colores, tela = @tela, minimo = @minimo, ubicacion_id = @ubicacion_id,
+             colores = @colores, tela = @tela, minimo = @minimo,
              notas = @notas, foto = @foto, destacado = @destacado,
              actualizado_en = datetime('now','localtime')
            WHERE id = @id`
@@ -139,17 +145,22 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
     }
 
     // Alta: la existencia inicial entra como movimiento de entrada,
-    // asi queda registrada en el historial desde el primer dia.
-    const existenciaInicial = Math.max(0, entero(form.get("existencia"), 0));
+    // asi queda registrada en el historial desde el primer dia. Lo normal
+    // es que todo este en bodega, pero puede nacer con piezas que ya
+    // estan en la tienda o en el tianguis.
+    const iniciales = LUGARES.map((l) => ({
+      lugar: l,
+      piezas: Math.max(0, entero(form.get(CAMPO_PIEZAS[l]), 0)),
+    }));
 
     const nuevoId = db.transaction(() => {
       const info = db
         .prepare(
           `INSERT INTO modelos
              (codigo, codigo_norm, prefijo, numero, descripcion, categoria,
-              tallas, colores, tela, minimo, ubicacion_id, notas, foto, destacado)
+              tallas, colores, tela, minimo, notas, foto, destacado)
            VALUES (@codigo, @codigo_norm, @prefijo, @numero, @descripcion, @categoria,
-                   @tallas, @colores, @tela, @minimo, @ubicacion_id, @notas, @foto, @destacado)`
+                   @tallas, @colores, @tela, @minimo, @notas, @foto, @destacado)`
         )
         .run(campos);
 
@@ -158,12 +169,13 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
       // Una prenda nueva tambien puede nacer con su precio puesto.
       if (tocaPrecio) guardarPrecio(db, creadoId, precioCentavos);
 
-      if (existenciaInicial > 0) {
+      for (const { lugar, piezas } of iniciales) {
+        if (piezas === 0) continue;
         aplicarMovimiento(db, {
           modeloId: creadoId,
-          tipo: "entrada",
-          cantidad: existenciaInicial,
-          nota: "Existencia inicial al dar de alta el modelo",
+          tipo: tipoEntrada(lugar),
+          cantidad: piezas,
+          nota: `Existencia inicial ${EN_LUGAR[lugar]} al dar de alta el modelo`,
         });
       }
 
@@ -176,20 +188,6 @@ export async function guardarModelo(_previo: unknown, form: FormData): Promise<R
     if (e instanceof ErrorInventario) return { ok: false, error: e.message };
     return { ok: false, error: "No se pudo guardar el modelo. Intenta de nuevo." };
   }
-}
-
-/** Cambia la ubicacion de un modelo sin tocar existencias. */
-export async function cambiarUbicacion(
-  modeloId: number,
-  ubicacionId: number | null
-): Promise<Resultado> {
-  await exigirAcceso();
-  const db = getDb();
-  db.prepare(
-    "UPDATE modelos SET ubicacion_id = ?, actualizado_en = datetime('now','localtime') WHERE id = ?"
-  ).run(ubicacionId, modeloId);
-  refrescar();
-  return { ok: true, mensaje: "Se actualizo la ubicacion." };
 }
 
 /**

@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { ESQUEMA } from "./esquema";
 import { sembrarCatalogo, sembrarDemostracion } from "./siembra";
+import { correrMigraciones } from "./migraciones";
 
 /**
  * Conexion unica a la base de datos.
@@ -74,6 +75,13 @@ function abrir(): Database.Database {
   db.pragma("busy_timeout = 5000");
 
   db.exec(ESQUEMA);
+  try {
+    correrMigraciones(db);
+  } catch (e) {
+    // Va en su propia transaccion: si falla no deja nada a medias y se
+    // vuelve a intentar la proxima vez que arranque el sistema.
+    console.error("No se pudieron acomodar los datos viejos:", e);
+  }
   sembrarCatalogos(db);
   asegurarTelas(db);
 

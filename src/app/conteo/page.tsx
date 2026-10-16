@@ -7,7 +7,7 @@ import {
 import { PanelConteo } from "@/components/PanelConteo";
 import { IniciarConteo } from "@/components/IniciarConteo";
 import { BotonEnlace, Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
-import { IconoPrenda, IconoUbicacion } from "@/components/iconos";
+import { IconoPrenda } from "@/components/iconos";
 import type { ModeloElegible } from "@/components/ArmadorEnvio";
 import { exigirEntrada } from "@/lib/acceso";
 
@@ -73,7 +73,6 @@ export default async function PaginaConteo() {
     existencia: m.existencia,
     en_tienda: m.en_tienda,
     en_tianguis: m.en_tianguis,
-    ubicacion_codigo: m.ubicacion_codigo,
     foto: m.foto,
   }));
 
@@ -97,24 +96,6 @@ export default async function PaginaConteo() {
       />
 
       <PanelConteo conteoId={abierto.id} modelos={modelos} lineas={lineas} />
-
-      {/* Envueltos juntos para que el space-y de la pagina no separe el
-          boton de su explicacion. */}
-      <div>
-        <div className="flex justify-center">
-          <BotonEnlace
-            href="/modelos?orden=ubicacion"
-            variante="secundario"
-            className="w-full justify-center sm:w-auto"
-          >
-            <IconoUbicacion tamano={16} />
-            Ver la lista por ubicacion
-          </BotonEnlace>
-        </div>
-        <p className="mt-2 text-center text-xs text-[var(--color-humo)]">
-          Para recorrer la bodega en orden.
-        </p>
-      </div>
     </div>
   );
 }

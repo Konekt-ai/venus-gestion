@@ -7,7 +7,7 @@ import { anotarConteo, borrarLineaConteo, cerrarConteo } from "@/acciones/conteo
 import { normalizarCodigo, normalizarTexto, partirCodigo } from "@/lib/codigos";
 import { Aviso, Boton, Insignia, Tarjeta } from "@/components/ui";
 import { FotoModelo } from "@/components/FotoModelo";
-import { IconoCerrar, IconoPin } from "@/components/iconos";
+import { IconoCerrar } from "@/components/iconos";
 import type { ConteoLineaConModelo } from "@/lib/tipos";
 import type { ModeloElegible } from "@/components/ArmadorEnvio";
 
@@ -199,7 +199,6 @@ export function PanelConteo({
                         <span className="codigo block text-sm">{m.codigo}</span>
                         <span className="block truncate text-xs text-[var(--color-humo)]">
                           {m.descripcion}
-                          {m.ubicacion_codigo && ` · ${m.ubicacion_codigo}`}
                         </span>
                       </span>
                       {yaContados.has(m.id) && (
@@ -228,12 +227,6 @@ export function PanelConteo({
               <div className="min-w-0 flex-1">
                 <p className="codigo text-xl">{elegido.codigo}</p>
                 <p className="text-sm text-[var(--color-humo)]">{elegido.descripcion}</p>
-                {elegido.ubicacion_codigo && (
-                  <p className="mt-1 flex items-center gap-1 text-sm text-[var(--color-humo)]">
-                    <IconoPin tamano={14} />
-                    {elegido.ubicacion_codigo}
-                  </p>
-                )}
               </div>
             </div>
 
@@ -329,7 +322,6 @@ export function PanelConteo({
                     <p className="codigo text-sm">{l.modelo_codigo}</p>
                     <p className="truncate text-xs text-[var(--color-humo)]">
                       {l.modelo_descripcion}
-                      {l.ubicacion_codigo && ` · ${l.ubicacion_codigo}`}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">

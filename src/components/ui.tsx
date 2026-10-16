@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { IconoPin, IconoVacio, IconoVolver } from "@/components/iconos";
+import { IconoVacio, IconoVolver } from "@/components/iconos";
+import { LUGARES, NOMBRE_LUGAR, piezasEn, type ConPiezas } from "@/lib/lugares";
 
 /** Piezas visuales que se repiten en todo el sistema. */
 
@@ -258,34 +259,42 @@ export function Existencia({
   );
 }
 
-/** Muestra la ubicacion como una pastilla, o un aviso si no tiene. */
-export function PastillaUbicacion({
-  codigo,
-  href,
+/**
+ * Donde estan las piezas de un modelo: "Bodega 5 · Tienda 2 · Tianguis 1".
+ *
+ * Con 'soloFuera' solo se nombran tienda y tianguis, y solo si tienen
+ * algo: sirve en las listas donde la cifra de bodega ya va aparte.
+ */
+export function PiezasPorLugar({
+  modelo,
+  soloFuera = false,
 }: {
-  codigo: string | null;
-  href?: string;
+  modelo: ConPiezas;
+  soloFuera?: boolean;
 }) {
-  if (!codigo) {
-    return (
-      <span className="inline-flex items-center rounded-sm bg-[var(--color-ambar-palido)] px-2 py-1 text-xs font-semibold text-[var(--color-ambar)]">
-        Sin ubicacion
-      </span>
-    );
-  }
+  const lugares = LUGARES.filter((l) => !soloFuera || (l !== "bodega" && piezasEn(modelo, l) > 0));
+  if (lugares.length === 0) return null;
 
-  const contenido = (
-    <span className="codigo inline-flex items-center gap-1 rounded-sm bg-[var(--color-crema)] px-2 py-1 text-xs text-[var(--color-tinta)]">
-      <IconoPin tamano={13} />
-      {codigo}
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {lugares.map((l) => {
+        const n = piezasEn(modelo, l);
+        return (
+          <span
+            key={l}
+            className={`inline-flex items-baseline gap-1 rounded-sm px-2 py-0.5 text-xs font-semibold ${
+              n > 0
+                ? l === "tianguis"
+                  ? "bg-[var(--color-oro-palido)] text-[#7a6220]"
+                  : "bg-[var(--color-crema)] text-[var(--color-tinta)]"
+                : "bg-[var(--color-crema)] text-[var(--color-humo)]/70"
+            }`}
+          >
+            {NOMBRE_LUGAR[l]}
+            <span className="tabular-nums">{n}</span>
+          </span>
+        );
+      })}
     </span>
-  );
-
-  return href ? (
-    <Link href={href} className="hover:opacity-70">
-      {contenido}
-    </Link>
-  ) : (
-    contenido
   );
 }

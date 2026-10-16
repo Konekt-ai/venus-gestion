@@ -1,16 +1,5 @@
 /** Tipos compartidos entre el servidor y las pantallas. */
 
-export type Ubicacion = {
-  id: number;
-  codigo: string;
-  zona: string;
-  rack: string;
-  nivel: string;
-  descripcion: string;
-  activa: number;
-  orden: number;
-};
-
 export type Modelo = {
   id: number;
   codigo: string;
@@ -26,19 +15,12 @@ export type Modelo = {
   en_tienda: number;
   en_tianguis: number;
   minimo: number;
-  ubicacion_id: number | null;
   foto: string;
   notas: string;
   destacado: number;
   activo: number;
   creado_en: string;
   actualizado_en: string;
-};
-
-/** Modelo con los datos de su ubicacion ya resueltos, para las listas. */
-export type ModeloConUbicacion = Modelo & {
-  ubicacion_codigo: string | null;
-  ubicacion_zona: string | null;
 };
 
 export type Linea = {
@@ -51,12 +33,20 @@ export type Linea = {
 
 export const TIPOS_MOVIMIENTO = [
   "entrada",
+  "entrada_tienda",
+  "entrada_tianguis",
   "salida_tienda",
   "salida_tianguis",
   "retorno_tienda",
   "retorno_tianguis",
+  "tienda_a_tianguis",
+  "tianguis_a_tienda",
   "ajuste",
+  "ajuste_tienda",
+  "ajuste_tianguis",
   "conteo",
+  "venta_tianguis",
+  "cancelacion_tianguis",
 ] as const;
 
 export type TipoMovimiento = (typeof TIPOS_MOVIMIENTO)[number];
@@ -77,12 +67,20 @@ export type TipoEnHistorial = TipoMovimiento | TipoDeCaja;
 /** Como se le llama a cada movimiento en pantalla. */
 export const NOMBRE_MOVIMIENTO: Record<TipoEnHistorial, string> = {
   entrada: "Entro a bodega",
+  entrada_tienda: "Entro directo a tienda",
+  entrada_tianguis: "Entro directo a tianguis",
   salida_tienda: "Salio a tienda",
   salida_tianguis: "Salio a tianguis",
   retorno_tienda: "Regreso de tienda",
   retorno_tianguis: "Regreso de tianguis",
-  ajuste: "Ajuste manual",
+  tienda_a_tianguis: "Paso de tienda a tianguis",
+  tianguis_a_tienda: "Paso de tianguis a tienda",
+  ajuste: "Correccion en bodega",
+  ajuste_tienda: "Correccion en tienda",
+  ajuste_tianguis: "Correccion en tianguis",
   conteo: "Cuadre por conteo",
+  venta_tianguis: "Se vendio en el tianguis",
+  cancelacion_tianguis: "Venta del tianguis cancelada",
   venta: "Se vendio en la tienda",
   cancelacion: "Venta cancelada",
 };
@@ -96,7 +94,6 @@ export type Movimiento = {
   cantidad: number;
   existencia_antes: number;
   existencia_despues: number;
-  ubicacion_id: number | null;
   remision_id: number | null;
   persona: string;
   nota: string;
@@ -144,7 +141,6 @@ export type ConteoLinea = {
 export type ConteoLineaConModelo = ConteoLinea & {
   modelo_codigo: string;
   modelo_descripcion: string;
-  ubicacion_codigo: string | null;
 };
 
 /** Resultado estandar de las acciones del servidor. */

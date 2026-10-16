@@ -26,6 +26,7 @@ export async function reiniciarDemo(): Promise<Resultado> {
       db.exec(`
         DELETE FROM conteo_lineas;
         DELETE FROM conteos;
+        DELETE FROM tianguis_ventas;
         DELETE FROM movimientos;
         DELETE FROM remisiones;
         DELETE FROM modelos;

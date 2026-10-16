@@ -274,6 +274,120 @@ comprobar(
 );
 
 // ---------------------------------------------------------------
+console.log("\nTres lugares: bodega, tienda y tianguis");
+// ---------------------------------------------------------------
+const idLugares = Number(
+  db
+    .prepare(
+      "INSERT INTO modelos (codigo, codigo_norm, prefijo, numero, descripcion) VALUES (?, ?, ?, ?, ?)"
+    )
+    .run("VD 777", "VD777", "VD", 777, "PRUEBA DE LUGARES").lastInsertRowid
+);
+const leerL = () => db.prepare("SELECT * FROM modelos WHERE id = ?").get(idLugares);
+const cuentas = () => {
+  const x = leerL();
+  return [x.existencia, x.en_tienda, x.en_tianguis];
+};
+
+aplicarMovimiento(db, { modeloId: idLugares, tipo: "entrada", cantidad: 10 });
+aplicarMovimiento(db, { modeloId: idLugares, tipo: "entrada_tianguis", cantidad: 6 });
+iguales("una entrada puede ir directo al tianguis", cuentas(), [10, 0, 6]);
+
+aplicarMovimiento(db, { modeloId: idLugares, tipo: "entrada_tienda", cantidad: 2 });
+iguales("y directo a la tienda", cuentas(), [10, 2, 6]);
+
+aplicarMovimiento(db, { modeloId: idLugares, tipo: "tianguis_a_tienda", cantidad: 1 });
+iguales("del tianguis a la tienda no toca bodega", cuentas(), [10, 3, 5]);
+
+aplicarMovimiento(db, { modeloId: idLugares, tipo: "tienda_a_tianguis", cantidad: 3 });
+iguales("de la tienda al tianguis", cuentas(), [10, 0, 8]);
+
+const venta = aplicarMovimiento(db, { modeloId: idLugares, tipo: "venta_tianguis", cantidad: 2 });
+iguales("una venta del tianguis solo baja el tianguis", cuentas(), [10, 0, 6]);
+comprobar(
+  "el historial de la venta guarda la cuenta del tianguis",
+  venta.lugar === "tianguis" && venta.antes === 8 && venta.despues === 6,
+  JSON.stringify(venta)
+);
+
+aplicarMovimiento(db, { modeloId: idLugares, tipo: "cancelacion_tianguis", cantidad: 2 });
+iguales("cancelar la venta regresa las piezas al tianguis", cuentas(), [10, 0, 8]);
+
+aplicarMovimiento(db, { modeloId: idLugares, tipo: "ajuste_tianguis", cantidad: -3 });
+aplicarMovimiento(db, { modeloId: idLugares, tipo: "ajuste_tienda", cantidad: 4 });
+iguales("las correcciones de tienda y tianguis van a su cuenta", cuentas(), [10, 4, 5]);
+
+lanza("no se vende en el tianguis mas de lo que hay alla", () =>
+  aplicarMovimiento(db, { modeloId: idLugares, tipo: "venta_tianguis", cantidad: 6 })
+);
+lanza("no se pasa del tianguis a la tienda mas de lo que hay", () =>
+  aplicarMovimiento(db, { modeloId: idLugares, tipo: "tianguis_a_tienda", cantidad: 99 })
+);
+lanza("una correccion no deja la tienda en negativo", () =>
+  aplicarMovimiento(db, { modeloId: idLugares, tipo: "ajuste_tienda", cantidad: -5 })
+);
+iguales("los intentos invalidos no movieron nada", cuentas(), [10, 4, 5]);
+
+// ---------------------------------------------------------------
+console.log("\nUbicaciones que en realidad eran lugares");
+// ---------------------------------------------------------------
+const { correrMigraciones } = await import("../src/lib/migraciones.ts");
+const nuevaUbicacion = (codigo) =>
+  Number(
+    db.prepare("INSERT INTO ubicaciones (codigo, zona) VALUES (?, ?)").run(codigo, codigo)
+      .lastInsertRowid
+  );
+const uTianguis = nuevaUbicacion("TIANGUIS");
+const uTienda = nuevaUbicacion("Tienda");
+const uBodega = nuevaUbicacion("BODEGA");
+const uRack = nuevaUbicacion("A-01-1");
+
+const conUbicacion = (codigo, piezas, ubicacion) =>
+  Number(
+    db
+      .prepare(
+        `INSERT INTO modelos (codigo, codigo_norm, descripcion, existencia, en_tienda, ubicacion_id)
+         VALUES (?, ?, 'MIGRACION', ?, 1, ?)`
+      )
+      .run(codigo, codigo, piezas, ubicacion).lastInsertRowid
+  );
+const mTianguis = conUbicacion("MIG1", 7, uTianguis);
+const mTienda = conUbicacion("MIG2", 3, uTienda);
+const mBodega = conUbicacion("MIG3", 4, uBodega);
+const mRack = conUbicacion("MIG4", 5, uRack);
+
+db.prepare("DELETE FROM config WHERE clave = 'migracion_lugares_v1'").run();
+correrMigraciones(db);
+const fila = (id) => db.prepare("SELECT * FROM modelos WHERE id = ?").get(id);
+
+iguales(
+  "lo anotado en la ubicacion Tianguis paso al tianguis",
+  [fila(mTianguis).existencia, fila(mTianguis).en_tianguis],
+  [0, 7]
+);
+iguales(
+  "lo anotado en la ubicacion Tienda se suma a la tienda",
+  [fila(mTienda).existencia, fila(mTienda).en_tienda],
+  [0, 4]
+);
+iguales("lo de la ubicacion Bodega se queda en bodega", fila(mBodega).existencia, 4);
+iguales("un rack de verdad no se toca", [fila(mRack).existencia, fila(mRack).ubicacion_id], [5, uRack]);
+comprobar(
+  "las tres ubicaciones falsas se borraron",
+  db.prepare("SELECT COUNT(*) AS n FROM ubicaciones WHERE id IN (?, ?, ?)").get(uTianguis, uTienda, uBodega).n === 0
+);
+comprobar(
+  "el paso quedo en el historial como una salida",
+  Boolean(
+    db
+      .prepare("SELECT 1 FROM movimientos WHERE modelo_id = ? AND tipo = 'salida_tianguis' AND cantidad = 7")
+      .get(mTianguis)
+  )
+);
+correrMigraciones(db);
+iguales("correrla otra vez no repite nada", fila(mTianguis).en_tianguis, 7);
+
+// ---------------------------------------------------------------
 console.log("");
 console.log("Contrasena de entrada");
 

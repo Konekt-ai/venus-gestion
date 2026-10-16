@@ -151,7 +151,6 @@ cargar();
 
 const total = db.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(existencia),0) AS p FROM modelos WHERE activo = 1").get();
 const conFoto = db.prepare("SELECT COUNT(*) AS n FROM modelos WHERE foto <> '' AND activo = 1").get();
-const ubicaciones = db.prepare("SELECT COUNT(*) AS n FROM ubicaciones").get();
 
 console.log(`Catalogo importado (${origen})`);
 console.log(`  ${nuevos} modelos nuevos`);
@@ -159,7 +158,6 @@ console.log(`  ${actualizados} ya existian y se actualizo su ficha`);
 console.log("");
 console.log(`  ${total.n} modelos en el sistema, ${conFoto.n} con foto`);
 console.log(`  ${total.p} piezas registradas`);
-console.log(`  ${ubicaciones.n} ubicaciones creadas`);
 
 if (total.p === 0) {
   console.log("");

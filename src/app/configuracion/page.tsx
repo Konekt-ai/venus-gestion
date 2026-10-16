@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { listarCatalogo, nombresDeLineas, prefijosEnUso, resumen } from "@/lib/consultas";
-import { usaTianguis } from "@/lib/ajustes";
 import { pideContrasena } from "@/lib/acceso";
 import { MODO_DEMO, RUTA_BASE_DATOS } from "@/lib/db";
 import { rutaLogo } from "@/lib/logo";
@@ -9,7 +8,6 @@ import { ImportadorCSV } from "@/components/ImportadorCSV";
 import { DireccionRed } from "@/components/DireccionRed";
 import { ReiniciarDemo } from "@/components/ReiniciarDemo";
 import { EditorLineas } from "@/components/EditorLineas";
-import { InterruptorTianguis } from "@/components/InterruptorTianguis";
 import { CandadoAcceso } from "@/components/CandadoAcceso";
 import { Tarjeta, TituloPagina } from "@/components/ui";
 import { exigirEntrada } from "@/lib/acceso";
@@ -19,7 +17,6 @@ import {
   IconoEntrada,
   IconoCaja,
   IconoCodigoBarras,
-  IconoEtiqueta,
   IconoHistorial,
   IconoPersona,
 } from "@/components/iconos";
@@ -31,7 +28,6 @@ const ENLACES_EXTRA = [
   { href: "/personal", texto: "Personal", Icono: IconoPersona },
   { href: "/ventas", texto: "Ventas de la tienda", Icono: IconoCaja },
   { href: "/movimientos", texto: "Historial completo", Icono: IconoHistorial },
-  { href: "/ubicaciones/etiquetas", texto: "Etiquetas de racks", Icono: IconoEtiqueta },
   { href: "/modelos/etiquetas", texto: "Etiquetas de prendas", Icono: IconoCodigoBarras },
 ];
 
@@ -137,8 +133,6 @@ export default async function Configuracion() {
         nombres={Object.fromEntries(nombresDeLineas())}
       />
 
-      <InterruptorTianguis encendido={usaTianguis()} />
-
       {/* En la demostracion la base vive en un archivo temporal que se
           borra solo: una contrasena ahi se perderia sin avisar. */}
       {!MODO_DEMO && <CandadoAcceso puesta={pideContrasena()} />}
@@ -157,8 +151,8 @@ export default async function Configuracion() {
           {[
             { t: "Modelos", v: datos.total_modelos },
             { t: "Piezas en bodega", v: datos.total_piezas },
-            { t: "Ubicaciones", v: datos.total_ubicaciones },
-            { t: "Sin ubicacion", v: datos.sin_ubicacion },
+            { t: "En la tienda", v: datos.piezas_tienda },
+            { t: "En el tianguis", v: datos.piezas_tianguis },
           ].map((x) => (
             <div key={x.t}>
               <dt className="etiqueta !mb-1">{x.t}</dt>

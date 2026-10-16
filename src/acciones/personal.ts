@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
-import { guardarAjuste } from "@/lib/ajustes";
 import type { Resultado } from "@/lib/tipos";
 import { exigirAcceso } from "@/lib/acceso";
 
@@ -69,15 +68,3 @@ export async function cambiarEstadoPersona(id: number, activo: boolean): Promise
   return { ok: true, mensaje: activo ? "Se reactivo." : "Se dio de baja." };
 }
 
-/** Prende o apaga el manejo de tianguis en todo el sistema. */
-export async function cambiarUsoTianguis(usar: boolean): Promise<Resultado> {
-  await exigirAcceso();
-  guardarAjuste("usa_tianguis", usar ? "1" : "0");
-  refrescar();
-  return {
-    ok: true,
-    mensaje: usar
-      ? "Ya se puede mandar mercancia al tianguis."
-      : "Se oculto el tianguis. Lo registrado no se borro.",
-  };
-}

@@ -12,8 +12,9 @@ import {
   IconoHistorial,
   IconoInicio,
   IconoPrenda,
+  IconoRegresar,
   IconoSalida,
-  IconoUbicacion,
+  IconoTianguis,
 } from "@/components/iconos";
 import { Logo } from "@/components/Logo";
 import { creditoCorto, DESARROLLADOR } from "@/lib/marca";
@@ -34,7 +35,7 @@ type Enlace = {
 const ENLACES: Enlace[] = [
   { href: "/", texto: "Inicio", Icono: IconoInicio, exacto: true },
   { href: "/modelos", texto: "Modelos", Icono: IconoPrenda },
-  { href: "/ubicaciones", texto: "Ubicaciones", Icono: IconoUbicacion },
+  { href: "/tianguis", texto: "Tianguis", Icono: IconoTianguis },
   { href: "/salidas", texto: "Salidas", Icono: IconoSalida },
   { href: "/entradas", texto: "Entradas", Icono: IconoEntrada },
   { href: "/conteo", texto: "Conteo", Icono: IconoConteo },
@@ -47,8 +48,28 @@ const ENLACES: Enlace[] = [
 ];
 
 // En el celular solo caben los mas usados; el resto vive en Ajustes.
-const EN_CELULAR = ["/", "/modelos", "/ubicaciones", "/salidas", "/conteo"];
+const EN_CELULAR = ["/", "/modelos", "/tianguis", "/salidas", "/conteo"];
 const ENLACES_MOVIL = ENLACES.filter((e) => EN_CELULAR.includes(e.href));
+
+/**
+ * Las pestanas del tianguis, en el orden en que se usan: vender es casi
+ * todo el dia; el inventario se consulta antes y entre ventas; las ventas
+ * se revisan de vez en cuando; el cierre es una vez, al final.
+ */
+const PESTANAS_TIANGUIS: Enlace[] = [
+  { href: "/tianguis", texto: "Vender", Icono: IconoCaja, exacto: true },
+  { href: "/tianguis/inventario", texto: "Inventario", Icono: IconoPrenda },
+  { href: "/tianguis/ventas", texto: "Ventas", Icono: IconoHistorial },
+  { href: "/tianguis/cierre", texto: "Cierre", Icono: IconoRegresar },
+];
+
+// Dentro del tianguis la barra de abajo cambia por sus pestanas: quien
+// vende pasa ahi el dia entero y no necesita el resto del sistema a la
+// mano. "Inicio" se queda al final como salida.
+const ENLACES_MOVIL_TIANGUIS: Enlace[] = [
+  ...PESTANAS_TIANGUIS,
+  { href: "/", texto: "Inicio", Icono: IconoInicio, exacto: true },
+];
 
 function estaActivo(pathname: string, href: string, exacto?: boolean) {
   return exacto ? pathname === href : pathname === href || pathname.startsWith(href + "/");
@@ -104,10 +125,12 @@ export function BarraLateral({ logo }: { logo: string | null }) {
 
 export function BarraMovil() {
   const pathname = usePathname();
+  const enTianguis = estaActivo(pathname, "/tianguis");
+  const enlaces = enTianguis ? ENLACES_MOVIL_TIANGUIS : ENLACES_MOVIL;
 
   return (
     <nav className="no-imprimir margen-abajo-seguro fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--color-linea-fuerte)] bg-[var(--color-beige)] md:hidden">
-      {ENLACES_MOVIL.map(({ href, texto, Icono, exacto }) => {
+      {enlaces.map(({ href, texto, Icono, exacto }) => {
         const activo = estaActivo(pathname, href, exacto);
         return (
           <Link
@@ -145,5 +168,36 @@ export function EncabezadoMovil({ logo }: { logo: string | null }) {
         <IconoAjustes tamano={21} />
       </Link>
     </header>
+  );
+}
+
+/**
+ * Las pestanas del tianguis en computadora, arriba del contenido.
+ * En el celular no se dibujan: ahi viven en la barra de abajo.
+ */
+export function PestanasTianguis() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="no-imprimir hidden gap-1 border-b border-[var(--color-linea)] md:flex">
+      {PESTANAS_TIANGUIS.map(({ href, texto, Icono, exacto }) => {
+        const activo = estaActivo(pathname, href, exacto);
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={activo ? "page" : undefined}
+            className={`relative -mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+              activo
+                ? "border-[var(--color-vino)] text-[var(--color-vino)]"
+                : "border-transparent text-[var(--color-humo)] hover:text-[var(--color-tinta)]"
+            }`}
+          >
+            <Icono tamano={18} />
+            {texto}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }

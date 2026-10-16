@@ -6,7 +6,7 @@ import {
   nombresDeLineas,
   obtenerModelo,
 } from "@/lib/consultas";
-import { leerAjustes, usaTianguis } from "@/lib/ajustes";
+import { leerAjustes } from "@/lib/ajustes";
 import { AccionesMovimiento } from "@/components/AccionesMovimiento";
 import { FotoModelo } from "@/components/FotoModelo";
 import { CodigoBarras } from "@/components/CodigoBarras";
@@ -17,11 +17,11 @@ import {
   EnlaceVolver,
   Existencia,
   Insignia,
-  PastillaUbicacion,
   Tarjeta,
 } from "@/components/ui";
 import { IconoEditar, IconoEstrella } from "@/components/iconos";
 import { NOMBRE_MOVIMIENTO } from "@/lib/tipos";
+import { EN_LUGAR, lugarDelMovimiento } from "@/lib/lugares";
 import { exigirEntrada } from "@/lib/acceso";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +44,6 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
 
   const historial = movimientosDeModelo(modelo.id, 40);
   const nombreLinea = modelo.prefijo ? nombresDeLineas().get(modelo.prefijo) : undefined;
-  const conTianguis = usaTianguis();
   const ajustes = leerAjustes();
   const hayImpresora = Boolean(ajustes.impresoraEtiquetas);
   const personal = listarPersonal();
@@ -68,7 +67,7 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
 
       <div className="grid gap-4 sm:grid-cols-[13rem_minmax(0,1fr)] sm:gap-6">
         {/* En el celular la foto va primero, pero con alto contenido: a todo
-            lo alto empujaba el codigo y la ubicacion fuera de la pantalla, y
+            lo alto empujaba el codigo y las piezas fuera de la pantalla, y
             a esto se entra estando parado frente al rack. */}
         <div className="h-60 max-h-[40vh] w-full overflow-hidden rounded-sm border border-[var(--color-linea)] bg-[var(--color-crema)] sm:aspect-[3/4] sm:h-auto sm:max-h-none">
           <FotoModelo
@@ -83,10 +82,6 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
             <h1 className="codigo text-3xl sm:text-4xl">{modelo.codigo}</h1>
             <p className="titulo mt-1 text-lg text-[var(--color-humo)]">{modelo.descripcion}</p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <PastillaUbicacion
-                codigo={modelo.ubicacion_codigo}
-                href={modelo.ubicacion_id ? `/ubicaciones/${modelo.ubicacion_id}` : undefined}
-              />
               {nombreLinea && (
                 <Insignia>
                   {modelo.prefijo} · {nombreLinea}
@@ -146,9 +141,7 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
 
       {/* Apiladas, las tres cifras empujaban fuera de pantalla "¿Que paso con
           este modelo?", que es a lo que se entra estando frente al rack. */}
-      <div
-        className={`grid grid-cols-2 gap-2 sm:gap-3 ${conTianguis ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
-      >
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         <Tarjeta className="col-span-2 text-center sm:col-span-1">
           <p className="etiqueta">En bodega</p>
           <div className="mt-1">
@@ -159,12 +152,10 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
           <p className="etiqueta">En la tienda</p>
           <p className="titulo mt-1 text-3xl tabular-nums">{modelo.en_tienda}</p>
         </Tarjeta>
-        {conTianguis && (
-          <Tarjeta className="text-center !p-4 sm:!p-5">
-            <p className="etiqueta">En el tianguis</p>
-            <p className="titulo mt-1 text-3xl tabular-nums">{modelo.en_tianguis}</p>
-          </Tarjeta>
-        )}
+        <Tarjeta className="text-center !p-4 sm:!p-5">
+          <p className="etiqueta">En el tianguis</p>
+          <p className="titulo mt-1 text-3xl tabular-nums">{modelo.en_tianguis}</p>
+        </Tarjeta>
       </div>
 
       <section className="no-imprimir">
@@ -174,7 +165,6 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
           existencia={modelo.existencia}
           enTienda={modelo.en_tienda}
           enTianguis={modelo.en_tianguis}
-          usaTianguis={conTianguis}
           personal={personal}
         />
       </section>
@@ -260,7 +250,7 @@ export default async function FichaModelo({ params }: { params: Promise<{ id: st
                         {diferencia > 0 ? `+${diferencia}` : diferencia}
                       </p>
                       <p className="text-xs text-[var(--color-humo)]">
-                        quedaron {mv.existencia_despues}
+                        quedaron {mv.existencia_despues} {EN_LUGAR[lugarDelMovimiento(mv.tipo)]}
                       </p>
                     </div>
                   </li>

@@ -1,4 +1,4 @@
-import { listarCatalogo, listarUbicaciones } from "@/lib/consultas";
+import { listarCatalogo } from "@/lib/consultas";
 import { FormularioModelo } from "@/components/FormularioModelo";
 import { TituloPagina } from "@/components/ui";
 import { exigirEntrada } from "@/lib/acceso";
@@ -21,7 +21,6 @@ export default async function NuevoModelo({ searchParams }: { searchParams: Para
       />
       <FormularioModelo
         hayPrecios={hayTablaPrecios()}
-        ubicaciones={listarUbicaciones()}
         codigoSugerido={codigoSugerido}
         catalogos={{
           tallas: listarCatalogo("talla"),

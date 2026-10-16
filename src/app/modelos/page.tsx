@@ -3,11 +3,9 @@ import Link from "next/link";
 import {
   buscarModelos,
   categoriasEnUso,
-  listarUbicaciones,
   nombresDeLineas,
   prefijosEnUso,
 } from "@/lib/consultas";
-import { usaTianguis } from "@/lib/ajustes";
 import { aCentavos, pesos } from "@/lib/dinero";
 import { hayTablaPrecios } from "@/lib/precios";
 import { Buscador } from "@/components/Buscador";
@@ -18,7 +16,7 @@ import {
   BotonEnlace,
   Existencia,
   Insignia,
-  PastillaUbicacion,
+  PiezasPorLugar,
   TituloPagina,
   Vacio,
 } from "@/components/ui";
@@ -76,8 +74,7 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
   const q = uno(sp.q);
   const existencia = uno(sp.existencia);
   const orden = uno(sp.orden) || "codigo";
-  const ubicacionParam = uno(sp.ubicacion);
-  const sinUbicacion = uno(sp.sinubicacion) === "1";
+  const hayEn = uno(sp.hay);
   const categoria = uno(sp.categoria);
   const soloDestacados = uno(sp.destacado) === "1";
   // Los dados de baja no salen en ningun lado: esta es la unica puerta
@@ -86,8 +83,8 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
 
   // Por omision se queda la lista, no la cuadricula. La cuadricula es mas
   // bonita, pero esta pantalla se abre estando de pie frente al rack para
-  // saber "¿hay y donde esta?": en un renglon caben la existencia y la
-  // ubicacion y entran casi el doble de modelos por pantallazo. Ahora que
+  // saber "¿hay y donde esta?": en un renglon caben la existencia y los
+  // lugares y entran casi el doble de modelos por pantallazo. Ahora que
   // el renglon trae su fotito, la lista tambien deja reconocer la prenda,
   // que era lo unico que la cuadricula hacia mejor. Quien anda buscando
   // "el midi de olanes" cambia a cuadricula y la eleccion se le queda en
@@ -108,15 +105,13 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
     q,
     existencia,
     orden,
-    sinUbicacion,
+    hayEn,
     categoria,
     soloDestacados,
     archivados,
     prefijo: uno(sp.prefijo),
-    ubicacionId: ubicacionParam ? parseInt(ubicacionParam, 10) : null,
   });
 
-  const ubicaciones = listarUbicaciones();
   const nombresLinea = nombresDeLineas();
   // El filtro de lineas muestra "VN — Vestidos de Nelly" cuando ya se
   // le puso nombre al prefijo en Ajustes.
@@ -125,7 +120,6 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
     nombre: nombresLinea.get(p.prefijo) ?? "",
   }));
   const categorias = categoriasEnUso();
-  const conTianguis = usaTianguis();
   const totalPiezas = modelos.reduce((s, m) => s + m.existencia, 0);
 
   return (
@@ -169,7 +163,7 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
           </Suspense>
 
           <Suspense fallback={null}>
-            <FiltrosModelos ubicaciones={ubicaciones} prefijos={prefijos} hayPrecios={hayPrecios} />
+            <FiltrosModelos prefijos={prefijos} hayPrecios={hayPrecios} />
           </Suspense>
         </>
       )}
@@ -337,7 +331,7 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                       )}
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <Existencia cantidad={m.existencia} minimo={m.minimo} />
-                        <PastillaUbicacion codigo={m.ubicacion_codigo} />
+                        <PiezasPorLugar modelo={m} soloFuera />
                       </div>
                     </div>
                   </Link>
@@ -350,7 +344,7 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                   las columnas no caben, asi que la tabla se desliza dentro
                   de su propio marco en vez de recortarse en silencio. */}
               <div className="desliza-h hidden rounded-sm border border-[var(--color-linea)] bg-[var(--color-papel)] md:block">
-                <table className="w-full min-w-[46rem] text-left text-sm">
+                <table className="w-full min-w-[50rem] text-left text-sm">
                   <thead className="border-b border-[var(--color-linea)] bg-[var(--color-crema)] text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-humo)]">
                     <tr>
                       <th className="w-16 px-3 py-3 font-semibold">
@@ -360,8 +354,9 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                       <th className="px-4 py-3 font-semibold">Descripcion</th>
                       <th className="px-4 py-3 font-semibold">Tallas</th>
                       <th className="px-4 py-3 font-semibold">Tela</th>
-                      <th className="px-4 py-3 font-semibold">Ubicacion</th>
                       {hayPrecios && <th className="px-4 py-3 text-right font-semibold">Precio</th>}
+                      <th className="px-4 py-3 text-right font-semibold">Tienda</th>
+                      <th className="px-4 py-3 text-right font-semibold">Tianguis</th>
                       <th className="px-4 py-3 text-right font-semibold">Bodega</th>
                     </tr>
                   </thead>
@@ -386,30 +381,20 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                           <Link href={`/modelos/${m.id}`} className="block hover:underline">
                             {m.descripcion}
                           </Link>
-                          {(m.en_tienda > 0 || (conTianguis && m.en_tianguis > 0)) && (
-                            <span className="mt-1 flex gap-1">
-                              {m.en_tienda > 0 && (
-                                <Insignia tono="vino">{m.en_tienda} en tienda</Insignia>
-                              )}
-                              {conTianguis && m.en_tianguis > 0 && (
-                                <Insignia tono="vino">{m.en_tianguis} en tianguis</Insignia>
-                              )}
-                            </span>
-                          )}
                         </td>
                         <td className="px-4 py-3 text-[var(--color-humo)]">{m.tallas || "—"}</td>
                         <td className="px-4 py-3 text-[var(--color-humo)]">{m.tela || "—"}</td>
-                        <td className="px-4 py-3">
-                          <PastillaUbicacion
-                            codigo={m.ubicacion_codigo}
-                            href={m.ubicacion_id ? `/ubicaciones/${m.ubicacion_id}` : undefined}
-                          />
-                        </td>
                         {hayPrecios && (
                           <td className="whitespace-nowrap px-4 py-3 text-right">
                             <Precio centavos={m.precio} />
                           </td>
                         )}
+                        <td className={`px-4 py-3 text-right font-semibold tabular-nums ${m.en_tienda > 0 ? "" : "text-[var(--color-humo)]/60"}`}>
+                          {m.en_tienda}
+                        </td>
+                        <td className={`px-4 py-3 text-right font-semibold tabular-nums ${m.en_tianguis > 0 ? "" : "text-[var(--color-humo)]/60"}`}>
+                          {m.en_tianguis}
+                        </td>
                         <td className="px-4 py-3 text-right">
                           <Existencia cantidad={m.existencia} minimo={m.minimo} />
                         </td>
@@ -448,14 +433,8 @@ export default async function PaginaModelos({ searchParams }: { searchParams: Pa
                           <Existencia cantidad={m.existencia} minimo={m.minimo} />
                         </div>
                         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                          <PastillaUbicacion codigo={m.ubicacion_codigo} />
+                          <PiezasPorLugar modelo={m} soloFuera />
                           {m.tallas && <Insignia>{m.tallas}</Insignia>}
-                          {m.en_tienda > 0 && (
-                            <Insignia tono="vino">{m.en_tienda} en tienda</Insignia>
-                          )}
-                          {conTianguis && m.en_tianguis > 0 && (
-                            <Insignia tono="vino">{m.en_tianguis} en tianguis</Insignia>
-                          )}
                         </div>
                       </div>
                     </Link>
