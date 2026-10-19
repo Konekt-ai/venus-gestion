@@ -266,15 +266,26 @@ en que se usan:
 | --- | --- |
 | **Vender** | Buscar la prenda (o escanearla), poner cuántas y en cuánto. El precio viene puesto con el registrado; si se vende en otro, se cambia ahí y **solo cuenta para esa venta**. Tiene *Deshacer* por si se picó mal. |
 | **Inventario** | Todo lo que hay en el tianguis, con foto, piezas y precio. Tocar una prenda lleva a venderla. |
-| **Ventas** | Lo vendido en el día (y los días anteriores): modelo y piezas, **sin el precio**. Desde aquí se cancela una venta equivocada. |
+| **Ventas** | Lo vendido en el día (y los días anteriores): modelo, piezas, precio por pieza y total de cada venta, con el dinero del día arriba para cuadrar el efectivo. Desde aquí se cancela una venta equivocada. |
 | **Cierre** | Al terminar el día: todo lo que no se vendió regresa a bodega. Se buscan las prendas que vayan a otro lado y se dice cuántas van a la tienda y cuántas se quedan en el tianguis; un botón al final mueve todo junto. |
 
 Lo que aparece en el tianguis es lo que se haya mandado antes desde bodega o
 la tienda (con **Salidas** o con el botón **A tianguis** de cada modelo).
 
-El dinero de cada venta queda guardado en la base (tabla `tianguis_ventas`,
-en centavos, junto con el precio registrado en ese momento), pero por ahora no
-se muestra en ninguna pantalla.
+Cada venta queda guardada en la tabla `tianguis_ventas`, en centavos, junto
+con el precio registrado en ese momento.
+
+## Ventas
+
+La pantalla **Ventas** es la lista de cada venta, de la tienda (lo que cobró
+la caja) y del tianguis, agrupada por día y la más nueva arriba. Cada venta
+dice de dónde fue, a qué hora y quién vendió; cada prenda con sus piezas y su
+precio por pieza; y el total de la venta. Las canceladas se ven tachadas y no
+cuentan.
+
+Arriba van solo el total vendido, las ventas y las piezas del periodo. Con
+**Todo / Tienda / Tianguis** se ve cada lado por separado; en *Todo* se dice
+cuánto fue de cada uno.
 
 ---
 

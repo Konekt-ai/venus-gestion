@@ -148,10 +148,8 @@ CREATE INDEX IF NOT EXISTS idx_mov_remision ON movimientos(remision_id);
 -- tianguis no hay caja, se registran desde el celular. Cada renglon es
 -- un modelo con sus piezas y el precio al que de verdad se vendio, en
 -- centavos. 'precio_lista' es el que tenia registrado en ese momento,
--- para saber despues cuanto se rebajo.
---
--- Los vendedores ven estas ventas SIN el precio; el dinero solo queda
--- guardado.
+-- para saber despues cuanto se rebajo. Se ven en Tianguis -> Ventas y,
+-- junto con las de la tienda, en la pantalla Ventas.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tianguis_ventas (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,

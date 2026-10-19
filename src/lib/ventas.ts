@@ -1,17 +1,17 @@
 import "server-only";
 import { getDb } from "./db";
-import { conFotosReales } from "./consultas";
 
 /**
- * Lo que se vendio en la tienda.
+ * Lo que se vendio: en la tienda y en el tianguis.
  *
- * Las ventas las escribe la caja, que trabaja sobre esta misma base de
- * datos. Aqui nunca se escriben: solo se leen para los reportes. Por eso
- * todo este archivo es de puras consultas.
+ * Las ventas de la tienda las escribe la caja, que trabaja sobre esta
+ * misma base de datos; aqui nunca se escriben, solo se leen. Las del
+ * tianguis son de bodega (tianguis_ventas). Este archivo junta las dos
+ * para la pantalla Ventas, y todo es de puras consultas.
  *
  * Las tablas de la caja pueden no existir todavia: mientras no se
- * instale la caja en la tienda, esta base solo tiene lo de bodega. Todas
- * las funciones responden vacio en ese caso, sin reventar.
+ * instale la caja en la tienda, esta base solo tiene lo de bodega. En
+ * ese caso todo sale solo con lo del tianguis, sin reventar.
  *
  * El dinero se guarda en centavos, en numeros enteros. Nunca en
  * decimales: 0.1 + 0.2 no da 0.3 en una computadora y las sumas del dia
@@ -26,6 +26,12 @@ export function hayCaja(): boolean {
   return Boolean(fila);
 }
 
+/** true si hay algo que reportar, venga de la tienda o del tianguis. */
+export function hayVentas(): boolean {
+  if (hayCaja()) return true;
+  return Boolean(getDb().prepare("SELECT 1 FROM tianguis_ventas LIMIT 1").get());
+}
+
 export type Periodo = "hoy" | "semana" | "mes" | "todo";
 
 export const PERIODOS: { valor: Periodo; nombre: string }[] = [
@@ -33,6 +39,15 @@ export const PERIODOS: { valor: Periodo; nombre: string }[] = [
   { valor: "semana", nombre: "Ultimos 7 dias" },
   { valor: "mes", nombre: "Ultimos 30 dias" },
   { valor: "todo", nombre: "Todo" },
+];
+
+/** De donde salio la venta. 'todo' junta las dos. */
+export type Origen = "todo" | "tienda" | "tianguis";
+
+export const ORIGENES: { valor: Origen; nombre: string }[] = [
+  { valor: "todo", nombre: "Todo" },
+  { valor: "tienda", nombre: "Tienda" },
+  { valor: "tianguis", nombre: "Tianguis" },
 ];
 
 /**
@@ -51,166 +66,207 @@ function desde(periodo: Periodo): string {
   return fila.d;
 }
 
+/**
+ * Todas las ventas como si fueran de una sola tabla, para los totales.
+ *
+ * Una venta del tianguis es un solo modelo; un ticket de la tienda puede
+ * traer varios. Para los totales eso no importa: cada uno cuenta como
+ * una venta, con sus piezas y su total. 'valida' es 1 si se cobro y 0
+ * si se cancelo.
+ */
+function ventasUnidas(origen: Origen): string {
+  const partes: string[] = [];
+  if (origen !== "tianguis" && hayCaja()) {
+    partes.push(`
+      SELECT 'tienda' AS origen, fecha, vendedora,
+             CASE WHEN estado = 'cobrada' THEN 1 ELSE 0 END AS valida,
+             piezas, total
+        FROM caja_ventas`);
+  }
+  if (origen !== "tienda") {
+    partes.push(`
+      SELECT 'tianguis' AS origen, fecha, persona AS vendedora,
+             CASE WHEN estado = 'vendida' THEN 1 ELSE 0 END AS valida,
+             piezas, piezas * precio AS total
+        FROM tianguis_ventas`);
+  }
+  // Sin ninguna de las dos, una tabla vacia con las mismas columnas.
+  if (partes.length === 0) {
+    return "SELECT '' AS origen, '' AS fecha, '' AS vendedora, 0 AS valida, 0 AS piezas, 0 AS total WHERE 0";
+  }
+  return partes.join(" UNION ALL ");
+}
+
 export type ResumenVentas = {
-  tickets: number;
+  ventas: number;
   piezas: number;
   total: number;
   promedio: number;
   canceladas: number;
+  /** Cuanto fue de cada lado, para decirlo debajo del total. */
+  totalTienda: number;
+  totalTianguis: number;
 };
 
-/** Los numeros de arriba: cuanto se vendio y en cuantos tickets. */
-export function resumenVentas(periodo: Periodo): ResumenVentas {
-  if (!hayCaja()) return { tickets: 0, piezas: 0, total: 0, promedio: 0, canceladas: 0 };
-
+/** Los numeros de arriba: cuanto se vendio y en cuantas ventas. */
+export function resumenVentas(periodo: Periodo, origen: Origen = "todo"): ResumenVentas {
   const fila = getDb()
     .prepare(
-      `SELECT
-         COUNT(*)                                            AS tickets,
-         COALESCE(SUM(piezas), 0)                            AS piezas,
-         COALESCE(SUM(total), 0)                             AS total,
-         (SELECT COUNT(*) FROM caja_ventas
-           WHERE estado = 'cancelada' AND date(fecha) >= ?)  AS canceladas
-       FROM caja_ventas
-       WHERE estado = 'cobrada' AND date(fecha) >= ?`
+      `WITH todas AS (${ventasUnidas(origen)})
+       SELECT
+         COALESCE(SUM(valida), 0)                                           AS ventas,
+         COALESCE(SUM(CASE WHEN valida = 1 THEN piezas END), 0)             AS piezas,
+         COALESCE(SUM(CASE WHEN valida = 1 THEN total END), 0)              AS total,
+         COALESCE(SUM(CASE WHEN valida = 0 THEN 1 ELSE 0 END), 0)           AS canceladas,
+         COALESCE(SUM(CASE WHEN valida = 1 AND origen = 'tienda' THEN total END), 0)   AS totalTienda,
+         COALESCE(SUM(CASE WHEN valida = 1 AND origen = 'tianguis' THEN total END), 0) AS totalTianguis
+       FROM todas
+       WHERE date(fecha) >= ?`
     )
-    .get(desde(periodo), desde(periodo)) as Omit<ResumenVentas, "promedio">;
+    .get(desde(periodo)) as Omit<ResumenVentas, "promedio">;
 
   return {
     ...fila,
-    promedio: fila.tickets > 0 ? Math.round(fila.total / fila.tickets) : 0,
+    promedio: fila.ventas > 0 ? Math.round(fila.total / fila.ventas) : 0,
   };
 }
 
-export type ModeloVendido = {
+/** Un renglon de una venta: que prenda, cuantas y a cuanto. */
+export type RenglonDeVenta = {
   modelo_id: number | null;
   codigo: string;
   descripcion: string;
-  foto: string;
   piezas: number;
+  /** Precio por pieza, en centavos. */
+  precio: number;
   importe: number;
-  en_tienda: number;
-  existencia: number;
+  /** En el tianguis: el precio registrado si se vendio en otro. */
+  precio_lista: number | null;
 };
 
-/**
- * Lo que mas se vende, de verdad.
- *
- * Hasta ahora "mas vendido" era lo que el cliente marco en su catalogo,
- * que es lo que el creia. Esto es lo que la caja registro.
- */
-export function masVendidos(periodo: Periodo, limite = 12): ModeloVendido[] {
-  if (!hayCaja()) return [];
-
-  const filas = getDb()
-    .prepare(
-      `SELECT
-         l.modelo_id,
-         l.codigo,
-         MAX(l.descripcion)              AS descripcion,
-         COALESCE(MAX(m.foto), '')       AS foto,
-         COALESCE(MAX(m.en_tienda), 0)   AS en_tienda,
-         COALESCE(MAX(m.existencia), 0)  AS existencia,
-         SUM(l.piezas)                   AS piezas,
-         SUM(l.importe)                  AS importe
-       FROM caja_venta_lineas l
-       JOIN caja_ventas v ON v.id = l.venta_id
-       LEFT JOIN modelos m ON m.id = l.modelo_id
-       WHERE v.estado = 'cobrada' AND date(v.fecha) >= ?
-       GROUP BY l.codigo
-       ORDER BY piezas DESC, importe DESC
-       LIMIT ?`
-    )
-    .all(desde(periodo), limite) as ModeloVendido[];
-
-  return conFotosReales(filas);
-}
-
-export type DesempenoVendedora = {
+/** Una venta completa, de la tienda o del tianguis. */
+export type VentaIndividual = {
+  origen: "tienda" | "tianguis";
+  clave: string;
+  /** Folio del ticket de la tienda; vacio en el tianguis. */
+  folio: string;
+  fecha: string;
   vendedora: string;
-  tickets: number;
+  cancelada: boolean;
   piezas: number;
+  descuento: number;
   total: number;
-  promedio: number;
+  renglones: RenglonDeVenta[];
 };
 
-/** Cuanto vendio cada quien. Es lo que se usa para las comisiones. */
-export function desempenoVendedoras(periodo: Periodo): DesempenoVendedora[] {
-  if (!hayCaja()) return [];
-
-  const filas = getDb()
-    .prepare(
-      `SELECT
-         CASE WHEN vendedora = '' THEN 'Sin firmar' ELSE vendedora END AS vendedora,
-         COUNT(*)                  AS tickets,
-         COALESCE(SUM(piezas), 0)  AS piezas,
-         COALESCE(SUM(total), 0)   AS total
-       FROM caja_ventas
-       WHERE estado = 'cobrada' AND date(fecha) >= ?
-       GROUP BY vendedora
-       ORDER BY total DESC`
-    )
-    .all(desde(periodo)) as Omit<DesempenoVendedora, "promedio">[];
-
-  return filas.map((f) => ({
-    ...f,
-    promedio: f.tickets > 0 ? Math.round(f.total / f.tickets) : 0,
-  }));
-}
-
-export type DiaDeVentas = { dia: string; total: number; piezas: number };
-
-/** Dia por dia, para ver la forma de la semana. */
-export function ventasPorDia(periodo: Periodo): DiaDeVentas[] {
-  if (!hayCaja()) return [];
-
-  return getDb()
-    .prepare(
-      `SELECT date(fecha) AS dia, SUM(total) AS total, SUM(piezas) AS piezas
-       FROM caja_ventas
-       WHERE estado = 'cobrada' AND date(fecha) >= ?
-       GROUP BY dia
-       ORDER BY dia`
-    )
-    .all(desde(periodo)) as DiaDeVentas[];
-}
-
 /**
- * Lo que se esta vendiendo y ya casi no hay en la tienda.
+ * Las ventas una por una, la mas nueva arriba, con sus prendas.
  *
- * Es la pregunta que de verdad le sirve a bodega: no "que se vendio",
- * sino "que hay que mandar mañana". Solo aparece lo que ademas si hay
- * en bodega para surtir.
+ * Se piden las 'limite' mas recientes de cada lado y luego se juntan y
+ * se recortan: asi un periodo largo no trae miles de renglones.
  */
-export function hayQueSurtir(limite = 8): ModeloVendido[] {
-  if (!hayCaja()) return [];
+export function ventasIndividuales(
+  periodo: Periodo,
+  origen: Origen = "todo",
+  limite = 150
+): VentaIndividual[] {
+  const db = getDb();
+  const inicio = desde(periodo);
+  const ventas: VentaIndividual[] = [];
 
-  const filas = getDb()
-    .prepare(
-      `SELECT
-         m.id                       AS modelo_id,
-         m.codigo,
-         m.descripcion,
-         m.foto,
-         m.en_tienda,
-         m.existencia,
-         SUM(l.piezas)              AS piezas,
-         SUM(l.importe)             AS importe
-       FROM caja_venta_lineas l
-       JOIN caja_ventas v ON v.id = l.venta_id
-       JOIN modelos m     ON m.id = l.modelo_id
-       WHERE v.estado = 'cobrada'
-         AND date(v.fecha) >= date('now','localtime','-29 day')
-         AND m.activo = 1
-         AND m.en_tienda <= 2
-         AND m.existencia > 0
-       GROUP BY m.id
-       ORDER BY piezas DESC
-       LIMIT ?`
-    )
-    .all(limite) as ModeloVendido[];
+  if (origen !== "tianguis" && hayCaja()) {
+    const tickets = db
+      .prepare(
+        `SELECT id, folio, fecha, vendedora, estado, piezas, descuento, total
+           FROM caja_ventas
+          WHERE date(fecha) >= ?
+          ORDER BY fecha DESC
+          LIMIT ?`
+      )
+      .all(inicio, limite) as {
+      id: string;
+      folio: string;
+      fecha: string;
+      vendedora: string;
+      estado: string;
+      piezas: number;
+      descuento: number;
+      total: number;
+    }[];
 
-  return conFotosReales(filas);
+    const renglonesDe = db.prepare(
+      `SELECT modelo_id, codigo, descripcion, piezas, precio, importe, NULL AS precio_lista
+         FROM caja_venta_lineas WHERE venta_id = ? ORDER BY id`
+    );
+
+    for (const t of tickets) {
+      ventas.push({
+        origen: "tienda",
+        clave: `tienda-${t.id}`,
+        folio: t.folio,
+        fecha: t.fecha,
+        vendedora: t.vendedora,
+        cancelada: t.estado !== "cobrada",
+        piezas: t.piezas,
+        descuento: t.descuento,
+        total: t.total,
+        renglones: renglonesDe.all(t.id) as RenglonDeVenta[],
+      });
+    }
+  }
+
+  if (origen !== "tienda") {
+    const filas = db
+      .prepare(
+        `SELECT v.id, v.fecha, v.persona, v.estado, v.piezas, v.precio, v.precio_lista,
+                v.modelo_id, m.codigo, m.descripcion
+           FROM tianguis_ventas v
+           JOIN modelos m ON m.id = v.modelo_id
+          WHERE date(v.fecha) >= ?
+          ORDER BY v.fecha DESC, v.id DESC
+          LIMIT ?`
+      )
+      .all(inicio, limite) as {
+      id: number;
+      fecha: string;
+      persona: string;
+      estado: string;
+      piezas: number;
+      precio: number;
+      precio_lista: number | null;
+      modelo_id: number;
+      codigo: string;
+      descripcion: string;
+    }[];
+
+    for (const v of filas) {
+      const importe = v.piezas * v.precio;
+      ventas.push({
+        origen: "tianguis",
+        clave: `tianguis-${v.id}`,
+        folio: "",
+        fecha: v.fecha,
+        vendedora: v.persona,
+        cancelada: v.estado !== "vendida",
+        piezas: v.piezas,
+        descuento: 0,
+        total: importe,
+        renglones: [
+          {
+            modelo_id: v.modelo_id,
+            codigo: v.codigo,
+            descripcion: v.descripcion,
+            piezas: v.piezas,
+            precio: v.precio,
+            importe,
+            precio_lista: v.precio_lista !== null && v.precio_lista !== v.precio ? v.precio_lista : null,
+          },
+        ],
+      });
+    }
+  }
+
+  return ventas.sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, limite);
 }
 
 /** Los pesos y centavos, escritos como se leen. */

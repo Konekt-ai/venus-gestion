@@ -329,6 +329,38 @@ lanza("una correccion no deja la tienda en negativo", () =>
 iguales("los intentos invalidos no movieron nada", cuentas(), [10, 4, 5]);
 
 // ---------------------------------------------------------------
+console.log("\nVentas del tianguis en los reportes");
+// ---------------------------------------------------------------
+const ventasLib = await import("../src/lib/ventas.ts");
+db.prepare(
+  `INSERT INTO tianguis_ventas (modelo_id, piezas, precio, precio_lista, persona, estado)
+   VALUES (?, 2, 60000, 65000, 'Lupita', 'vendida'), (?, 1, 89000, NULL, 'Mario', 'cancelada')`
+).run(idLugares, idLugares);
+
+const r = ventasLib.resumenVentas("hoy", "tianguis");
+iguales(
+  "el resumen cuenta solo las ventas cobradas del tianguis",
+  [r.ventas, r.piezas, r.total, r.canceladas],
+  [1, 2, 120000, 1]
+);
+iguales("sin caja, 'todo' es lo mismo que el tianguis", ventasLib.resumenVentas("hoy").total, 120000);
+iguales("filtrar por tienda sin caja no trae nada", ventasLib.resumenVentas("hoy", "tienda").ventas, 0);
+
+const lista = ventasLib.ventasIndividuales("hoy");
+const vendida = lista.find((v) => !v.cancelada);
+comprobar(
+  "venta por venta trae modelo, piezas, precio y total",
+  vendida?.origen === "tianguis" &&
+    vendida.renglones[0].codigo === "VD 777" &&
+    vendida.renglones[0].piezas === 2 &&
+    vendida.renglones[0].precio === 60000 &&
+    vendida.total === 120000,
+  JSON.stringify(vendida)
+);
+iguales("y avisa que se vendio en otro precio", vendida?.renglones[0].precio_lista, 65000);
+comprobar("la cancelada aparece marcada", lista.some((v) => v.cancelada));
+
+// ---------------------------------------------------------------
 console.log("\nUbicaciones que en realidad eran lugares");
 // ---------------------------------------------------------------
 const { correrMigraciones } = await import("../src/lib/migraciones.ts");

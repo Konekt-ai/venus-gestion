@@ -5,6 +5,7 @@ import { FotoModelo } from "@/components/FotoModelo";
 import { Insignia, Tarjeta, TituloPagina, Vacio } from "@/components/ui";
 import { IconoHistorial } from "@/components/iconos";
 import { exigirEntrada } from "@/lib/acceso";
+import { pesos } from "@/lib/dinero";
 
 export const dynamic = "force-dynamic";
 
@@ -21,11 +22,9 @@ function nombreDelDia(dia: string): string {
 }
 
 /**
- * Las ventas del tianguis, SIN precio: que se vendio y cuantas.
- *
- * Lo ven los vendedores, asi que el dinero ni siquiera se lee de la base
- * (ver lib/tianguis.ts). Sirve para revisar el dia y para corregir una
- * venta que se registro mal.
+ * Las ventas del tianguis de un dia: que se vendio, cuantas, a cuanto y
+ * el total, con el dinero del dia arriba para cuadrar el efectivo al
+ * cerrar. Tambien sirve para cancelar una venta que se registro mal.
  */
 export default async function PaginaVentasTianguis({ searchParams }: { searchParams: Params }) {
   await exigirEntrada();
@@ -41,6 +40,7 @@ export default async function PaginaVentasTianguis({ searchParams }: { searchPar
   const ventas = ventasDelDia(dia);
   const vendidas = ventas.filter((v) => v.estado === "vendida");
   const piezas = vendidas.reduce((s, v) => s + v.piezas, 0);
+  const dinero = vendidas.reduce((s, v) => s + v.piezas * v.precio, 0);
 
   return (
     <div className="space-y-4">
@@ -50,7 +50,7 @@ export default async function PaginaVentasTianguis({ searchParams }: { searchPar
           vendidas.length > 0
             ? `${dia === deHoy ? "Hoy" : nombreDelDia(dia)}: ${piezas} ${
                 piezas === 1 ? "pieza vendida" : "piezas vendidas"
-              } en ${vendidas.length} ${vendidas.length === 1 ? "venta" : "ventas"}.`
+              }, ${pesos(dinero)} en ${vendidas.length} ${vendidas.length === 1 ? "venta" : "ventas"}.`
             : undefined
         }
       />
@@ -93,6 +93,14 @@ export default async function PaginaVentasTianguis({ searchParams }: { searchPar
                   <div className="min-w-0 flex-1">
                     <p className={`codigo text-base ${cancelada ? "line-through" : ""}`}>{v.codigo}</p>
                     <p className="truncate text-xs text-[var(--color-humo)]">{v.descripcion}</p>
+                    <p className="mt-0.5 text-sm tabular-nums">
+                      {v.piezas} × {pesos(v.precio)}
+                      {v.precio_lista !== null && v.precio_lista !== v.precio && (
+                        <span className="block text-xs text-[var(--color-ambar)]">
+                          Precio registrado {pesos(v.precio_lista)}
+                        </span>
+                      )}
+                    </p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[var(--color-humo)]">
                       {v.fecha.slice(11, 16)}
                       {v.persona && ` · ${v.persona}`}
@@ -100,9 +108,13 @@ export default async function PaginaVentasTianguis({ searchParams }: { searchPar
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end">
-                    <span className="text-xl leading-none font-bold tabular-nums">{v.piezas}</span>
-                    <span className="text-[0.7rem] text-[var(--color-humo)]">
-                      {v.piezas === 1 ? "pieza" : "piezas"}
+                    <span
+                      className={`text-lg leading-none font-bold tabular-nums ${cancelada ? "line-through" : ""}`}
+                    >
+                      {pesos(v.piezas * v.precio)}
+                    </span>
+                    <span className="mt-0.5 text-[0.7rem] text-[var(--color-humo)]">
+                      {v.piezas} {v.piezas === 1 ? "pieza" : "piezas"}
                     </span>
                     {!cancelada && <CancelarVentaTianguis ventaId={v.id} />}
                   </div>

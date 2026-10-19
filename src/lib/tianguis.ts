@@ -6,14 +6,9 @@ import { preciosDeModelos } from "./precios";
 /**
  * Lo que se lee del tianguis.
  *
- * El tianguis se trabaja desde el celular de quien esta vendiendo. Por
- * eso aqui hay dos cuidados:
- *
- *   - Solo se manda al telefono lo que esta en el tianguis, no los dos
- *     mil modelos del catalogo: la senal alla suele ser mala.
- *   - Las ventas que ven los vendedores salen SIN precio. No es que la
- *     pantalla lo esconda: la consulta ni siquiera lo pide, asi que no
- *     viaja al telefono.
+ * El tianguis se trabaja desde el celular de quien esta vendiendo, asi
+ * que solo se manda al telefono lo que esta en el tianguis, no los dos
+ * mil modelos del catalogo: la senal alla suele ser mala.
  */
 
 /** Un modelo del tianguis, con lo justo para buscarlo y venderlo. */
@@ -48,14 +43,17 @@ export function inventarioTianguis(): ModeloTianguis[] {
   return conFotosReales(filas.map((f) => ({ ...f, precio: precios.get(f.id) ?? null })));
 }
 
-/** Una venta tal como la ven los vendedores: sin dinero. */
-export type VentaSinPrecio = {
+/** Una venta del tianguis con su precio por pieza, en centavos. */
+export type VentaDelTianguis = {
   id: number;
   modelo_id: number;
   codigo: string;
   descripcion: string;
   foto: string;
   piezas: number;
+  precio: number;
+  /** El precio registrado al momento de vender, o null si no tenia. */
+  precio_lista: number | null;
   persona: string;
   estado: "vendida" | "cancelada";
   fecha: string;
@@ -78,16 +76,16 @@ export function hoy(): string {
 }
 
 /** Las ventas de un dia (YYYY-MM-DD), la mas nueva arriba. */
-export function ventasDelDia(dia: string): VentaSinPrecio[] {
+export function ventasDelDia(dia: string): VentaDelTianguis[] {
   const filas = getDb()
     .prepare(
-      `SELECT v.id, v.modelo_id, m.codigo, m.descripcion, m.foto, v.piezas, v.persona,
-              v.estado, v.fecha
+      `SELECT v.id, v.modelo_id, m.codigo, m.descripcion, m.foto, v.piezas, v.precio,
+              v.precio_lista, v.persona, v.estado, v.fecha
          FROM tianguis_ventas v
          JOIN modelos m ON m.id = v.modelo_id
         WHERE date(v.fecha) = ?
         ORDER BY v.fecha DESC, v.id DESC`
     )
-    .all(dia) as VentaSinPrecio[];
+    .all(dia) as VentaDelTianguis[];
   return conFotosReales(filas);
 }
