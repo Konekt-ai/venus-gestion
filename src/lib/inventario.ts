@@ -84,8 +84,14 @@ export function aplicarMovimiento(db: Database.Database, datos: DatosMovimiento)
 
   // Nunca se permite dejar existencias en negativo: significa que el
   // dato de partida estaba mal y hay que revisarlo, no arrastrarlo.
+  //
+  // Solo se revisan los lugares que este movimiento resta. La caja cobra
+  // aunque la tienda este en cero (el candado viene apagado) y la deja en
+  // negativo; si aqui se revisaran los tres, ese modelo ya no aceptaria
+  // ni una entrada a bodega ni un conteo, que no tocan la tienda. Y lo
+  // que si la toca para subirla es justo lo que la arregla.
   for (const l of LUGARES) {
-    if (cuentas[l] >= 0) continue;
+    if (cuentas[l] >= 0 || cuentas[l] >= piezasEn(modelo, l)) continue;
     const habia = piezasEn(modelo, l);
     throw new ErrorInventario(
       `No alcanza: ${modelo.codigo} tiene ${habia} ${habia === 1 ? "pieza" : "piezas"} ${EN_LUGAR[l]}.`

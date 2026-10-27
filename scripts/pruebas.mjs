@@ -329,6 +329,40 @@ lanza("una correccion no deja la tienda en negativo", () =>
 iguales("los intentos invalidos no movieron nada", cuentas(), [10, 4, 5]);
 
 // ---------------------------------------------------------------
+console.log("\nLa caja dejo la tienda en negativo");
+// ---------------------------------------------------------------
+// La caja cobra aunque la tienda este en cero y la deja en negativo, sin
+// pasar por aqui. Ese modelo tiene que seguir aceptando lo que no toca la
+// tienda, y lo que la sube.
+const idCaja = Number(
+  db
+    .prepare(
+      "INSERT INTO modelos (codigo, codigo_norm, prefijo, numero, descripcion, existencia, en_tienda, en_tianguis) VALUES (?, ?, ?, ?, ?, 5, -1, 2)"
+    )
+    .run("VD 666", "VD666", "VD", 666, "VENDIDO SIN PIEZAS EN TIENDA").lastInsertRowid
+);
+const cuentasCaja = () => {
+  const x = db.prepare("SELECT * FROM modelos WHERE id = ?").get(idCaja);
+  return [x.existencia, x.en_tienda, x.en_tianguis];
+};
+
+aplicarMovimiento(db, { modeloId: idCaja, tipo: "entrada", cantidad: 3 });
+iguales("acepta una entrada a bodega", cuentasCaja(), [8, -1, 2]);
+
+aplicarMovimiento(db, { modeloId: idCaja, tipo: "conteo", cantidad: 6 });
+iguales("acepta el conteo de bodega", cuentasCaja(), [6, -1, 2]);
+
+aplicarMovimiento(db, { modeloId: idCaja, tipo: "salida_tianguis", cantidad: 1 });
+iguales("acepta una salida al tianguis", cuentasCaja(), [5, -1, 3]);
+
+lanza("pero no deja la tienda mas abajo de lo que estaba", () =>
+  aplicarMovimiento(db, { modeloId: idCaja, tipo: "tienda_a_tianguis", cantidad: 1 })
+);
+
+aplicarMovimiento(db, { modeloId: idCaja, tipo: "salida_tienda", cantidad: 3 });
+iguales("un envio a la tienda la regresa a positivo", cuentasCaja(), [2, 2, 3]);
+
+// ---------------------------------------------------------------
 console.log("\nVentas del tianguis en los reportes");
 // ---------------------------------------------------------------
 const ventasLib = await import("../src/lib/ventas.ts");
