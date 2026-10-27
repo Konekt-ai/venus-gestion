@@ -26,6 +26,23 @@ export function hayCaja(): boolean {
   return Boolean(fila);
 }
 
+/**
+ * true cuando la caja ya guarda el precio registrado de cada prenda
+ * vendida, para saber si se cobro en otro.
+ *
+ * Solo se recuerda el si, igual que en precios.ts: si se recordara el no,
+ * al actualizar la caja la columna seguiria invisible hasta reiniciar
+ * bodega.
+ */
+let cajaConPrecioLista = false;
+
+function cajaGuardaPrecioLista(): boolean {
+  if (cajaConPrecioLista) return true;
+  const columnas = getDb().prepare("PRAGMA table_info(caja_venta_lineas)").all() as { name: string }[];
+  if (columnas.some((c) => c.name === "precio_lista")) cajaConPrecioLista = true;
+  return cajaConPrecioLista;
+}
+
 /** true si hay algo que reportar, venga de la tienda o del tianguis. */
 export function hayVentas(): boolean {
   if (hayCaja()) return true;
@@ -108,8 +125,33 @@ export type ResumenVentas = {
   totalTianguis: number;
 };
 
+/**
+ * Quien vendio en el periodo, para el filtro por vendedora.
+ *
+ * Se juntan por nombre y no por id: la caja firma con el de Personal y el
+ * tianguis guarda el nombre tal cual, asi que el nombre es lo unico que
+ * tienen en comun. Las ventas canceladas tambien cuentan: quien cobro y
+ * luego cancelo tambien tiene que poder revisarse.
+ */
+export function vendedorasConVentas(periodo: Periodo, origen: Origen = "todo"): string[] {
+  const filas = getDb()
+    .prepare(
+      `WITH todas AS (${ventasUnidas(origen)})
+       SELECT DISTINCT trim(vendedora) AS nombre
+         FROM todas
+        WHERE date(fecha) >= ? AND trim(vendedora) <> ''
+        ORDER BY nombre`
+    )
+    .all(desde(periodo)) as { nombre: string }[];
+  return filas.map((f) => f.nombre);
+}
+
 /** Los numeros de arriba: cuanto se vendio y en cuantas ventas. */
-export function resumenVentas(periodo: Periodo, origen: Origen = "todo"): ResumenVentas {
+export function resumenVentas(
+  periodo: Periodo,
+  origen: Origen = "todo",
+  vendedora = ""
+): ResumenVentas {
   const fila = getDb()
     .prepare(
       `WITH todas AS (${ventasUnidas(origen)})
@@ -121,9 +163,9 @@ export function resumenVentas(periodo: Periodo, origen: Origen = "todo"): Resume
          COALESCE(SUM(CASE WHEN valida = 1 AND origen = 'tienda' THEN total END), 0)   AS totalTienda,
          COALESCE(SUM(CASE WHEN valida = 1 AND origen = 'tianguis' THEN total END), 0) AS totalTianguis
        FROM todas
-       WHERE date(fecha) >= ?`
+       WHERE date(fecha) >= ? AND (? = '' OR trim(vendedora) = ?)`
     )
-    .get(desde(periodo)) as Omit<ResumenVentas, "promedio">;
+    .get(desde(periodo), vendedora.trim(), vendedora.trim()) as Omit<ResumenVentas, "promedio">;
 
   return {
     ...fila,
@@ -168,10 +210,12 @@ export type VentaIndividual = {
 export function ventasIndividuales(
   periodo: Periodo,
   origen: Origen = "todo",
-  limite = 150
+  limite = 150,
+  vendedora = ""
 ): VentaIndividual[] {
   const db = getDb();
   const inicio = desde(periodo);
+  const quien = vendedora.trim();
   const ventas: VentaIndividual[] = [];
 
   if (origen !== "tianguis" && hayCaja()) {
@@ -179,11 +223,11 @@ export function ventasIndividuales(
       .prepare(
         `SELECT id, folio, fecha, vendedora, estado, piezas, descuento, total
            FROM caja_ventas
-          WHERE date(fecha) >= ?
+          WHERE date(fecha) >= ? AND (? = '' OR trim(vendedora) = ?)
           ORDER BY fecha DESC
           LIMIT ?`
       )
-      .all(inicio, limite) as {
+      .all(inicio, quien, quien, limite) as {
       id: string;
       folio: string;
       fecha: string;
@@ -194,12 +238,20 @@ export function ventasIndividuales(
       total: number;
     }[];
 
+    // Una caja sin actualizar no tiene la columna: sus renglones salen sin
+    // precio registrado, igual que antes.
     const renglonesDe = db.prepare(
-      `SELECT modelo_id, codigo, descripcion, piezas, precio, importe, NULL AS precio_lista
+      `SELECT modelo_id, codigo, descripcion, piezas, precio, importe,
+              ${cajaGuardaPrecioLista() ? "precio_lista" : "NULL"} AS precio_lista
          FROM caja_venta_lineas WHERE venta_id = ? ORDER BY id`
     );
 
     for (const t of tickets) {
+      const renglones = (renglonesDe.all(t.id) as RenglonDeVenta[]).map((r) => ({
+        ...r,
+        // Igual que en el tianguis: solo se dice cuando se cobro en otro.
+        precio_lista: r.precio_lista !== null && r.precio_lista !== r.precio ? r.precio_lista : null,
+      }));
       ventas.push({
         origen: "tienda",
         clave: `tienda-${t.id}`,
@@ -210,7 +262,7 @@ export function ventasIndividuales(
         piezas: t.piezas,
         descuento: t.descuento,
         total: t.total,
-        renglones: renglonesDe.all(t.id) as RenglonDeVenta[],
+        renglones,
       });
     }
   }
@@ -222,11 +274,11 @@ export function ventasIndividuales(
                 v.modelo_id, m.codigo, m.descripcion
            FROM tianguis_ventas v
            JOIN modelos m ON m.id = v.modelo_id
-          WHERE date(v.fecha) >= ?
+          WHERE date(v.fecha) >= ? AND (? = '' OR trim(v.persona) = ?)
           ORDER BY v.fecha DESC, v.id DESC
           LIMIT ?`
       )
-      .all(inicio, limite) as {
+      .all(inicio, quien, quien, limite) as {
       id: number;
       fecha: string;
       persona: string;

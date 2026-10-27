@@ -6,6 +6,7 @@ import {
   PERIODOS,
   pesos,
   resumenVentas,
+  vendedorasConVentas,
   ventasIndividuales,
   type Origen,
   type Periodo,
@@ -67,12 +68,16 @@ export default async function PaginaVentas({ searchParams }: { searchParams: Par
     ? (pedidoOrigen as Origen)
     : "todo";
 
-  // Los dos filtros viajan juntos en la direccion: cambiar uno no borra el otro.
-  const liga = (cambio: { periodo?: Periodo; origen?: Origen }) => {
+  const vendedora = typeof sp.vendedora === "string" ? sp.vendedora.trim() : "";
+
+  // Los filtros viajan juntos en la direccion: cambiar uno no borra los otros.
+  const liga = (cambio: { periodo?: Periodo; origen?: Origen; vendedora?: string }) => {
     const p = new URLSearchParams();
     p.set("periodo", cambio.periodo ?? periodo);
     const o = cambio.origen ?? origen;
     if (o !== "todo") p.set("origen", o);
+    const v = cambio.vendedora ?? vendedora;
+    if (v) p.set("vendedora", v);
     return `/ventas?${p.toString()}`;
   };
 
@@ -92,8 +97,13 @@ export default async function PaginaVentas({ searchParams }: { searchParams: Par
     );
   }
 
-  const resumen = resumenVentas(periodo, origen);
-  const ventas = ventasIndividuales(periodo, origen, LIMITE);
+  const resumen = resumenVentas(periodo, origen, vendedora);
+  const ventas = ventasIndividuales(periodo, origen, LIMITE, vendedora);
+
+  // La elegida se queda en la lista aunque en este periodo no tenga ventas:
+  // si desapareciera, no habria como ver que el filtro sigue puesto.
+  const vendedoras = vendedorasConVentas(periodo, origen);
+  if (vendedora && !vendedoras.includes(vendedora)) vendedoras.unshift(vendedora);
 
   // Agrupadas por dia, con lo que se vendio ese dia. Las canceladas se
   // ven, pero no suman.
@@ -138,6 +148,28 @@ export default async function PaginaVentas({ searchParams }: { searchParams: Par
             </Link>
           ))}
         </div>
+        {/* Con una sola persona vendiendo no hay nada que filtrar. */}
+        {(vendedoras.length > 1 || vendedora) && (
+          <div className="desliza-h -mx-4 flex gap-2 px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+            <Link
+              href={liga({ vendedora: "" })}
+              aria-current={!vendedora ? "true" : undefined}
+              className={`${CHIP} ${!vendedora ? PRENDIDO : APAGADO}`}
+            >
+              Todas las vendedoras
+            </Link>
+            {vendedoras.map((nombre) => (
+              <Link
+                key={nombre}
+                href={liga({ vendedora: nombre })}
+                aria-current={vendedora === nombre ? "true" : undefined}
+                className={`${CHIP} ${vendedora === nombre ? PRENDIDO : APAGADO}`}
+              >
+                {nombre}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* En el celular el total va a lo ancho: en un tercio de pantalla una
@@ -164,8 +196,8 @@ export default async function PaginaVentas({ searchParams }: { searchParams: Par
       {ventas.length === 0 ? (
         <Vacio
           icono={<IconoCaja tamano={24} />}
-          titulo="No hay ventas en este periodo"
-          descripcion="Prueba con un rango mas largo."
+          titulo={vendedora ? `${vendedora} no tiene ventas en este periodo` : "No hay ventas en este periodo"}
+          descripcion={vendedora ? "Prueba con un rango mas largo o con todas las vendedoras." : "Prueba con un rango mas largo."}
         />
       ) : (
         <div className="space-y-6">

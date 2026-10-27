@@ -285,7 +285,11 @@ cuentan.
 
 Arriba van solo el total vendido, las ventas y las piezas del periodo. Con
 **Todo / Tienda / Tianguis** se ve cada lado por separado; en *Todo* se dice
-cuánto fue de cada uno.
+cuánto fue de cada uno. Debajo está el filtro por **vendedora**: con una
+elegida, la lista y los totales son solo de lo que vendió ella.
+
+Si en la caja se cobró una prenda en otro precio (solo para esa venta), al
+lado sale el **precio registrado**, igual que en el tianguis.
 
 ---
 

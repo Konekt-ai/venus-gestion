@@ -394,6 +394,15 @@ comprobar(
 iguales("y avisa que se vendio en otro precio", vendida?.renglones[0].precio_lista, 65000);
 comprobar("la cancelada aparece marcada", lista.some((v) => v.cancelada));
 
+iguales("la lista de vendedoras trae a quien vendio", ventasLib.vendedorasConVentas("hoy"), ["Lupita", "Mario"]);
+iguales(
+  "filtrar por vendedora trae solo sus ventas",
+  ventasLib.ventasIndividuales("hoy", "todo", 150, "Lupita").map((v) => v.vendedora),
+  ["Lupita"]
+);
+iguales("y el resumen cuenta solo lo suyo", ventasLib.resumenVentas("hoy", "todo", "Mario").total, 0);
+iguales("una vendedora sin ventas no trae nada", ventasLib.ventasIndividuales("hoy", "todo", 150, "Nadie").length, 0);
+
 // ---------------------------------------------------------------
 console.log("\nUbicaciones que en realidad eran lugares");
 // ---------------------------------------------------------------
@@ -850,6 +859,45 @@ comprobar(
 comprobar(
   "y buscar por un precio exacto no truena: no encuentra a nadie",
   habiaTabla || consultas.buscarModelos({ precioCentavos: 65000 }).length === 0
+);
+
+// ---------------------------------------------------------------
+console.log("\nVentas de la tienda (escritas por la caja)");
+// ---------------------------------------------------------------
+// Va al final a proposito: a partir de aqui la base ya "tiene caja".
+// Se crean solo las columnas que bodega lee, como las deja la caja.
+db.exec(`
+  CREATE TABLE caja_ventas (id TEXT PRIMARY KEY, folio TEXT, fecha TEXT, vendedora TEXT,
+    estado TEXT, piezas INTEGER, descuento INTEGER, total INTEGER);
+  CREATE TABLE caja_venta_lineas (id INTEGER PRIMARY KEY AUTOINCREMENT, venta_id TEXT,
+    modelo_id INTEGER, codigo TEXT, descripcion TEXT, piezas INTEGER, precio INTEGER,
+    importe INTEGER, sin_respaldo INTEGER DEFAULT 0);
+`);
+db.prepare(
+  `INSERT INTO caja_ventas VALUES ('t1', 'C1-000001', datetime('now','localtime'), 'ANA', 'cobrada', 1, 0, 50000)`
+).run();
+db.prepare(
+  `INSERT INTO caja_venta_lineas (venta_id, modelo_id, codigo, descripcion, piezas, precio, importe)
+   VALUES ('t1', ?, 'VD 777', 'PRUEBA', 1, 50000, 50000)`
+).run(idLugares);
+
+const deAna = ventasLib.ventasIndividuales("hoy", "todo", 150, "ANA");
+iguales("la tienda tambien se filtra por vendedora", deAna.map((v) => v.folio), ["C1-000001"]);
+iguales("una caja vieja no trae precio registrado", deAna[0]?.renglones[0].precio_lista, null);
+
+// La caja nueva guarda el precio registrado de cada prenda vendida.
+db.exec("ALTER TABLE caja_venta_lineas ADD COLUMN precio_lista INTEGER");
+db.prepare("UPDATE caja_venta_lineas SET precio_lista = 60000 WHERE venta_id = 't1'").run();
+iguales(
+  "la caja nueva avisa que se cobro en otro precio",
+  ventasLib.ventasIndividuales("hoy", "tienda")[0]?.renglones[0].precio_lista,
+  60000
+);
+db.prepare("UPDATE caja_venta_lineas SET precio_lista = 50000 WHERE venta_id = 't1'").run();
+iguales(
+  "y no dice nada si se cobro al registrado",
+  ventasLib.ventasIndividuales("hoy", "tienda")[0]?.renglones[0].precio_lista,
+  null
 );
 
 // ---------------------------------------------------------------
